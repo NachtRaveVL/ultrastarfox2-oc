@@ -15,6 +15,9 @@ SUPERFX3	equ 0
 ; PAL/NTSC (1/0)
 pal					equ	0
 
+; 26MHz oscillator build (GSU-1/GSU-2 fast mode stays enabled)
+oc26				equ	1
+
 ; Run Super FX chip @ 21Mhz
 fast				equ	1
 

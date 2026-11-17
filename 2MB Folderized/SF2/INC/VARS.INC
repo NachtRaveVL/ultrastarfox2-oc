@@ -92,7 +92,11 @@ user_yajima		equ	8
 
 	IFEQ	SUPERFX3
 	IFNE	fast
+	IFNE	oc26
+	defs	version,"%$version/26Mhz"
+	ELSEIF
 	defs	version,"%$version/21Mhz"
+	ENDC
 	ELSEIF
 	defs	version,"%$version/10#Mhz"
 	ENDC

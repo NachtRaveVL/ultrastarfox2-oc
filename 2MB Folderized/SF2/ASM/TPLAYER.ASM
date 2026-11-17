@@ -2791,6 +2791,15 @@ aav_wz	equ	work4
 	adc	exal_vz,y
 	sta	exal_vz,y
 
+	lda	exal_vx,y
+	jsr	OC_scalevel_srou
+	sta	exal_vx,y
+	lda	exal_vy,y
+	jsr	OC_scalevel_srou
+	sta	exal_vy,y
+	lda	exal_vz,y
+	jsr	OC_scalevel_srou
+	sta	exal_vz,y
 
 ; Room mode?
 
@@ -2884,6 +2893,31 @@ aav_wz	equ	work4
 
 
 
+
+
+; Scale a signed vector by 31/32 without delaying the frame transfer.
+OC_scalevel_srou
+	a16
+	sta	x1
+	bpl	.oc_abs
+	eor	#$ffff
+	inc	a
+.oc_abs	clc
+	adc	#16
+	lsr	a
+	lsr	a
+	lsr	a
+	lsr	a
+	lsr	a
+	sta	x2
+	lda	x1
+	bpl	.oc_positive
+	clc
+	adc	x2
+	rts
+.oc_positive	sec
+	sbc	x2
+	rts
 
 ;-------------------------------------------------------------------
 addroomvecs
