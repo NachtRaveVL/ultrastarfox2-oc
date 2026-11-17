@@ -5336,7 +5336,7 @@ timebonustbl
 	db	10
 	ENDC
 
-; Scale signed Arwing vectors by 31/32 outside the full player bank.
+; Scale signed Arwing vectors by (32-oc_vel_step)/32 outside the full player bank.
 OC_scalevecs_l
 	a16
 	lda	exal_vx,y
@@ -5360,6 +5360,16 @@ OC_scalevecs_l
 	lsr	a
 	lsr	a
 	lsr	a
+	IFGT	oc_vel_step-1
+	sta	x2
+	REPT	oc_vel_step-1
+	clc
+	adc	x2
+	ENDR
+	ENDC
+	IFLT	oc_vel_step-1
+	lda	#0
+	ENDC
 	sta	x2
 	lda	x1
 	bpl	.oc_positive

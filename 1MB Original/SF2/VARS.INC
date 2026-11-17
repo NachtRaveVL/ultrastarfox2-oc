@@ -13,7 +13,7 @@ contest	equ	0	; contest version
 german	equ	0	; german version
 french	equ	0	; french version
 fast	equ	1	; 21Mhz?
-oc26	equ	1	; 26MHz external oscillator build
+oc_hz	equ	26000000	; external oscillator frequency in Hz
 CacheOn	equ	1	; Super FX chip cache on/off
 
 tamehomon	equ	0	; tame dama 1:homing on 0:off
@@ -64,6 +64,8 @@ user_yajima		equ	8
 ;  º                     º³
 ;  ÈÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼³
 ;   ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+oc_vel_step	equ	(oc_hz-26000000)/7000000+1	; 26MHz: 1/32, 33MHz: 2/32
 
 	STRING	version[80]
 
@@ -124,11 +126,7 @@ user_yajima		equ	8
 	ENDC
 
 	IFNE	fast
-	IFNE	oc26
-	defs	version,"%$version/26Mhz"
-	ELSEIF
-	defs	version,"%$version/21Mhz"
-	ENDC
+	defs	version,"%$version/",oc_hz,"Hz"
 	ELSEIF
 	defs	version,"%$version/10«Mhz"
 	ENDC
