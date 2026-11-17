@@ -92,19 +92,21 @@ Pull requests and corrections are welcome. Open changes against this fork's [`ma
 ```text
 ultrastarfox2-oc
 ├── 1MB Original: Original 1MB ROM layout for GSU-1 hardware
-│   ├── sf2: Main source code directory
+│   ├── SF2: Main source code directory
 │   │   ├── *.ASM: Main game code (65816)
 │   │   ├── *.MC: Super FX (MARIO) assembly code
 │   │   ├── *.INC: Assembly includes and configuration
 │   │   ├── *.EXT: External symbol declarations
 │   │   ├── DATA: Graphics and other game data
+│   │   ├── EXT: External symbol declarations
 │   │   ├── MAPS: Level scripts
 │   │   ├── MSPRITES: Super FX textures
-│   │   └── SND: Sound and music data
-│   ├── BUILD.BAT: ROM build script
-│   ├── BLDtolog.BAT: Build with logging
-│   ├── build.cmd: DOSBox build launcher
-│   ├── build to log.cmd: Logging build launcher
+│   │   ├── SOUND: Sound and music data
+│   │   └── TEMP: Temporary source and supporting files
+│   ├── bldsf2.bat: ROM build script
+│   ├── bldlog.bat: Build with logging
+│   ├── build_sf2.cmd: DOSBox-X build launcher
+│   ├── build_log.cmd: Logging build launcher
 │   └── dosbox-x.conf: DOSBox-X configuration
 ├── 2MB Folderized: Expanded ROM layout for GSU-2 hardware
 │   ├── SF2: Main source code directory
@@ -112,6 +114,7 @@ ultrastarfox2-oc
 │   │   ├── BANK: ROM bank data and assembly files
 │   │   ├── CONFIG: Game and ROM configuration
 │   │   ├── DATA: Graphics and other game data
+│   │   │   └── COL: Palette files and Palette Packer
 │   │   ├── EXT: External symbol declarations
 │   │   ├── FONT: Font graphics and data
 │   │   ├── INC: Assembly includes and lookup tables
@@ -127,7 +130,13 @@ ultrastarfox2-oc
 │   ├── docs: Star Fox 2 technical documentation
 │   ├── optionalstuff: Optional graphics and assets
 │   ├── BUILD.BAT: ROM build script
+│   ├── BLDTOLOG.BAT: Build with logging
+│   ├── CLEAN.BAT: Build cleanup script
 │   ├── Makefile: Linux build automation
+│   ├── build.cmd: DOSBox-X build launcher
+│   ├── build to log.cmd: Logging build launcher
+│   ├── clean.cmd: Build cleanup launcher
 │   └── dosbox-x.conf: DOSBox-X configuration
 └── README.md: Project overview and build documentation
+
 ```
