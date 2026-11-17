@@ -1,0 +1,160 @@
+184a185
+> 	s_mode_entry	.loop,p_loop
+188a190
+> 	s_mode_entry	.waitfaceplayer,p_waitfaceplayer
+194a197
+> 	s_mode_entry	.findnextobj,p_findnextshape
+224a228
+> 	s_mode_entry	.belowplayer,p_belowplayer
+244c248
+< ;--;	s_mode_entry	.firecanhit,p_firecanhit
+---
+> 	s_mode_entry	.firecanhit,p_firecanhit
+246c250
+< ;--;	s_mode_entry	.fireatplayercanhit,p_fireatplayercanhit
+---
+> 	s_mode_entry	.fireatplayercanhit,p_fireatplayercanhit
+320,321d323
+< 	s_mode_entry	p.importbq,p_importbq
+< 	s_mode_entry	p.importwq,p_importwq
+325,326d326
+< 	s_mode_entry	p.exportbq,p_exportbq
+< 	s_mode_entry	p.exportwq,p_exportwq
+468,473d467
+< ;--;	s_mode_entry	.waitfaceplayer,p_waitfaceplayer
+< 
+< 	s_mode_entry	p.circlewindow,p_circlewindow
+< 
+< 	s_mode_entry	p.scrflash,p_scrflash
+< 
+486d479
+< 	s_mode_entry	.loop,ep_loop
+488,490d480
+< 	s_mode_entry	.belowplayer,ep_belowplayer
+< 	s_mode_entry	.findnextobj,ep_findnextshape
+< 
+606a597,599
+> 	s_mode_entry	p.circlewindow,ep_circlewindow
+> 	s_mode_entry	p.scrflash,ep_scrflash
+> 
+657,661d649
+< 	s_mode_entry	p.settype,ep_Settype
+< 
+< 	s_mode_entry	p.setbossmode,ep_setbossmode
+< 	s_mode_entry	p.swapvar,ep_swapvar
+< 
+924,931c912,919
+< ;.waitfaceplayer	PATHCMD
+< ;	ldy			pathplayer&WM
+< ;	s_obj2obj_3dangle	x,y,al_roty,al_rotx,3,.slradd1
+< ;	jsr	.setlockrot
+< ;	jmp			.move
+< ;.slradd1
+< ;	jsr	.setlockrot
+< ;	jmp		_padd1
+---
+> .waitfaceplayer	PATHCMD
+> 	ldy			pathplayer&WM
+> 	s_obj2obj_3dangle	x,y,al_roty,al_rotx,3,.slradd1
+> 	jsr	.setlockrot
+> 	jmp			.move
+> .slradd1
+> 	jsr	.setlockrot
+> 	jmp		_padd1
+3510,3517d3497
+< .importbq	LOCAL
+< 	PATHCMD
+< 	jsr	.importq
+< 	lda		pathx2
+< 	sta.w		0,y
+< 	jmp		_padd3
+< 
+< ;**********
+3527,3535d3506
+< .importwq	LOCAL
+< 	PATHCMD
+< 	jsr	.importq
+< 	a16
+< 	lda		pathx2
+< 	sta.w		0,y
+< 	jmp		_padd3
+< 
+< ;**********
+3553,3575d3523
+< ;**********
+< .exportbq	LOCAL
+< 	PATHCMD
+< 	jsr	.export
+< 	LONGA
+< 	and	#255
+< 	tay
+< 	a8
+< 	lda	pathx2
+< 	sta.w	path_zero_page,y
+< 	jmp	_padd3
+< 
+< ;**********
+< .exportwq	LOCAL
+< 	PATHCMD
+< 	jsr	.export
+< 	LONGA
+< 	and	#255
+< 	tay
+< 	lda	pathx2
+< 	sta.w	path_zero_page,y
+< 	jmp	_padd3
+< 
+3600,3612d3547
+< ;* * * * * *
+< .importq	LOCAL
+< 	getparam	2
+< 	a16
+< 	and	#255
+< 	tay
+< 	lda.w		path_zero_page,y
+< 	sta		pathx2
+< 
+< 	a8
+< 	addalvaroffset	1
+< 	rts
+< 
+8123,8132d8057
+< 
+< ;**********
+< .settype	LOCAL
+< 	PATHCMD
+< 	getparam	1
+< 	sta	pathx1
+< 	lda	al_collflags,x
+< 	ora	pathx1
+< 	sta	al_collflags,x
+< 	jmp	_padd2
+8203,8230d8127
+< 
+< ;**********
+< .setbossmode	LOCAL
+< 	PATHCMD
+< 	getparam	1
+< 	sta	bossmode
+< 	jmp	_padd2
+< 
+< ;**********
+< .swapvar	LOCAL
+< 	PATHCMD
+< 	addalvaroffset	1
+< 	phy
+< 	a16
+< 	lda.w	0,y
+< 	sta	pathy1
+< 	a8
+< 	addalvaroffset	2
+< 	a16
+< 	lda.w	0,y
+< 	pha
+< 	lda	pathy1
+< 	sta.w	0,y
+< 	pla
+< 	ply
+< 	sta.w	0,y
+< 
+< 	jmp	_padd3

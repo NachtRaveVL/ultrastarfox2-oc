@@ -5110,7 +5110,7 @@ SprGameTimer_l
 	IFEQ	1
 ;========= Semicolon Flashing Check ======
 	lda	SecondTimer
-	cmp	#(second+1)/2	;8
+	cmp	#(videosecond+1)/2	;8
 	bpl	.SetNoFlash
 .SetFlash
 	SetSprXYChr_Im		SprSmcolOffX,SprTmOffY,SprSmFlChr,colpal0,pri3,noflip

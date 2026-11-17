@@ -1,0 +1,9 @@
+	global	intro_l
+	global	OC_scalevecs_l
+	global	kgamesequence
+	global	knastycheck_l
+
+;;;;	global	InitGamePalette_l
+;;;	global	missionmaptbl,missionmaptblEND
+;;;	global	battlemaptbl,battlemaptblEND
+;;;	global	testmaptbl,testmaptblEND

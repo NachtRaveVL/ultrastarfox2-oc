@@ -24,9 +24,9 @@ enterendy	equ	-500
 ;³palyer ga damage wo uketa tokino muteki jikan³
 ;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
 
-plnohitfrm		equ	10
+plnohitfrm		equ	(10*videosecond)/second
 plscrflashfrm	equ	8	;4
-plnohitfrm_s		equ	4
+plnohitfrm_s		equ	(4*videosecond)/second
 plscrflashfrm_s	equ	2
 
 ;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
