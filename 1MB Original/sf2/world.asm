@@ -31,7 +31,7 @@
 ;*                                                                         *
 ;***************************************************************************
 
-	incpublics	world.ext
+	incpub	world
 
 
 
@@ -49,24 +49,6 @@ ifobjinvalid	macro
 	shorta
 	longi
 
-update_objects_l
-	ai16
-	ldx	playpt
-	lda	al_worldz,x
-;	lda	viewposz
-	sec
-	sbc	lastplayz
-	sta	lastzchange
-	lda	al_worldz,x
-;	lda	viewposz
-	sta	lastplayz
-	ldx	mapptr
-	lda	mapcnt
-	sec
-	sbc	lastzchange
-	bmi	newobjs_l
-	sta	mapcnt
-	rtl
 newobjs_l
 	php
 	a8
@@ -157,7 +139,876 @@ mapjmp	dw	mapobjdo&WM	;0
 	dw	notneededyet&WM		;136
 	dw	mapwait2do&WM		;138
 	dw	mapsetpathdo&WM		;140
+	dw	mapinertobjdo&WM	;142
+	dw	mapinertpathdo&WM	;144
+	dw	mapsetscale&WM		;146
+	dw	mapsetarea&WM		;148
+	dw	mapifswitch&WM		;150
+	dw	mapifnotswitch&WM	;152
+	dw	mapsetdust&WM		;154
+	dw	mapareaout&WM		;156
+	dw	mapgotoiflevelcode&WM	;158
+	dw	mapinerttargetdo&WM	;160
+	dw	mapgotoifplanetcode&WM	;162
+	dw	mapgotoifsatellite&WM	;164
 
+	REPT	(ols_id-(*-mapjmp))/2
+	dw	0	; Pad out table with zero's up to the ols stuff
+	ENDR
+
+	dw	olsobject&wm		; 200
+	dw	olswait&wm		; 202
+	dw	olsgoto&wm		; 204
+	dw	olspositions&wm		; 206
+	dw	olslink&wm		; 208
+	dw	olspathobj&wm		; 210
+	dw	olslinkend&wm		; 212
+	dw	olsinertpath&wm		; 214
+
+
+;-------------------------------------------------------------------
+	longa
+	longi
+mapgotoiflevelcode
+	a8
+	lda.w	mgil_level,y
+	cmp	currentlevel
+	bne	.nojump
+
+	a16
+	lda.w	mgil_addr,y
+	tax
+	jmp	newobjex
+
+.nojump
+	a16
+	tya
+	clc
+	adc	#mgil_sizeof
+	tax
+	jmp	newobjex
+
+;-------------------------------------------------------------------
+	longa
+	longi
+mapsetdust
+	lda.w	msd_dustflags,y
+	sta.l	m_dustflags
+
+	a16
+	tya
+	clc
+	adc	#msd_sizeof
+	tax
+
+	jmp	newobjex
+
+;-------------------------------------------------------------------
+	longa
+	longi
+; add a user defined area
+mapsetarea
+
+; get the area number
+	lda.w	ma_num,y
+	and	#127
+
+	tax		; calculate index into area
+	beq	.le_fin
+	lda	#0
+	clc
+.multiply	adc	#mar_sizeof
+	dex
+	bne	.multiply
+	clc
+	tax
+.le_fin
+	lda.w	ma_x,y
+	and	#255
+	xba
+	sta.l	areas+mar_x,x
+
+	lda.w	ma_z,y
+	and	#255
+	xba
+	sta.l	areas+mar_z,x
+
+	lda.w	ma_width,y
+	and	#255
+	xba
+	sta.l	areas+mar_width,x
+
+	lda.w	ma_length,y
+	and	#255
+	xba
+	sta.l	areas+mar_length,x
+
+	lda.w	ma_addr,y
+	sta.l	areas+mar_mapaddr,x
+	lda.w	ma_addr+1,y
+	sta.l	areas+mar_mapaddr+1,x
+
+	a8
+	lda.w	ma_num,y
+	and	#128
+	beq	.setactive
+	lda	#0
+	beq	.setit
+.setactive
+	lda	#ar_active
+.setit	sta.l	areas+mar_flags,x
+
+	inc	NumAreas
+	a16
+	tya
+	clc
+	adc	#ma_sizeof
+	tax
+
+	jmp	newobjex
+
+;-------------------------------------------------------------------
+	shorta
+	longi
+; check for linked ols objects.
+; ie. when one object blows up another particular object gets created.
+
+checkolslinks_l
+	php
+	phy
+	a16
+	ldy	olslptr
+	beq	.nolinks
+	txa
+	bra	.search
+
+.nxtone
+	txa
+	cmp.w	olslinks,y
+	beq	.gotone
+	lda	al_inertptr,x	; check for ols ptr
+	cmp.w	olslinks,y
+	beq	.gotone
+.search
+	dey
+	dey
+	dey
+	dey
+	dey
+
+	bpl	.nxtone
+.nolinks
+	ply
+	plp
+	rtl
+.gotone
+; now to create ols object
+	phx
+	phb
+	a8
+	lda	mapbank
+	pha
+	lda.w	olslinks+4,y
+	sta	mapbank
+	
+
+	ldx.w	olslinks+2,y	; get old map ptr.
+	phy
+	jsl	newobjs_l
+	ply
+
+	jsr	removeolslink
+
+	a8
+	pla
+	sta	mapbank
+	plb
+
+	plx
+	ply
+	plp
+	rtl
+
+;-------------------------------------------------------------------
+; remove the link in y from olslinks list
+	longa
+	longi
+removeolslink
+	php
+	a16
+	phx
+	sty	x1
+	lda	olslptr
+	sec
+	sbc	x1
+	beq	.norem
+	sec
+	sbc	#5
+	beq	.norembutincptr
+
+	tax
+	a8
+
+.madamada
+	lda.w	olslinks+5,y
+	sta.w	olslinks,y
+	iny
+	dex
+	bne	.madamada
+
+	a16
+.norembutincptr
+	lda	olslptr
+	sec
+	sbc	#5
+	sta	olslptr		; adjust ptr to last object
+.norem
+	plx
+	plp
+	rts
+
+;-------------------------------------------------------------------
+	longa
+	longi
+olslink
+	tyx
+	ldy	olslptr
+
+	lda	lastmapobj
+	beq	.nolastobj
+	sta.w	olslinks,y
+
+	txa
+	clc
+	adc	#ol_sizeof
+	sta.w	olslinks+2,y
+
+	a8
+	lda	mapbank
+	sta.w	olslinks+4,y
+	a16
+
+	iny
+	iny
+	iny
+	iny
+	iny
+	sty	olslptr
+
+.nolastobj
+	lda.w	ol_bypass,x
+	tax
+	jmp	newobjex
+
+
+;-------------------------------------------------------------------
+	longa
+	longi
+
+olslinkend	rts
+	
+	
+;-------------------------------------------------------------------
+	longa
+	longi
+olspositions
+	tyx
+	txa
+	inc	a
+	inc	a
+	sta	olspositions_addr
+
+	a8
+	lda	mapbank
+	sta	olspositions_addr+2
+
+	lda	op_numpos,x
+	sta	olspositions_num
+	a16
+
+	and	#255
+	asl	a
+	sta	x1
+	asl	a
+	clc
+	adc	x1
+	sta	x1
+	txa
+	clc
+	adc	x1
+	clc
+	adc	#op_sizeof
+	tax		; increment x past the list of coordinates
+
+	jmp	newobjex
+	
+;-------------------------------------------------------------------
+; sets alien in x to a random position taken from the olspositions table
+	longa
+	longi	
+setrandompos
+	php
+	phy
+	phb
+	a16
+	lda	olspositions_num
+	dec	a
+	and	#255
+	sta	x1
+
+	a8
+	lda	olspositions_addr+2
+	pha
+	plb	; change to map bank to read table
+	sta	tempaddrl+2
+
+	jsl	random_l
+	a16
+	and	x1	; mask out
+	asl	a
+	sta	x1
+	asl	a	; *6
+	clc
+	adc	x1
+	sta	x1
+
+	txy
+	lda	olspositions_addr
+	clc
+	adc	x1
+	tax	; calculate offset into x,z table
+	sta	tempaddrl
+
+
+	lda.l	mapbase,x
+	sta	x1
+	lda.l	mapbase+2,x
+	sta	y1
+	lda.l	mapbase+4,x
+	sta	z1
+
+
+	plb
+	tyx
+	ply
+	plp
+	rts
+
+;-------------------------------------------------------------------
+; this searches the aliens and then the inert objects
+; for any ols objects with the same position
+; position as is in tempaddrl
+
+findolssamepos
+	php
+	phb
+	phx
+	phy
+	a8
+	lda	#$7e
+	pha
+	plb
+	a16
+
+	ldx	allst
+	beq	.none1
+
+.lp
+	s_jmp_notalsflag	x,olsobj,.nomatch
+	s_get_resource	L,x,textpt,poslist,.nomatch
+
+	lda	textpt
+	cmp	tempaddrl
+	bne	.nomatch
+	lda	textpt+1
+	cmp	tempaddrl+1
+	beq	.match
+.nomatch
+
+	lda	_next,x
+	tax
+	bne	.lp
+
+.none1
+
+	ldx	inertlistptr
+	beq	.none2
+.lp2
+	lda.w	i_poslist,x
+	cmp	tempaddrl
+	bne	.nomatch2
+	lda.w	i_poslist+1,x
+	cmp	tempaddrl+1
+	beq	.match
+
+.nomatch2
+	lda.w	_next,x
+	tax
+	bne	.lp2
+.none2
+
+
+	lda	#0
+	bra	.exit
+
+.match	lda	#1
+.exit
+	ply
+	plx
+	plb
+	plp
+	rts
+
+;-------------------------------------------------------------------
+	LONGA
+	LONGI
+setols
+; set position randomly
+	php
+	phx
+.lp
+	jsr	setrandompos
+
+	jsr	findolssamepos
+	cmp	#1
+	beq	.lp
+
+	lda	x1
+	sta.w	al_worldx,y
+
+	lda	y1
+	sta.w	al_worldy,y
+
+	lda	z1
+	sta.w	al_worldz,y
+
+	s_set_alsflag	y,olsobj
+
+	sty	lastmapobj
+
+	a8
+	phb
+	lda	#$7e
+	pha
+	plb
+	s_set_resource	L,y,poslist,tempaddrl
+	inc	olsobjs_num
+
+.notfound
+
+	plb
+	plx
+	plp
+	rts
+
+;-------------------------------------------------------------------
+	LONGA
+	LONGI
+setinertols
+; set position randomly
+	php
+
+	a16
+.lp
+	jsr	setrandompos
+
+	jsr	findolssamepos
+	cmp	#1
+;	beq	.lp
+
+	lda	x1
+	sta.w	i_worldx,y
+
+	lda	y1
+	sta.w	i_worldy,y
+
+	lda	z1
+	sta.w	i_worldz,y
+
+	sty	lastmapobj
+
+	a8
+	inc	olsobjs_num
+
+	lda	tempaddrl+2
+	sta.w	i_poslist+2,y	; store the position
+	a16
+	lda	tempaddrl
+	sta.w	i_poslist,y
+	plp
+	rts
+
+;-------------------------------------------------------------------
+	longa
+	longi
+olspathobj
+	tyx
+
+; add the object
+	phx
+	ldx	allst
+	l_add	allst,alfreelst,.noadd
+	txy
+	plx
+
+; initialise its variables
+	a8
+	jsl	init_objvars_l
+	a16
+
+; copy data from map
+	lda	opo_shape,x
+	sta.w	al_shape,y
+	lda	opo_path,x
+	sta.w	al_sword2,y
+
+	lda	#path_istrat&WM
+	sta.w	al_stratptr,y
+	lda	#path_istrat>>8
+	sta.w	al_stratptr+1,y
+
+	jsr	setols
+
+	bra	.wobber
+
+.noadd
+	stz	lastmapobj
+	plx
+.wobber
+	txa
+	clc
+	adc	#opo_sizeof
+	tax
+
+	jmp	newobjex
+
+
+
+;-------------------------------------------------------------------
+	longa
+	longi
+olsinertpath
+	phb
+	phy
+
+	lda.w	opo_shape,y
+	sta	x2
+	lda.w	opo_path,y
+	sta	y2
+
+	a8
+	lda	#$7e
+	pha
+	plb
+	a16
+
+; add the object
+	ldx	inertlistptr
+	l_add.w	inertlistptr,inertfree,.noadd
+
+; copy data from map
+	lda	x2
+	sta.w	i_shape,x
+	lda	y2
+	sta.w	i_strat,x
+
+	stz.w	i_alienptr,x
+	a8
+	lda	#if_pathobj!if_olsobj
+	sta.w	i_flags,x
+	stz.w	i_rotx,x
+	stz.w	i_roty,x
+	stz.w	i_rotz,x
+
+	txy
+	jsr	setinertols
+
+	plx
+	plb
+
+	bra	.wobber
+
+.noadd	a16
+	stz	lastmapobj
+	plx
+	plb
+.wobber	a16
+	txa
+	clc
+	adc	#opo_sizeof
+	tax
+
+	jmp	newobjex
+
+;-------------------------------------------------------------------
+	longa
+	longi
+olsobject
+	tyx
+	jsr	olsobject_rou
+	txa
+	clc
+	adc	#oo_sizeof
+	tax
+	jmp	newobjex
+olsobject_rou
+
+; add the object
+	phx
+	ldx	allst
+	l_add	allst,alfreelst,.noadd
+	txy
+	plx
+
+; initialise its variables
+	a8
+	jsl	init_objvars_l
+	a16
+
+; copy data from map
+	lda	oo_shape,x
+	sta.w	al_shape,y
+	lda	oo_strategy,x
+	sta.w	al_stratptr,y
+	lda	oo_strategy+1,x
+	sta.w	al_stratptr+1,y
+
+	jsr	setols
+
+	bra	.wobber
+
+.noadd
+	stz	lastmapobj
+	plx
+.wobber
+	rts
+;-------------------------------------------------------------------
+	longa
+	longi
+olswait
+	tyx
+
+	lda	ow_condition,x
+	and	#255
+	cmp	#_olsw_alldead
+	beq	.chkalldead
+	cmp	#_olsw_onedead
+	beq	.chkonedead
+.wait
+	stx	mapptr
+	rts
+.chkalldead
+	lda	olsobjs_num
+	beq	.con
+	stx	mapptr
+	rts
+.chkonedead
+	lda	olsobj_dead
+	beq	.wait
+	stz	olsobj_dead
+.con
+	txa
+	clc
+	adc	#ow_sizeof
+	tax
+	jmp	newobjex
+
+;-------------------------------------------------------------------
+	longa
+	longi
+olsgoto
+	tyx
+	lda	og_condition,x
+	and	#255
+	beq	.gotoit
+	cmp	#_olsg_ifnotsos1
+	beq	.notsos1
+	cmp	#_olsg_ifnotsos2
+	beq	.notsos2
+	cmp	#_olsg_ifnotsos3
+	beq	.notsos3
+	bra	.con
+.notsos1
+.notsos2
+.notsos3
+.con
+	txa
+	clc
+	adc	#og_sizeof
+	tax
+	jmp	newobjex
+.gotoit	lda	og_addr,x
+	tax
+	jmp	newobjex
+;-------------------------------------------------------------------
+
+;-------------------------------------------------------------------
+	longa
+	longi
+
+mapsetscale
+	lda.w	ms_scale,y
+;	jsl	set_scale_l
+	tya
+	clc
+	adc	#ms_sizeof
+	tax
+	jmp	newobjex
+
+;-------------------------------------------------------------------
+	longa
+	longi
+mapinerttargetdo
+	phb
+	phy
+
+	lda	#if_pathobj!if_target
+	sta.l	tempinertflags
+
+	jmp	mapinertpathdo_in
+;-------------------------------------------------------------------
+	longa
+	longi
+
+mapinertpathdo
+	phb
+	phy
+	lda	#if_pathobj
+	sta.l	tempinertflags
+
+mapinertpathdo_in
+; copy data into temporary storage
+	lda.w	mip_x,y
+	sta	x1
+	lda.w	mip_y,y
+	sta	y1
+	lda.w	mip_z,y
+	sta	z1
+
+	lda.w	mip_shape,y
+	sta	x2
+
+	lda.w	mip_path,y
+	sta	y2
+
+	a8
+
+	lda.w	mip_roty,y
+	sta	z2+1
+
+	lda	#$7e
+	pha
+	plb
+
+	a16
+
+	ldx	inertlistptr
+	l_add.w	inertlistptr,inertfree,.nocando
+
+	lda	x1
+	sta.w	i_worldx,x
+	lda	y1
+	sta.w	i_worldy,x
+	lda	z1
+	sta.w	i_worldz,x
+	lda	x2
+	sta.w	i_shape,x
+	lda	y2
+	sta.w	i_strat,x
+
+	a8
+	lda	z2+1
+	sta.w	i_roty,x
+
+	lda	CurrentArea
+	sta.w	i_area,x
+
+	lda.l	tempinertflags	; #if_pathobj
+	sta.w	i_flags,x
+	stz.w	i_rotx,x
+	stz.w	i_rotz,x
+	a16
+.nocando
+	plx
+	plb
+	txa
+	clc
+	adc	#mip_sizeof
+	tax
+	jmp	newobjex
+
+;-------------------------------------------------------------------
+	longa
+	longi
+
+mapinertobjdo
+	phb
+	phy
+; copy data into temporary storage
+	lda.w	mio_x,y
+	sta	x1
+	lda.w	mio_y,y
+	sta	y1
+	lda.w	mio_z,y
+	sta	z1
+
+	lda.w	mio_shape,y
+	sta	x2
+
+	lda.w	mio_strat,y
+	sta	y2
+
+	a8
+	lda.w	mio_strat+2,y
+	sta	z2
+
+	lda.w	mio_roty,y
+	sta	z2+1
+
+	lda	#$7e
+	pha
+	plb
+
+	a16
+
+	ldx	inertlistptr
+	l_add.w	inertlistptr,inertfree,.nocando
+
+	lda	x1
+	globalscale_a
+	sta.w	i_worldx,x
+	lda	y1
+	globalscale_a
+	sta.w	i_worldy,x
+	lda	z1
+	globalscale_a
+	sta.w	i_worldz,x
+	lda	x2
+	sta.w	i_shape,x
+	lda	y2
+	sta.w	i_strat,x
+
+	a8
+	lda	z2
+	sta.w	i_strat+2,x
+	lda	z2+1
+	sta.w	i_roty,x
+
+	lda	CurrentArea
+	sta.w	i_area,x
+
+	stz.w	i_flags,x
+	stz.w	i_rotx,x
+	stz.w	i_rotz,x
+	a16
+.nocando
+	plx
+	plb
+	txa
+	clc
+	adc	#mio_sizeof
+	tax
+	jmp	newobjex
 
 	longa
 	longi
@@ -213,7 +1064,7 @@ mapsendmessage
 	tyx
 	phx
 	lda	mapbase&WM+1,x
-	jsl	send_message_l
+;	jsl	send_message_l
 	plx
 	inx
 	inx
@@ -277,11 +1128,11 @@ mapcodejsl	tyx
 mapjmpvarlessdo
 	tyx
 	lda	mapbase&WM+1,x
-	sta	fptr
+	sta	tempaddrl
 	lda	mapbase&WM+2,x
-	sta	fptr+1
+	sta	tempaddrl+1
 	a8
-	lda.l	[fptr]
+	lda.l	[tempaddrl]
 	cmp	mapbase&WM+4,x
 	bpl	.njmp
 	a16
@@ -301,14 +1152,50 @@ mapjmpvarlessdo
 ;--------------------------------------------------------
 	longa
 	longi
+mapifswitch
+	tyx
+	lda.l	switchflags
+	bit	mapbase&WM+1,x
+	beq	.njmp
+	lda	mapbase&WM+3,x
+	tax
+	jmp	newobjex
+.njmp
+	inx
+	inx
+	inx
+	inx
+	inx
+	jmp	newobjex
+;--------------------------------------------------------
+	longa
+	longi
+mapifnotswitch
+	tyx
+	lda.l	switchflags
+	bit	mapbase&WM+1,x
+	bne	.njmp
+	lda	mapbase&WM+3,x
+	tax
+	jmp	newobjex
+.njmp
+	inx
+	inx
+	inx
+	inx
+	inx
+	jmp	newobjex
+;--------------------------------------------------------
+	longa
+	longi
 mapjmpvarmoredo
 	tyx
 	lda	mapbase&WM+1,x
-	sta	fptr
+	sta	tempaddrl
 	lda	mapbase&WM+2,x
-	sta	fptr+1
+	sta	tempaddrl+1
 	a8
-	lda.l	[fptr]
+	lda.l	[tempaddrl]
 	cmp	mapbase&WM+4,x
 	beq	.njmp
 	bmi	.njmp
@@ -332,11 +1219,11 @@ mapjmpvarmoredo
 mapjmpvareqdo
 	tyx
 	lda	mapbase&WM+1,x
-	sta	fptr
+	sta	tempaddrl
 	lda	mapbase&WM+2,x
-	sta	fptr+1
+	sta	tempaddrl+1
 	a8
-	lda.l	[fptr]
+	lda.l	[tempaddrl]
 	cmp	mapbase&WM+4,x
 	bne	.njmp
 	a16
@@ -358,7 +1245,9 @@ mapjmpvareqdo
 
 	longa
 	longi
-fadetoseado	tyx
+fadetoseado
+	IFEQ	1
+	tyx
 	inx
 	ldy	#seapal-seapal+30
 	sty	palfade
@@ -368,10 +1257,12 @@ fadetoseado	tyx
 	lda	#30
 	sta	palnum
 	jmp	newobjex
+	ENDC
 	
 	longa
 	longi
 fadetogrounddo
+	IFEQ	1
 	tyx
 	inx
 	ldy	#groundpal-seapal+30
@@ -382,6 +1273,7 @@ fadetogrounddo
 	lda	#30
 	sta	palnum
 	jmp	newobjex
+	ENDC
 
 setrestartfade_l
 	php
@@ -406,11 +1298,11 @@ addalvarptrbdo	tyx
 	adc	lastmapobj
 	tay
 	lda	mapbase&WM+3,x
-	sta	fptr
+	sta	tempaddrl
 	lda	mapbase&WM+4,x
-	sta	fptr+1
+	sta	tempaddrl+1
 	a8
-	lda	[fptr]
+	lda	[tempaddrl]
 	clc
 	adc.w	0,y
 	sta.w	0,y
@@ -432,11 +1324,11 @@ addalvarptrwdo	tyx
 	adc	lastmapobj
 	tay
 	lda	mapbase&WM+3,x
-	sta	fptr
+	sta	tempaddrl
 	lda	mapbase&WM+4,x
-	sta	fptr+1
+	sta	tempaddrl+1
 	a16
-	lda	[fptr]
+	lda	[tempaddrl]
 	clc
 	adc.w	0,y
 	sta.w	0,y
@@ -471,30 +1363,7 @@ setbginfo_l
 setbginforeq_l
 	php
 	ai16
-	ldx	playpt
-	beq	.nowrite
-
-	lda	newplayerstrat
-	ora	newplayerstrat+1
-	beq	.con534
-
-	lda	keeppstrat
-	and	#255
-	bne	.con534
-
-	lda	newplayerstrat
-	sta	al_stratptr,x
-	lda	newplayerstrat+1
-	sta	al_stratptr+1,x
-	bra	.con534
-.nowrite	blink
-.con534
 	a8
-	stz	keeppstrat
-
-
-	lda	inatunnel
-	sta	tunnelscroll
 
 	lda	levelinfo
 	bit	#if_ground!if_space
@@ -574,17 +1443,17 @@ setbginforeq_l
 	longi
 setvarldo	tyx
 	lda	mapbase&WM+1,x
-	sta	fptr
+	sta	tempaddrl
 	lda	mapbase&WM+2,x
-	sta	fptr+1
+	sta	tempaddrl+1
 
 	lda	mapbase&WM+4,x
-	sta.l	[fptr]
-	inc	fptr
-	inc	fptr
+	sta.l	[tempaddrl]
+	inc	tempaddrl
+	inc	tempaddrl
 	a8
 	lda	mapbase&WM+6,x
-	sta.l	[fptr]
+	sta.l	[tempaddrl]
 	inx
 
 	inx
@@ -600,11 +1469,11 @@ setvarldo	tyx
 	longi
 setvarwdo	tyx
 	lda	mapbase&WM+3,x
-	sta	fptr
+	sta	tempaddrl
 	lda	mapbase&WM+4,x
-	sta	fptr+1
+	sta	tempaddrl+1
 	lda	mapbase&WM+1,x
-	sta	[fptr]
+	sta	[tempaddrl]
 	inx
 	inx
 	inx
@@ -618,12 +1487,12 @@ setvarwdo	tyx
 	longi
 setvarbdo	tyx
 	lda	mapbase&WM+2,x
-	sta	fptr
+	sta	tempaddrl
 	lda	mapbase&WM+3,x
-	sta	fptr+1
+	sta	tempaddrl+1
 	a8
 	lda	mapbase&WM+1,x
-	sta	[fptr]
+	sta.l	[tempaddrl]
 	inx
 	inx
 	inx
@@ -729,11 +1598,11 @@ mapwaitfadedo
 setvarobjdo	tyx
 	ifobjinvalid	.dekinai
 	lda	mapbase&WM+1,x
-	sta	fptr
+	sta	tempaddrl
 	lda	mapbase&WM+2,x
-	sta	fptr+1
+	sta	tempaddrl+1
 	lda	lastmapobj
-	sta.l	[fptr]
+	sta.l	[tempaddrl]
 .dekinai
 	inx
 	inx
@@ -751,11 +1620,11 @@ setalvarptrbdo	tyx
 	adc	lastmapobj
 	tay
 	lda	mapbase&WM+3,x
-	sta	fptr
+	sta	tempaddrl
 	lda	mapbase&WM+4,x
-	sta	fptr+1
+	sta	tempaddrl+1
 	a8
-	lda	[fptr]
+	lda	[tempaddrl]
 	sta.w	0,y
 .dekinai
 	inx
@@ -776,11 +1645,11 @@ setalvarptrwdo
 	adc	lastmapobj
 	tay
 	lda	mapbase&WM+3,x
-	sta	fptr
+	sta	tempaddrl
 	lda	mapbase&WM+4,x
-	sta	fptr+1
+	sta	tempaddrl+1
 	a16
-	lda	[fptr]
+	lda	[tempaddrl]
 	sta.w	0,y
 .dekinai
 	inx
@@ -1142,8 +2011,6 @@ vofsonplease
 	sta	bg2vofs
 	lda	#1
 	sta	dovofs
-	lda	#2
-	sta	bgmode
 	plp
 	rts
 
@@ -1160,8 +2027,6 @@ vofsoffplease
 	php
 	a8
 	stz	dovofs
-	lda	#1
-	sta	bgmode
 	lda	bg2scroll
 	sta	bg2vofs
 	lda	bg2scroll+1
@@ -1272,6 +2137,10 @@ setbg_l
 	rtl
 
 dobgreq_l
+	a8
+	lda	#1+2+16
+	sta	kw_tmptm	;through main get
+
 	ai16
 	ldx	currentbg
 .loop
@@ -1320,128 +2189,128 @@ setstagedo
 	longa
 	longi
 mapqobjdo
-	tyx
-	lda	map_count,x
-	and	#255
-	asl	a
-	asl	a
-	asl	a
-	asl	a
-	sta	mapcnt
-	phx
-	ldx	allst
-	l_add	allst,alfreelst,.nofreeblks
-	txy
-	plx
-	a8
-	jsl	init_objvars_l
-	a16
+	IFEQ	1
 
-	lda	mq_x,x
-	sexa
-	asl	a
-	asl	a
-	sta.w	al_worldx,y
-	lda	mq_y,x
-	sexa
-	asl	a
-	asl	a
-	sta.w	al_worldy,y
-	lda	mq_z,x
-	and	#255
-	asl	a
-	asl	a
-	asl	a
-	asl	a
-	phy
-	ldy	playpt
-	clc
-	adc.w	al_worldz,y
-	ply
-	sta.w	al_worldz,y
 
-	lda	map_ctrl,x
-	and	#255
-	cmp	#ctrlmapqobj2
-	bne	.norm
-
-	lda	mq_shape,x
-	phx
-	and	#255
-	asl	a
-	asl	a
-	tax
-	lda.l	istrats,x
-	sta.w	al_stratptr,y
-	a8
-	lda.l	istrats+2,x
-	sta.w	al_stratptr+2,y
-	lda.l	istrats+3,x
-	a16
-	and	#255
-	asl	a
-	tax
-	lda.l	shapes,x
-	sta.w	al_shape,y
-	plx
-	bra	.aha
-.norm
-	lda	mq_shape,x
-	phx
-	and	#255
-	asl	a
-	tax
-	lda.l	shapes,x
-	sta.w	al_shape,y
-	plx
-
-	lda	mq_strat,x
-	phx
-	and	#255
-	asl	a
-	asl	a
-	tax
-	lda.l	istrats,x
-	sta.w	al_stratptr,y
-	a8
-	lda.l	istrats+2,x
-	sta.w	al_stratptr+2,y
-	plx
-
-.aha
-	a16
-	sty	lastmapobj
-
-	jsr	.incx
-
-	lda	mapcnt
-	bne	.listfull
-	jmp	newobjex
-.listfull	stx	mapptr
-	rts
-.nofreeblks	a16
-	ldx	#0
-	stx	lastmapobj
-	plx
-	jsr	.incx
-	lda	mapcnt
-	bne	.listfull
-	jmp	newobjex
-
-.incx	lda	map_ctrl,x
-	and	#255
-	cmp	#ctrlmapqobj2
-	beq	.oneway
-	txa
-	clc
-	adc	#mq_sizeof
-	tax
-	rts
-.oneway	txa
-	clc
-	adc	#mq_sizeof-1
-	tax
-	rts
+;;	tyx
+;;	lda	map_count,x
+;;	and	#255
+;;	asl	a
+;;	asl	a
+;;	asl	a
+;;	asl	a
+;;	sta	mapcnt
+;;	phx
+;;	ldx	allst
+;;	l_add	allst,alfreelst,.nofreeblks
+;;	txy
+;;	plx
+;;	a8
+;;	jsl	init_objvars_l
+;;	a16
+;;
+;;	lda	mq_x,x
+;;	sexa
+;;	asl	a
+;;	asl	a
+;;	sta.w	al_worldx,y
+;;	lda	mq_y,x
+;;	sexa
+;;	asl	a
+;;	asl	a
+;;	sta.w	al_worldy,y
+;;	lda	mq_z,x
+;;	and	#255
+;;	asl	a
+;;	asl	a
+;;	asl	a
+;;	asl	a
+;;	sta.w	al_worldz,y
+;;
+;;	lda	map_ctrl,x
+;;	and	#255
+;;	cmp	#ctrlmapqobj2
+;;	bne	.norm
+;;
+;;	lda	mq_shape,x
+;;	phx
+;;	and	#255
+;;	asl	a
+;;	asl	a
+;;	tax
+;;	lda.l	istrats,x
+;;	sta.w	al_stratptr,y
+;;	a8
+;;	lda.l	istrats+2,x
+;;	sta.w	al_stratptr+2,y
+;;	lda.l	istrats+3,x
+;;	a16
+;;	and	#255
+;;	asl	a
+;;	tax
+;;	lda.l	shapes,x
+;;	sta.w	al_shape,y
+;;	plx
+;;	bra	.aha
+;;.norm
+;;	lda	mq_shape,x
+;;	phx
+;;	and	#255
+;;	asl	a
+;;	tax
+;;	lda.l	shapes,x
+;;	sta.w	al_shape,y
+;;	plx
+;;
+;;	lda	mq_strat,x
+;;	phx
+;;	and	#255
+;;	asl	a
+;;	asl	a
+;;	tax
+;;	lda.l	istrats,x
+;;	sta.w	al_stratptr,y
+;;	a8
+;;	lda.l	istrats+2,x
+;;	sta.w	al_stratptr+2,y
+;;	plx
+;;
+;;.aha
+;;	a16
+;;	sty	lastmapobj
+;;
+;;	jsr	.incx
+;;
+;;	lda	mapcnt
+;;	bne	.listfull
+;;	jmp	newobjex
+;;.listfull	stx	mapptr
+;;	rts
+;;.nofreeblks	a16
+;;	ldx	#0
+;;	stx	lastmapobj
+;;	plx
+;;	jsr	.incx
+;;	lda	mapcnt
+;;	bne	.listfull
+;;	jmp	newobjex
+;;
+;;.incx	lda	map_ctrl,x
+;;	and	#255
+;;	cmp	#ctrlmapqobj2
+;;	beq	.oneway
+;;	txa
+;;	clc
+;;	adc	#mq_sizeof
+;;	tax
+;;	rts
+;;.oneway	txa
+;;	clc
+;;	adc	#mq_sizeof-1
+;;	tax
+;;	rts
+;;
+	ENDC
 
 	longa
 	longi
@@ -1477,11 +2346,6 @@ mapobj8do
 	asl	a
 	asl	a
 	asl	a
-	phy
-	ldy	playpt
-	clc
-	adc.w	al_worldz,y
-	ply
 	sta.w	al_worldz,y
 
 	lda	m8_shape,x
@@ -1520,223 +2384,221 @@ mapobj8do
 	longa
 	longi
 mapobjdo
-	tyx
-	lda	map_count,x
-	sta	mapcnt
-	phx
-	ldx	allst
-	l_add	allst,alfreelst,.nofreeblks
-	txy
-	plx
-	a8
-	jsl	init_objvars_l
-	a16
+	IFEQ	1
+;;	tyx
+;;	lda	map_count,x
+;;	sta	mapcnt
+;;	phx
+;;	ldx	allst
+;;	l_add	allst,alfreelst,.nofreeblks
+;;	txy
+;;	plx
+;;	a8
+;;	jsl	init_objvars_l
+;;	a16
+;;
+;;	lda	mobj_x,x
+;;	sta.w	al_worldx,y
+;;	lda	mobj_y,x
+;;	sta.w	al_worldy,y
+;;	lda	mobj_z,x
+;;	sta.w	al_worldz,y
+;;
+;;	lda	mobj_shape,x
+;;	phx
+;;	and	#255
+;;	asl	a
+;;	tax
+;;	lda.l	shapes,x
+;;	sta.w	al_shape,y
+;;	plx
+;;
+;;	lda	mobj_strat,x
+;;	phx
+;;	and	#255
+;;	
+;;
+;;	asl	a
+;;	asl	a
+;;	tax
+;;	lda.l	istrats,x
+;;	sta.w	al_stratptr,y
+;;	a8
+;;	lda.l	istrats+2,x
+;;	sta.w	al_stratptr+2,y
+;;	plx
+;;
+;;	sty	lastmapobj
+;;
+;;	a16
+;;	txa
+;;	clc
+;;	adc	#mobj_sizeof
+;;	tax
+;;
+;;	lda	mapcnt
+;;	bne	.listfull
+;;	jmp	newobjex
+;;.listfull	stx	mapptr
+;;	rts
+;;.nofreeblks	a16
+;;	stz	lastmapobj
+;;	pla
+;;	clc
+;;	adc	#mobj_sizeof
+;;	tax
+;;
+;;	lda	mapcnt
+;;	bne	.listfull
+;;	jmp	newobjex
 
-	lda	mobj_x,x
-	sta.w	al_worldx,y
-	lda	mobj_y,x
-	sta.w	al_worldy,y
-	phy
-	ldy	playpt
-	lda.w	al_worldz,y
-	ply
-	clc
-	adc	mobj_z,x
-	sta.w	al_worldz,y
-
-	lda	mobj_shape,x
-	phx
-	and	#255
-	asl	a
-	tax
-	lda.l	shapes,x
-	sta.w	al_shape,y
-	plx
-
-	lda	mobj_strat,x
-	phx
-	and	#255
-	asl	a
-	asl	a
-	tax
-	lda.l	istrats,x
-	sta.w	al_stratptr,y
-	a8
-	lda.l	istrats+2,x
-	sta.w	al_stratptr+2,y
-	plx
-
-	sty	lastmapobj
-
-	a16
-	txa
-	clc
-	adc	#mobj_sizeof
-	tax
-
-	lda	mapcnt
-	bne	.listfull
-	jmp	newobjex
-.listfull	stx	mapptr
-	rts
-.nofreeblks	a16
-	stz	lastmapobj
-	pla
-	clc
-	adc	#mobj_sizeof
-	tax
-
-	lda	mapcnt
-	bne	.listfull
-	jmp	newobjex
-
+	ENDC
 
 	longa
 	longi
 mapdobjdo
-	tyx
-	lda	map_count,x
-	sta	mapcnt
-	phx
-	ldx	allst
-	l_add	allst,alfreelst,.nofreeblks
-	txy
-	plx
-	a8
-	jsl	init_objvars_l
-	a16
 
-	lda	md_x,x
-	sta.w	al_worldx,y
-	lda	md_y,x
-	sta.w	al_worldy,y
-	phy
-	ldy	playpt
-	lda.w	al_worldz,y
-	ply
-	clc
-	adc	md_z,x
-	sta.w	al_worldz,y
+	IFEQ	1
+;;
+;;	tyx
+;;	lda	map_count,x
+;;	sta	mapcnt
+;;	phx
+;;	ldx	allst
+;;	l_add	allst,alfreelst,.nofreeblks
+;;	txy
+;;	plx
+;;	a8
+;;	jsl	init_objvars_l
+;;	a16
+;;
+;;	lda	md_x,x
+;;	sta.w	al_worldx,y
+;;	lda	md_y,x
+;;	sta.w	al_worldy,y
+;;	lda	md_z,x
+;;	sta.w	al_worldz,y
+;;
+;;	lda	md_strat,x
+;;	phx
+;;	and	#255
+;;	asl	a
+;;	asl	a
+;;	tax
+;;	lda.l	istrats,x
+;;	sta.w	al_stratptr,y
+;;	a8
+;;	lda.l	istrats+2,x
+;;	sta.w	al_stratptr+2,y
+;;	lda.l	istrats+3,x
+;;	a16
+;;	and	#255
+;;	asl	a
+;;	tax
+;;	lda.l	shapes,x
+;;	sta.w	al_shape,y
+;;	plx
+;;
+;;	sty	lastmapobj
+;;
+;;	a16
+;;	txa
+;;	clc
+;;	adc	#md_sizeof
+;;	tax
+;;
+;;	lda	mapcnt
+;;	bne	.listfull
+;;	jmp	newobjex
+;;.listfull	stx	mapptr
+;;	rts
+;;.nofreeblks	a16
+;;	stz	lastmapobj
+;;	pla
+;;	clc
+;;	adc	#md_sizeof
+;;	tax
+;;
+;;	lda	mapcnt
+;;	bne	.listfull
+;;	jmp	newobjex
 
-	lda	md_strat,x
-	phx
-	and	#255
-	asl	a
-	asl	a
-	tax
-	lda.l	istrats,x
-	sta.w	al_stratptr,y
-	a8
-	lda.l	istrats+2,x
-	sta.w	al_stratptr+2,y
-	lda.l	istrats+3,x
-	a16
-	and	#255
-	asl	a
-	tax
-	lda.l	shapes,x
-	sta.w	al_shape,y
-	plx
-
-	sty	lastmapobj
-
-	a16
-	txa
-	clc
-	adc	#md_sizeof
-	tax
-
-	lda	mapcnt
-	bne	.listfull
-	jmp	newobjex
-.listfull	stx	mapptr
-	rts
-.nofreeblks	a16
-	stz	lastmapobj
-	pla
-	clc
-	adc	#md_sizeof
-	tax
-
-	lda	mapcnt
-	bne	.listfull
-	jmp	newobjex
+	ENDC
 
 	longa
 	longi
 mapobjzrotdo
-	tyx
-	lda	map_count,x
-	sta	mapcnt
-	phx
-	ldx	allst
-	l_add	allst,alfreelst,.nofreeblks
-	txy
-	plx
-	a8
-	jsl	init_objvars_l
-	a16
+	IFEQ	1
+;;
+;;	tyx
+;;	lda	map_count,x
+;;	sta	mapcnt
+;;	phx
+;;	ldx	allst
+;;	l_add	allst,alfreelst,.nofreeblks
+;;	txy
+;;	plx
+;;	a8
+;;	jsl	init_objvars_l
+;;	a16
+;;
+;;	lda	mz_x,x
+;;	sta.w	al_worldx,y
+;;	lda	mz_y,x
+;;	sta.w	al_worldy,y
+;;	lda	mz_z,x
+;;	sta.w	al_worldz,y
+;;
+;;	lda	mz_shape,x
+;;	phx
+;;	and	#255
+;;	asl	a
+;;	tax
+;;	lda.l	shapes,x
+;;	sta.w	al_shape,y
+;;	plx
+;;
+;;	lda	mz_strat,x
+;;	phx
+;;	and	#255
+;;	asl	a
+;;	asl	a
+;;	tax
+;;	lda.l	istrats,x
+;;	sta.w	al_stratptr,y
+;;	a8
+;;	lda.l	istrats+2,x
+;;	sta.w	al_stratptr+2,y
+;;	plx
+;;
+;;	lda	mz_rotz,x
+;;	sta.w	al_rotz,y
+;;
+;;	sty	lastmapobj
+;;	
+;;	a16
+;;	txa
+;;	clc
+;;	adc	#mz_sizeof
+;;	tax
+;;
+;;	lda	mapcnt
+;;	bne	.listfull
+;;	jmp	newobjex
+;;.listfull	stx	mapptr
+;;	rts
+;;.nofreeblks	a16
+;;	stz	lastmapobj
+;;	pla
+;;	clc
+;;	adc	#mz_sizeof
+;;	tax
+;;
+;;	lda	mapcnt
+;;	bne	.listfull
+;;	jmp	newobjex
 
-	lda	mz_x,x
-	sta.w	al_worldx,y
-	lda	mz_y,x
-	sta.w	al_worldy,y
-	phy
-	ldy	playpt
-	lda.w	al_worldz,y
-	ply
-	clc
-	adc	mz_z,x
-	sta.w	al_worldz,y
-
-	lda	mz_shape,x
-	phx
-	and	#255
-	asl	a
-	tax
-	lda.l	shapes,x
-	sta.w	al_shape,y
-	plx
-
-	lda	mz_strat,x
-	phx
-	and	#255
-	asl	a
-	asl	a
-	tax
-	lda.l	istrats,x
-	sta.w	al_stratptr,y
-	a8
-	lda.l	istrats+2,x
-	sta.w	al_stratptr+2,y
-	plx
-
-	lda	mz_rotz,x
-	sta.w	al_rotz,y
-
-	sty	lastmapobj
-	
-	a16
-	txa
-	clc
-	adc	#mz_sizeof
-	tax
-
-	lda	mapcnt
-	bne	.listfull
-	jmp	newobjex
-.listfull	stx	mapptr
-	rts
-.nofreeblks	a16
-	stz	lastmapobj
-	pla
-	clc
-	adc	#mz_sizeof
-	tax
-
-	lda	mapcnt
-	bne	.listfull
-	jmp	newobjex
+	ENDC
 
 
 	longa
@@ -1830,12 +2692,7 @@ mapnormobj
 	sta.w	al_worldx,y
 	lda	mm_y,x
 	sta.w	al_worldy,y
-	phy
-	ldy	playpt
-	lda.w	al_worldz,y
-	ply
-	clc
-	adc	mm_z,x
+	lda	mm_z,x
 	sta.w	al_worldz,y
 
 	lda	mm_shape,x
@@ -1897,12 +2754,7 @@ mapmother
 	sta.w	al_worldx,y
 	lda	mm_y,x
 	sta.w	al_worldy,y
-	phy
-	ldy	playpt
-	lda.w	al_worldz,y
-	ply
-	clc
-	adc	mm_z,x
+	lda	mm_z,x
 	sta.w	al_worldz,y
 
 	lda	mm_shape,x
@@ -1992,8 +2844,56 @@ mapwait
 	rts
 .zero	jmp	newobjex
 
+;****************************************************************************
+;Kawaguchi Program Start
+;****************************************************************************
+;---------------------------------------------------------------------
+;*		Mission Area Out Off/ON				* 
+;---------------------------------------------------------------------
+	longa
+	longi
+mapareaout
+	tyx
+	km_setgameflag	areaout
+	inx
+	jmp	newobjex
 
-	incfile	mother.asm
+;---------------------------------------------------------------------
+;*		Map Goto If Planet				*
+;---------------------------------------------------------------------
+	longa
+	longi
+mapgotoifplanetcode
+	km_bitcheckflag16	currentlevel,1
+	beq	kg_nojump
+	bra	kg_jump
 
+;---------------------------------------------------------------------
+;*		Map Goto If Satellite				*
+;---------------------------------------------------------------------
+	longa
+	longi
+mapgotoifsatellite
+	km_bitcheckflag16.l	kx_satelliteflag,safl_virustorituki
+	beq	kg_nojump
+	bra	kg_jump
 
+kg_jump
+	lda.w	map_count,y
+	tax
+	jmp	newobjex
+kg_nojump
+	tya
+	clc
+	adc	#map_sizeof
+	tax
+	jmp	newobjex
 
+;****************************************************************************
+;Kawaguchi Program End
+;****************************************************************************
+
+;	incfile	mother.asm
+
+
+

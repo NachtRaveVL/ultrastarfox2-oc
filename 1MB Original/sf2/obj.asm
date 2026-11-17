@@ -8,6 +8,7 @@
 *								*
 *****************************************************************
 
+	INCPUB	obj
 
 init3d2
 	php
@@ -65,6 +66,7 @@ initmario3d_l
 
 	jsl	minitdust_l
 
+	a16
 	lda	vanishx
 	sta.l	m_vanishx
 	lda	vanishy
@@ -77,6 +79,12 @@ initmario3d_l
 	sta.l	m_ytop
 	lda	cly2
 	sta.l	m_ybot
+
+; texture map clipper planes
+	lda	xtclip
+	sta.l	m_xtclip
+	lda	ytclip
+	sta.l	m_ytclip
 	rtl
 
 
@@ -90,6 +98,7 @@ copychars_l
 	php
 	ai8
 
+	IFEQ	1
 	ldy	#0
 	ldx	#0
 	lda	#8*16		; copy hex charset to mario RAM
@@ -102,6 +111,8 @@ copychars_l
 	iny
 	dec	count1
 	bne	.loopy	
+
+	ENDC
 
 	plp
 	rtl
@@ -178,6 +189,45 @@ crotmat16_l
 	a8i16
 	lda	#mcrotwmatzxy16>>16
 	ldx	#mcrotwmatzxy16&$ffff
+	jsl	runmario_l
+
+	a16
+	lda.l	m_wmat11
+	sta	mat11w
+	lda.l	m_wmat12
+	sta	mat12w
+	lda.l	m_wmat13
+	sta	mat13w
+
+	lda.l	m_wmat21
+	sta	mat21w
+	lda.l	m_wmat22
+	sta	mat22w
+	lda.l	m_wmat23
+	sta	mat23w
+
+	lda.l	m_wmat31
+	sta	mat31w
+	lda.l	m_wmat32
+	sta	mat32w
+	lda.l	m_wmat33
+	sta	mat33w
+
+	ai8
+	rtl
+
+crotmatyxz16_l
+	a16
+	lda	matxw
+	sta.l	m_rotx
+	lda	matyw
+	sta.l	m_roty
+	lda	matzw
+	sta.l	m_rotz
+
+	a8i16
+	lda	#mcrotwmatyxz16>>16
+	ldx	#mcrotwmatyxz16&$ffff
 	jsl	runmario_l
 
 	a16
@@ -365,15 +415,14 @@ projectlog_l
 	rtl
 
 
-
 projlog_l
 	projlogmac	px,pz,pr,vanishx
 	rtl
 
 
-dividend equ divdnd
-divisor  equ divsor
-flipflag equ sign
+dividend = divdnd
+divisor  = divsor
+flipflag = sign
 
 
 
@@ -459,68 +508,9 @@ dout
 
 
 
-; 31 bit Unsigned divide
-; 31 bit divided by 15 bit giving 15 bit result
-;
-; In:	dividend unsigned 31 bit
-;	divisor  unsigned 15 bit
-; Out:	quotient unsigned 15 bit
-; Uses: A,X
-; Cycles:	47 + 16*21 = 383 max
-
-divmac	macro
-	rol	dividend	; 7
-	rol	a		; 2
-	tax			; 2
-	clc			; 2
-	adc	divisor		; 4
-	bcs	\@		; 2/3
-	txa			; 2	= 21/20
-\@
-	endm
 
 
 
-divu3115_l
-	jsr	divu3115
-	rtl
-
-
-;divu3216
-divu3216test
-divu3115
-	phx
-	php
-	ai16
-
-	lda	#0
-	sec
-	sbc	divisor
-	sta	divisor
-
-	lda	dividend+2
-
-	asl	dividend	; 7
-	rol	a		; 2
-	tax			; 2
-	clc			; 2
-	adc	divisor		; 4
-	bcs	div1		; 2/3
-	txa			; 2	= 21/20
-div1
-
-	rept	15
-	divmac
-	endr
-
-	lda	dividend
-	rol	a
-	sta	quotient
-	stz	quotient+2	
-
-	plp
-	plx
-	rts	
 
 	shorta
 	shorti
@@ -709,10 +699,104 @@ mgrcolshift	equ	1
 mgrcoland	equ	(1<<mgrcolshift)-1
 
 
-mshowgrid_l
-	lbmi	mshowdust_l
 
+mshowgrid_l
 	ai16
+	lda	#0
+	sta.l	m_dotsorstars
+
+	lda	demoflag
+	bit	#demoflag_dustoff
+	bne	.exit
+
+	test_screenmode	noplayer
+	beq		.player
+
+.exit	ai8
+	rtl
+	LONGA
+	LONGI
+.player
+
+	lda	gamemode
+	and	#255
+	cmp	#SPACE_MODE
+	bne	.ok
+
+	lda.l	m_dustflags
+	and	#~df_ground
+	sta.l	m_dustflags
+.dostars
+	lda.l	stardustkazu
+	and	#255
+	sta.l	m_cnt
+
+	jsl	mshowdust_l
+	rtl
+.ok
+	ldx	viewblock
+
+	lda	al_worldy,x
+;	cmp	#-1000
+
+	cmp	stardustheight
+	bcc	.addstars
+
+	lda.l	m_dustflags
+	ora	#df_ground
+	sta.l	m_dustflags
+
+	bra	.dostars
+
+;.remstars	a8
+;	lda	al_sbyte4,x
+;	beq	.doground2
+;	dec	a
+;	sta	al_sbyte4,x
+;.doground2	a16
+;	lda	al_sword2,x
+;	cmp	#2000
+;	bpl	.drawstars
+;	clc
+;	adc	#100
+;	sta	al_sword2,x
+
+.addstars
+	lda.l	m_dustflags
+	and	#~df_ground
+	sta.l	m_dustflags
+
+	bra	.dostars
+
+;	a8
+;	lda	al_sbyte4,x
+;	cmp	#mmaxdust
+;	bcs	.doground1
+;	inc	a
+;	sta	al_sbyte4,x
+;.doground1	a16
+;	lda	al_sword2,x
+;	bmi	.drawstars
+;	sec
+;	sbc	#100
+;	sta	al_sword2,x
+
+
+	IFEQ	1
+
+.drawstars
+	a16
+	lda	al_sbyte4,x
+	and	#255
+	beq	.nostars
+	sta.l	m_cnt		; store the amount of stars to display
+	
+	jsl	mshowdust_l
+.nostars
+	ai16
+	ldx	viewblock
+	lda	al_sword2,x
+	lbmi	.exit
 
 	lda	viewposx
 	and	#mgridand
@@ -780,13 +864,19 @@ mshowgrid_l
 	a8
 
 
-	a16
+	ai16
 
 	lda	x1
 	sta.l	m_x1
 	lda	y1
 	sta.l	m_y1
+
+	ldx	viewblock
 	lda	z1
+	sec
+	sbc	#2000
+	clc
+	adc	al_sword2,x
 	sta.l	m_z1
 
 	lda	pxx
@@ -803,20 +893,30 @@ mshowgrid_l
 	lda	pzz
 	sta.l	m_pzz
 
-	a8i16
+	a8
 	lda	gridx
 	sta.l	m_gridx
 	lda	gridz
 	sta.l	m_gridz
 
-;	lda	#mshowgrid>>16
-;	ldx	#mshowgrid&$ffff
-;	jsl	runmario_l
+	test_screenmode	twoscreen
+	bne	.twoscreen
+	a16
+	lda.l	m_dotsorstars
+	ora	#1
+	sta.l	m_dotsorstars
 	ai8
-
+	rtl
+	LONGI
+.twoscreen
+;	lda	#mshowgrid2>>16
+;	ldx	#mshowgrid2&$ffff
+;	jsl	runmario_l
+;	ai8
+.exit
 	rtl
 
-
+	ENDC
 
 minitdust_l
 	a8i16
@@ -830,18 +930,6 @@ minitdust_l
 
 mshowdust_l
 	a16
-	lda	dogyirq
-	and	#$ff
-	beq	.nnn
-
-	lda	kcvposx
-	sta.l	m_viewposx
-	lda	kcvposy
-	sta.l	m_viewposy
-	lda	kcvposz
-	sta.l	m_viewposz
-	bra	.nslow
-.nnn
 	lda	viewposx
 	sta.l	m_viewposx
 	lda	viewposy
@@ -876,15 +964,117 @@ mshowdust_l
 	sta.l	m_wmat32
 	lda	wmat33w
 	sta.l	m_wmat33
-			
+
+;	test_screenmode	twoscreen
+;	bne	.twoscreen2
+
+	lda.l	m_dotsorstars
+	ora	#2
+	sta.l	m_dotsorstars
+	ai8
+	rtl
+
+.twoscreen2
 ;	a8i16
-;	lda	#mshowdust>>16
-;	ldx	#mshowdust&$ffff
+;	lda	#mshowdust2>>16
+;	ldx	#mshowdust2&$ffff
 ;	jsl	runmario_l
 	ai8
 	rtl
 
 
 
+;----------------------------------------------
+; returns xs and ys (8 bit) screen coordinates
+; pass x pointing to the alien
+
+	LONGI
+rotproj_l
+	phx
+	phy
+	php
+	a16
+	stz	x1
+	stz	y1
+	stz	z1
+	stz	x2
+	stz	y2
+	stz	z2
 
 
+	a8
+	stz	x1
+	stz	y1
+	lda	#-30
+	sta	z1
+
+
+	lda	al_rotx,x
+	jsl	rotate_8yz_l
+	lda	x2
+	sta	x1
+	lda	y2
+	sta	y1
+	lda	z2
+	sta	z1
+
+	lda	al_roty,x
+	jsl	rotate_8xz_l
+
+	a16
+	lda	x2
+	sexa
+	clc
+	adc	al_worldx,x
+	sec
+	sbc	viewposx
+	sta.l	m_x1
+
+	lda	y2
+	sexa
+	clc
+	adc	al_worldy,x
+	sec
+	sbc	viewposy
+	sta.l	m_y1
+
+	lda	z2
+	sexa
+	clc
+	adc	al_worldz,x
+	sec
+	sbc	viewposz
+	sta.l	m_z1
+
+
+	a8
+	lda	#mwmatrotp16>>16
+	ldx	#mwmatrotp16&$ffff
+	jsl	runmario_l
+	a16
+	lda.l	m_bigx
+	sta.l	m_x1
+	lda.l	m_bigy
+	sta.l	m_y1
+	lda.l	m_bigz
+	sta.l	m_z1
+
+	call_mario	mproject_a_point
+
+	a16
+	lda.l	m_x1
+	sta	xs
+
+	lda.l	m_y1
+	sta	ys
+
+	plp
+	ply
+	plx
+
+	rtl
+
+
+
+
+

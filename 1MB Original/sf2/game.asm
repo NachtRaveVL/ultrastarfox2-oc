@@ -1,69 +1,57 @@
 
-	incpublics	game.ext
+	incpub	game
 
+	IFEQ	1
 getview_l
-
-	a8
-	lda	noxrot
-	beq	.okx
-	stz	outvx
-	stz	outvx+1
-.okx
-	lda	viewtype
-	and	#viewtype_fpos
-	rlbne	.fpos
+	a16
 
 
-	a16i8
-	lda	viewshakeX
-	sexa
-	clc
-	adc	pviewposx
-	clc
-	adc	viewfloatX
+	ldx	#viewblk1
+
+	lda	al_worldx,x
+	sta	pviewposx
+
+	lda	al_worldy,x
+	sta	pviewposy
+
+	lda	al_worldz,x
+	sta	pviewposz
+
+	lda	al_sword1,x
+	sta	outdist
+
+	lda	al_roty,x
+	and	#255
+	xba
+	sta	outvy
+
+	lda	al_rotx,x
+	and	#255
+	xba
+	sta	outvx
+
+	lda	pviewposx
 	sta	viewposx
 
-	lda	viewshakeY
-	sexa
-	clc
-	adc	pviewposY
-	clc
-	adc	viewfloatY
-	sta	viewposY
+	lda	pviewposy
+	sta	viewposy
 
-	lda	viewshakeZ
-	sexa
-	clc
-	adc	pviewposZ
-	clc
-	adc	pviewposZoff
-	sta	viewposZ
+	lda	pviewposz
+	sta	viewposz
 
 	lda	outvx
 	sta	viewrotxw
+
 	lda	outvy
-	sec
-	sbc	player_turnrot
 	sta	viewrotyw
+
 	lda	outvz
-	sec
-	sbc	plrotz
 	sta	viewrotzw
 
-	a8
-	lda	dozrot
-	bne	.ok
-	sta	viewrotzw+1
-	sta	viewrotzw
-.ok
-
-	a8
-
-
+	a8i16
 ;***************************************************************
 ;* I'M SORRY BUT THESE ARE 2 VERY BIG HACKS, BECAUSE I DON'T WANT
 ;* TO FUCK WITH PETE'S CODE. (Giles) 
-
 
 
 ;* JUST X ROTATE VIEW POS.
@@ -298,7 +286,7 @@ getviewrts
 	rtl
 
 
-
+	ENDC
 
 
 
@@ -448,29 +436,6 @@ irotcen2
 ;
 ; by P. R. Warnes, Copyright 1990
 ;
-random_l
-	jsr	random
-	rtl
-random
-
-;	lda	rand
-;	rol	a
-;	eor	rand+1
-;	sta	rand+1
-;	adc	#4
-;	sta	rand
-	
-	lda rand
-	clc
-	sbc rand+1
-	sta rand+1
-	sbc rand+2
-	sta rand+2
-	sbc rand+3
-	sta rand+3
-	sbc rand
-	sta rand
-	rts
 
 
 	IFEQ	1
@@ -543,45 +508,6 @@ muls816log16
 	stz	m6
 	stz	m7
 	mla16mac	m1,m3,m4,m6
-	rts
-
-
-arctan16_l
-	jsr	arctan16	
-	a16
-	rtl
-
-
-; 16 bit arctan (x1/y1)
-; a = arctan(x1/y1)
-;
-; 0 to 359 degrees is $0000 to $ffff
-; x1 and y1 are signed
-;
-; tmpx,x1,x2,x3,y1,y2,px,pz,pr
-
-
-arctan16
-sarctan
-	phx
-	php
-
-	a16
-	lda	x1
-	sta.l	m_x1
-	lda	y1
-	sta.l	m_y1
-
-	a8i16
-	lda	#mcallarctan16>>16
-	ldx	#mcallarctan16&$ffff
-	jsl	runmario_l
-	
-	a16
-	lda.l	m_cnt
-
-	plp
-	plx
 	rts
 
 

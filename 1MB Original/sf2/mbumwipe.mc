@@ -1,16 +1,11 @@
 ;********************************************************************************
 ; Bum wipe window wiper.
 
-m_winwbglog	equ	m_bigx
-m_wintabptr	equ	m_bigy
 
-m_winbuf	equ	m_circlebuf
-m_winbuf2	equ	m_circlebuf2
-
-call	macro
-	link	#4
-	miwt	pc,(\1)&$ffff
-	endm
+;call	macro
+;	link	#4
+;	miwt	pc,(\1)&$ffff
+;	endm
 
 maddtowinbuf	macro
 	from	rbufbase
@@ -74,7 +69,7 @@ mbumwipe
 	iwt	rbufbase,#m_winbuf2&WM
 	bra	.doneb
 	nop
-.buf0	dw	m_winbuf
+.buf0	dw	m_winbuf&WM
 .doneb
 	call	mwindrawline
 	nop

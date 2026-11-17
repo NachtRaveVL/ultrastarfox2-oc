@@ -1,0 +1,244 @@
+ArgSfx-Extender v1.52 (DBR=OFF)  Copyright (c) Argonaut Software Ltd. 1992
+Optimising, ClearLines version
+6418K Free,  Saturday 24th June 1995
+[01m[32m-- Generating JAPAN/NTSC/FULL DEBUG/21Mhz version for dylan --[00m
+[01m-- BANK 8:[00m
+IMPORT NOT ZERO PAGE - STARWOLFNO
+IMPORT NOT ZERO PAGE - STARWOLFNO
+IMPORT NOT ZERO PAGE - STARWOLFNO
+IMPORT NOT ZERO PAGE - STARWOLFNO
+IMPORT NOT ZERO PAGE - Player_friend
+IMPORT NOT ZERO PAGE - playerctlmode
+IMPORT NOT ZERO PAGE - KGameMapPtr
+IMPORT NOT ZERO PAGE - player_controltypeABXY
+IMPORT NOT ZERO PAGE - KGameMapPtr
+IMPORT NOT ZERO PAGE - Player_friend
+IMPORT NOT ZERO PAGE - Pepper_message
+IMPORT NOT ZERO PAGE - KX_NEARPLANETNUM
+EXPORT NOT ZERO PAGE - Pepper_message
+IMPORT NOT ZERO PAGE - KX_NEARPLANETNUM
+IMPORT NOT ZERO PAGE - Player_friend
+IMPORT NOT ZERO PAGE - KGameMapPtr
+IMPORT NOT ZERO PAGE - KGameMapPtr
+IMPORT NOT ZERO PAGE - Kinitroty
+IMPORT NOT ZERO PAGE - CREDITS_ON
+IMPORT NOT ZERO PAGE - Kinitroty
+IMPORT NOT ZERO PAGE - KX_NEARPLANETNUM
+IMPORT NOT ZERO PAGE - Kinitroty
+IMPORT NOT ZERO PAGE - Kinitroty
+IMPORT NOT ZERO PAGE - Kinitroty
+IMPORT NOT ZERO PAGE - Kinitroty
+IMPORT NOT ZERO PAGE - KX_NEARPLANETNUM
+IMPORT NOT ZERO PAGE - Player_friend
+IMPORT NOT ZERO PAGE - KW_MisMapFlag
+EXPORT NOT ZERO PAGE - KW_MisMapFlag
+IMPORT NOT ZERO PAGE - KGameMapPtr
+IMPORT NOT ZERO PAGE - KGameMapPtr
+IMPORT NOT ZERO PAGE - Kinitroty
+EXPORT NOT ZERO PAGE - corex
+EXPORT NOT ZERO PAGE - corez
+EXPORT NOT ZERO PAGE - coreroty
+IMPORT NOT ZERO PAGE - Player1_vz
+IMPORT NOT ZERO PAGE - Player1_vz
+IMPORT NOT ZERO PAGE - KGameMapPtr
+IMPORT NOT ZERO PAGE - KGameMapPtr
+IMPORT NOT ZERO PAGE - KGameMapPtr
+IMPORT NOT ZERO PAGE - KGameMapPtr
+IMPORT NOT ZERO PAGE - KGameMapPtr
+EXPORT NOT ZERO PAGE - corex
+EXPORT NOT ZERO PAGE - corez
+EXPORT NOT ZERO PAGE - coreroty
+EXPORT NOT ZERO PAGE - Corex
+EXPORT NOT ZERO PAGE - Corez
+EXPORT NOT ZERO PAGE - Corex
+EXPORT NOT ZERO PAGE - Corez
+EXPORT NOT ZERO PAGE - Corex
+EXPORT NOT ZERO PAGE - Corez
+EXPORT NOT ZERO PAGE - Corex
+EXPORT NOT ZERO PAGE - Corez
+IMPORT NOT ZERO PAGE - Kinitroty
+IMPORT NOT ZERO PAGE - Kinitroty
+IMPORT NOT ZERO PAGE - Kinitroty
+IMPORT NOT ZERO PAGE - CREDITS_ON
+IMPORT NOT ZERO PAGE - Kinitroty
+IMPORT NOT ZERO PAGE - Kinitroty
+IMPORT NOT ZERO PAGE - Kinitroty
+IMPORT NOT ZERO PAGE - Kinitroty
+IMPORT NOT ZERO PAGE - Kinitroty
+IMPORT NOT ZERO PAGE - Kinitroty
+IMPORT NOT ZERO PAGE - Kinitroty
+IMPORT NOT ZERO PAGE - KGameMapPtr
+IMPORT NOT ZERO PAGE - CurrentLevel
+EXPORT NOT ZERO PAGE - KSoundMapPtr
+IMPORT NOT ZERO PAGE - KW_GAMEFLAG
+EXPORT NOT ZERO PAGE - KW_GAMEFLAG
+    [01m-- (2) [00m[33m00088000 [01m[33mpathdata.asm:    30905[00m
+EXPORT NOT ZERO PAGE - KSoundMapPtr
+IMPORT NOT ZERO PAGE - demotaiman
+IMPORT NOT ZERO PAGE - demotaiman
+IMPORT NOT ZERO PAGE - demotaiman
+IMPORT NOT ZERO PAGE - KGameMapPtr
+    [01m-- (2) [00m[33m0008F8B9 [01m[33mdpathdat.asm:     1782[00m
+[01m-- (1) [00m[33m00088000 [01m[33mpaths.asm:       32687[00m
+[01m-- 81 bytes free.[00m
+[01m-- BANK 9:[00m
+IMPORT NOT ZERO PAGE - KGameMapPtr
+IMPORT NOT ZERO PAGE - playerctlmode
+IMPORT NOT ZERO PAGE - KGameMapPtr
+IMPORT NOT ZERO PAGE - Player1_vx
+IMPORT NOT ZERO PAGE - Player1_vz
+IMPORT NOT ZERO PAGE - Player_friend
+IMPORT NOT ZERO PAGE - Player_friend
+IMPORT NOT ZERO PAGE - Player_friend
+IMPORT NOT ZERO PAGE - Player_friend
+IMPORT NOT ZERO PAGE - player_controltypeABXY
+IMPORT NOT ZERO PAGE - KGameMapPtr
+IMPORT NOT ZERO PAGE - PlayerImportFlag
+IMPORT NOT ZERO PAGE - Player_friend
+    [01m-- (2) [00m[33m00098000 [01m[33mkpathdat.asm:     3085[00m
+IMPORT NOT ZERO PAGE - bclipflag
+Crusher length = 875
+Pierrot length = 1
+IMPORT NOT ZERO PAGE - bclipflag
+Dodora length = 1640
+IMPORT NOT ZERO PAGE - y1
+EXPORT NOT ZERO PAGE - cs_shapename
+IMPORT NOT ZERO PAGE - STARWOLFNO
+
+DUMMY 100 bytes reserved for Dylan
+mae mitai ni komaranai you ni
+
+    [01m-- (2) [00m[33m00098C0D [01m[33mbpathdat.asm:    10635[00m
+IMPORT NOT ZERO PAGE - player1_horizon
+EXPORT NOT ZERO PAGE - player1vscroll
+IMPORT NOT ZERO PAGE - Player_friend
+IMPORT NOT ZERO PAGE - demomode
+IMPORT NOT ZERO PAGE - starwolfNo
+IMPORT NOT ZERO PAGE - demomode
+IMPORT NOT ZERO PAGE - player1_horizon_offset
+EXPORT NOT ZERO PAGE - player1_horizon_offset
+IMPORT NOT ZERO PAGE - player1_vx
+IMPORT NOT ZERO PAGE - player1_vz
+IMPORT NOT ZERO PAGE - Player_friend
+IMPORT NOT ZERO PAGE - Player_friend
+EXPORT NOT ZERO PAGE - tpx
+IMPORT NOT ZERO PAGE - Player_friend
+IMPORT NOT ZERO PAGE - corex
+IMPORT NOT ZERO PAGE - corez
+IMPORT NOT ZERO PAGE - demoNo
+IMPORT NOT ZERO PAGE - demoNo
+IMPORT NOT ZERO PAGE - demoNo
+IMPORT NOT ZERO PAGE - Player_friend
+IMPORT NOT ZERO PAGE - Player_friend
+IMPORT NOT ZERO PAGE - demoNo
+IMPORT NOT ZERO PAGE - Kinitroty
+IMPORT NOT ZERO PAGE - attackrnd
+IMPORT NOT ZERO PAGE - p1_roty_init
+IMPORT NOT ZERO PAGE - p1_dist2cam
+EXPORT NOT ZERO PAGE - x1
+IMPORT NOT ZERO PAGE - x1
+IMPORT NOT ZERO PAGE - KGameMapPtr
+IMPORT NOT ZERO PAGE - coreENTERroty
+IMPORT NOT ZERO PAGE - demoshapeptr
+IMPORT NOT ZERO PAGE - coreENTERroty
+IMPORT NOT ZERO PAGE - coreENTERroty
+EXPORT NOT ZERO PAGE - x2
+EXPORT NOT ZERO PAGE - y2
+EXPORT NOT ZERO PAGE - x2
+EXPORT NOT ZERO PAGE - y2
+IMPORT NOT ZERO PAGE - corex
+IMPORT NOT ZERO PAGE - corez
+IMPORT NOT ZERO PAGE - coreroty
+IMPORT NOT ZERO PAGE - demotaiman
+IMPORT NOT ZERO PAGE - demotaiman2
+IMPORT NOT ZERO PAGE - demotaiman2
+IMPORT NOT ZERO PAGE - demotaiman
+IMPORT NOT ZERO PAGE - demotaiman2
+IMPORT NOT ZERO PAGE - player1_vx
+IMPORT NOT ZERO PAGE - player1_vz
+IMPORT NOT ZERO PAGE - player1_vx
+IMPORT NOT ZERO PAGE - player1_vz
+IMPORT NOT ZERO PAGE - demono
+IMPORT NOT ZERO PAGE - demono
+IMPORT NOT ZERO PAGE - demono
+Destruct length = 1030
+IMPORT NOT ZERO PAGE - p1_worldx_init
+IMPORT NOT ZERO PAGE - p1_worldy_init
+IMPORT NOT ZERO PAGE - p1_worldz_init
+IMPORT NOT ZERO PAGE - Player_friend
+EXPORT NOT ZERO PAGE - tpx
+IMPORT NOT ZERO PAGE - player_friend
+IMPORT NOT ZERO PAGE - demomode
+Demo0 length = 1501
+IMPORT NOT ZERO PAGE - p1_pilotNo
+IMPORT NOT ZERO PAGE - p1_worldx_init
+IMPORT NOT ZERO PAGE - p1_worldz_init
+IMPORT NOT ZERO PAGE - p1_roty_init
+IMPORT NOT ZERO PAGE - x1
+IMPORT NOT ZERO PAGE - x1
+    [01m-- (2) [00m[33m0009B598 [01m[33mtpathdat.asm:    13047[00m
+IMPORT NOT ZERO PAGE - playerctlmode
+IMPORT NOT ZERO PAGE - hit_noaffect_chk
+IMPORT NOT ZERO PAGE - planet_mode
+IMPORT NOT ZERO PAGE - playerctlmode
+IMPORT NOT ZERO PAGE - hit_noaffect_chk
+IMPORT NOT ZERO PAGE - planet_mode
+IMPORT NOT ZERO PAGE - Planet_mode
+IMPORT NOT ZERO PAGE - planet_mode
+IMPORT NOT ZERO PAGE - planet_mode
+IMPORT NOT ZERO PAGE - planet_mode
+    [01m-- (2) [00m[33m0009E88F [01m[33mppathdat.asm:     1751[00m
+IMPORT NOT ZERO PAGE - P1_maxMETER
+IMPORT NOT ZERO PAGE - p1_markptr
+IMPORT NOT ZERO PAGE - planet_mode
+EXPORT NOT ZERO PAGE - corex
+EXPORT NOT ZERO PAGE - corez
+EXPORT NOT ZERO PAGE - coreroty
+IMPORT NOT ZERO PAGE - planet_mode
+IMPORT NOT ZERO PAGE - seadepth
+IMPORT NOT ZERO PAGE - playpt1
+IMPORT NOT ZERO PAGE - bombexplode
+IMPORT NOT ZERO PAGE - playpt1
+IMPORT NOT ZERO PAGE - bombexplode
+IMPORT NOT ZERO PAGE - Kinitroty
+IMPORT NOT ZERO PAGE - player1_vx
+IMPORT NOT ZERO PAGE - player1_vz
+EXPORT NOT ZERO PAGE - x1
+IMPORT NOT ZERO PAGE - x1
+EXPORT NOT ZERO PAGE - player1_vz
+IMPORT NOT ZERO PAGE - player1_vz
+Title demo length = 1451
+    [01m-- (2) [00m[33m0009EF66 [01m[33mgpathdat.asm:     3917[00m
+[01m-- (1) [00m[33m00098000 [01m[33mpaths2.asm:      32435[00m
+[01m-- 333 bytes free.[00m
+[01m-- BANK 13:[00m
+[01m-- (1) [00m[33m000DB000 [01m[33mslopes.asm:       3298[00m
+[01m-- (1) [00m[33m000DBCE2 [01m[33mchart.asm:        6502[00m
+[01m-- (1) [00m[33m000DD648 [01m[33mmapcode.asm:      1523[00m
+[01m-- (1) [00m[33m000DDC3B [01m[33mweapons.asm:      1344[00m
+    [01m-- (2) [00m[33m000DE17B [01m[33mfont_1.bin:        460[00m
+    [01m-- (2) [00m[33m000DE347 [01m[33mmmj.bin:          3097[00m
+    [01m-- (2) [00m[33m000DEF60 [01m[33mmf.bin:            209[00m
+    [01m-- (2) [00m[33m000DF031 [01m[33matoz.bin:          425[00m
+[01m-- (1) [00m[33m000DE17B [01m[33mfonts.asm:        4191[00m
+[01m-- (1) [00m[33m000DF1DA [01m[33mtitlesub.asm:     1544[00m
+[01m-- 2078 bytes free.[00m
+TOTALSAVED=0
+[01m------------------------------- MEMORY USAGE ----------------------------------[00m
+Zero Page Free       =    1 (000%)[00m      Work Ram Free        =   28 (000%)[00m
+Extended Ram Free    =  808 (001%)[00m      Xxtended Ram Free    = 1279 (001%)[00m
+ZMario Ram Free      =    6 (001%)[00m      Mario Ram Free       =  114 (001%)[00m
+[01m-------------------------------------------------------------------------------
+[00mWriting SOB file : bank8.SOB[00m      0 Error(s), 0 Warning(s). ([36m0.0s[00m)
+
+ArgLink SFX v1.11x         (c) 1993 Argonaut Software Ltd.
+
+Constructing Rom Image.
+Processing Externals.
+Sending Image.
+
+-------------------------------------------------------------------------------
+| Publics: 4050   Externs: 34672  Files: 13     Blocks: 186   Rom Size: 1023K |
+| Hash Chains: 970        Dos Memory:    0K            Extended Memory: 1824K |
+-------------------------------------------------------------------------------
+

@@ -1,4 +1,10 @@
 
+	mario	off
+	incpub	mhofs
+	mario	on
+
+	IFEQ	1
+
 mnograd
 	lms	r7,[m_viewposx]
 	with	r7
@@ -176,7 +182,7 @@ mwibbletunnel
 	ibt	r2,#0
 	lms	r3,[m_viewposx]
 	move	r0,r3
-	add	r3	
+	add	r3
 	add	r3
 	add	r3
 	with	r3
@@ -303,7 +309,6 @@ mwibbletunnel
 
 
 
-
 bholelimit equ	$a0
 mbhole
 	lms	r0,[testk3]
@@ -407,6 +412,7 @@ mbhole
 
 	stop
 	nop
+	ENDC
 
 
 	IFEQ	1
@@ -535,7 +541,6 @@ mbholescaledown
 	nop
 
 	ENDC
-
 
 watersinetab
 	db	-20,-19,-18,-17,-14,-10,-6,-2

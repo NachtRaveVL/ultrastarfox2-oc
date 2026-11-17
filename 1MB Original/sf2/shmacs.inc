@@ -19,11 +19,13 @@ shnumfaces	=	0
 	struct	sh_size,2
 	struct	sh_col_ptr,2
 	struct	sh_shadow,2
+	struct	sh_slopebox,0
 	struct	sh_simple1,2
 	struct	sh_simple2,2
 	struct	sh_simple3,2
 	struct	sh_name,0
 	struct	sh_header_size,0
+
 
 ;Shape header macro -- -- --
 
@@ -96,7 +98,7 @@ err	=	0
 	endc
 
 	ifne	err
-	printf	"Shape %phas a funny collision box%n"
+	printf	"** %q%f%q (%l) Error: Shape %p has a funny collision box%n"
 	endc
 
 ;;	printf	"\1:%xchar %n"
@@ -113,12 +115,12 @@ ShapeHdr	macro ;pptr,?,fptr,num,radcol,hgt,vy,shift,rad,xm,ym,zm,size,cptr,Name
 
 	IFND	hdrpublics
 
-	run	' public %p'
+;	run	' public %p'
 
 	IFNC	'0','\1'
-	IFND	t_\1
+	IFND	tp_\1
 	EXTERN	\1
-t_\1	equ	0
+tp_\1	equ	0
 	ENDC
 	IFND	ta_\3
 	EXTERN	\3
@@ -195,9 +197,9 @@ no_of_shapes	=	no_of_shapes+1
 
 	ELSEIF
 	IFNC	'0','\1'
-	IFND	t_\1
+	IFND	tp_\1
 	PUBLIC	\1
-t_\1	equ	0
+tp_\1	equ	0
 	ENDC
 	IFND	ta_\3
 	PUBLIC	\3
@@ -210,7 +212,7 @@ ta_\3	equ	0
 
 defshapename	macro
 ;	db	0
-;	run	" db '","[1]\1","',0"		;sh_name,0
+	run	" db '","[1]\1","',0"		;sh_name,0
 	endm
 
 	IFEQ	MAKE_SHAPE_REPORT
@@ -253,13 +255,13 @@ ShapeHdr_s	macro ;pptr,?,fptr
 
 	IFND	hdrpublics
 
-	run	' public %p'
+;	run	' public %p'
 
 no_of_shapes	=	no_of_shapes+1
 	IFNC	'0','\1'
-	IFND	t_\1
+	IFND	tp_\1
 	EXTERN	\1
-t_\1	equ	0
+tp_\1	equ	0
 	ENDC
 	IFND	ta_\3
 	EXTERN	\3
@@ -273,9 +275,9 @@ ta_\3	equ	0
 
 	ELSEIF
 	IFNC	'0','\1'
-	IFND	t_\1
+	IFND	tp_\1
 	PUBLIC	\1
-t_\1	equ	0
+tp_\1	equ	0
 	ENDC
 	IFND	ta_\3
 	PUBLIC	\3
@@ -307,6 +309,21 @@ colframecount	=	\1
 	struct	cb_flagclr,1
 	struct	cb_sizeof,0
 
+	structure	$7f0000
+	struct	cbx_next,2
+	struct	cbx_frame,1
+	struct	cbx_xoff,2
+	struct	cbx_yoff,2
+	struct	cbx_zoff,2
+	struct	cbx_rotz,1
+	struct	cbx_xmax,2
+	struct	cbx_ymax,2
+	struct	cbx_zmax,2
+	struct	cbx_flagset,1
+	struct	cbx_flagclr,1
+	struct	cbx_sizeof,0
+
+
 ;colbox macro -- -- -- -- -- -- -- -- -- -- --
 
 colframecount	=	0
@@ -337,6 +354,9 @@ cf	=	0
 	IFEQ	cbf_\5-cbf_rotx
 	dw	(\2)<<cs,\3,\4
 	ENDC
+	IFEQ	cbf_\5-cbf_rotxyz
+	dw	\2,\3,\4
+	ENDC
 
 	db	cbf_\5!cf
 
@@ -355,6 +375,59 @@ cbf_rotxyz	equ	1<<7
 
 cbf_scale	equ	15
 
+
+;----------------------------------------------------
+; SLOPE BOX MACROS
+
+
+SLOPES	MACRO	[num]
+	db	{num}
+slopeframes	=	0
+	ENDM
+
+SLOPEPOLY	MACRO	[numpoints,scale]
+
+	db	{numpoints}	; stores number of points
+
+	ENDM
+
+SLOPEPOINT	MACRO	[x,z]
+	db	({x}),({z})
+	ENDM
+
+SLOPE	MACRO	[x,y,z,width,length,nx,ny,nz,rotx,rotz,dist,scale,type,poly]
+
+	IFLT	NARG-13
+	error	<Too few arguments specified>
+	ENDC
+
+slscale	=	1<<{scale}
+
+	db	slopeframes		; amount of frames
+	dw	{x}*slscale
+;	dw	{y}*slscale
+	dw	{z}*slscale		; x,y,z of centre of polygon
+	dw	{width}*slscale		; width of box
+	dw	{length}*slscale	; length of box
+	db	{nx},{ny},{nz}		; normal
+;	db	{rotx}+26,{rotz}+26	; x & z rotation parallel to plane
+	dw	{dist}*slscale		; distance from origin of plane
+	IFEQ	NARG-14
+	dw	({poly})&WM	; Pointer to SLOPEPOLY definition
+	ELSEIF
+	dw	0
+	ENDC
+	db	st_{type}		; slope type (ground, water etc)
+	db	{scale}			; scale
+
+slopeframes	=	0
+	ENDM
+
+slopeframes	=	0
+
+SLOPEANIM	MACRO	[numframes]
+slopeframes	=	{numframes}
+	ENDM
 
 
 ;************************************************
@@ -609,9 +682,9 @@ fend	macro
 	db	-2	; end of faces and continue
 	endm
 
-endshape	macro
-	db	0	;mval_endshape
-	endm
+;endshape	macro
+;	db	0	;mval_endshape
+;	endm
 
 quit	macro
 	db	72	;mval_quit
@@ -728,6 +801,16 @@ colsmooth	macro	; \1 = light source number, \2 is normal colour byte
 	endm
 
 	endc
+
+
+clip_plane	macro	[n,x1,y1,z1,x2,y2,z2]
+
+	db	104
+	db	{n}
+	dw	{x1},{y1},{z1}
+	dw	{x2},{y2},{z2}
+
+	endm
 
 ;************************************************
 
@@ -865,6 +948,11 @@ face8	macro
 	db	8,\2,\1,\3,\4,-(\5),\6,\7,\8,\9,\A,\B,\C,\D
 shnumfaces	=	shnumfaces+1
 	endm
+
+face9	macro
+	db	9,\2,\1,\3,\4,-(\5),\6,\7,\8,\9,\A,\B,\C,\D,\E
+shnumfaces	=	shnumfaces+1
+	endm
 	
 face12	macro
 	db	12,\2,\1,\3,\4,-(\5),\6,\7,\8,\9,\A,\B,\C,\D,\E,\F,\G,\H
@@ -873,8 +961,5 @@ shnumfaces	=	shnumfaces+1
 
 	endc
 
+
 ;************************************************
-
-
-
-

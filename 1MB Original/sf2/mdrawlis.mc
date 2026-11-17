@@ -1,15 +1,33 @@
+;*********************************************************************
+;*		mnorm16	(Normalise)
+;* Init
+;*	m_x1	= vector X
+;*	m_y1	= vector Y
+;*	m_z1	= vector z
+;* Exit
+;*	m_x1	= unit vector X
+;*	m_y1	= unit vector Y
+;*	m_z1	= unit vector z
+;*********************************************************************
+mnorm16
+	miwt	r10,m_stack&WM
+	lm	r1,[m_x1]
+	lm	r2,[m_y1]
+	lm	r3,[m_z1]
+	mcall	mnormalise16
+	nop	
+	sm	[m_x1],r1
+	sm	[m_y1],r2
+	sm	[m_z1],r3
+	stop
+	nop
+
 ***************************************************************
 **
 **  Draw polygon list by Krister Wombell/Dylan
 **
 **
 **
-	zmalc	m_clrbitmaps,2
-	zmalc	m_player,2
-	zmalc	m_numshapes,2
-	zmalc	m_damage,2
-	zmalc	m_boostcnt,2
-	zmalc	m_boostanim,2
 
 rlistptr	equr	r1
 rzstore	equr	r2
@@ -18,8 +36,25 @@ rsflags	equr	r4
 rwork	equr	r5
 rzspare	equr	r6
 
+;;;;	ldx	#m_drawlist
+;;;;
+;;;;.again
+;;;;	lda.l	dl_next,x
+;;;;	beq	.exit
+;;;;
+;;;;	pha
+;;;;
+;;;;	lda.l	dl_x,x
+;;;;	
+;;;;
+;;;;	plx
+;;;;
+;;;;	bra	.again
+;;;;.exit
+;;;;
 ;Drawlist in format :
-; struct dl_xxxxx in SG.ASM
+; struct dl_xxxxx in STRUCTS.INC
+;
 ;
 ;	dl_rotx,1
 ;	dl_roty,1
@@ -39,6 +74,56 @@ rzspare	equr	r6
 ;	dl_depth,1
 ;	dl_tscrollx,1
 ;	dl_tscrolly,1
+;컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴�
+mbegin_3d_display
+;	ibt	r0,#$70
+	sub	r0
+	ramb
+;	sub	r0
+	romb
+
+	lms	r1,[m_drawmap]
+	sm	[m_olddrawmap],r1
+	mcall	mclrbitmap
+	nop
+
+;;;;	miwt	r10,(m_stack&WM)+mmaxstack/2
+;;;;	lms	r0,[m_cnt]
+;;;;	mpush	r0
+;;;;	sub	r0
+;;;;	sms	[m_cnt],r0
+
+;;;;	lm	r0,[m_mariopoll]
+;;;;	moves	r0,r0
+;;;;	beq	.nopoll
+;;;;	nop
+;;;;
+;;;;	mcall	manswerpoll
+;;;;	nop
+;;;;	mpop	r0
+;;;;	sms	[m_cnt],r0
+;;;;.nopoll
+
+;컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴�
+; Draw space dust or ground dots?
+;컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴�
+	lms	r0,[m_dotsorstars]	;do nodots/spacedust/gnd dots
+	sm	[m_stackptr_bak],r0	; temporary store
+	and	#1
+	beq	.nogdots
+	nop
+;	mcall	mshowgrid
+	nop
+.nogdots
+
+	lm	r0,[m_stackptr_bak]
+	and	#2
+	beq	.nostars
+	nop
+	mcall	mshowdust
+	nop
+.nostars
+
 
 mdo_3d_display
 
@@ -53,40 +138,68 @@ mdo_3d_display
 	sm	[m_visis_done],r0
 	endc
 
-	miwt	r10,m_stack&WM
-	lms	r0,[m_clrbitmaps]
-	lob
-	beq	.noclr
-	nop
-	mcall	mclrbitmaps		;Clear bitmaps
-	nop
-.noclr
-	lms	r0,[m_dotsorstars]	;do nodots/spacedust/gnd dots
-	moves	r0,r0
-	beq	.skip
-	nop
-	bmi	.stars
-	nop
-	mcall	mshowgrid
-	nop
-	bra	.skip
-	nop
-.stars
-	mcall	mshowdust
-	nop
-.skip
+;	miwt	r10,(m_stack&WM)+mmaxstack/2
+;	lms	r0,[m_clrbitmaps]
+;	lob
+;	beq	.noclr
+;	nop
+;	mcall	mclrbitmaps		;Clear bitmaps
+;	nop
+;.noclr
+;	lms	r0,[m_dotsorstars]	;do nodots/spacedust/gnd dots
+;	moves	r0,r0
+;	beq	.skip
+;	nop
+;	bmi	.stars
+;	nop
+;	mcall	mshowgrid
+;	nop
+;	bra	.skip
+;	nop
+;.stars
+;	mcall	mshowdust
+;	nop
+;.skip
 
 
 
 
 ; SHOW ALL OBJECTS
 mshowview
-	miwt	r10,m_stack&WM
+	miwt	r10,(m_stack&WM)+mmaxstack/2
 
-	mibt	r1,pfm_shadows
+;----------------------------------------
+;----------------------------------------
+; Ground Clip plane -----------------------
+	lm	r0,[m_groundlevel]	; set ground clipping plane (#1)
+	ibt	r1,#plane_GROUND
+
+	mcall	mGen_clip_plane
+	 nop
+;----------------------------------------
+; Player 1 Pool Clip plane -----------------------
+	lm	r0,[m_poolclip1]
+	ibt	r1,#plane_POOL1
+
+	mcall	mGen_clip_plane
+	 nop
+;----------------------------------------
+; Player 2 Pool Clip plane -----------------------
+	lm	r0,[m_poolclip2]
+	ibt	r1,#plane_POOL2
+
+	mcall	mGen_clip_plane
+	 nop
+;----------------------------------------
+;----------------------------------------
+
+	mcall	mallrotzsort		;Clear bitmaps
+	nop
+
+	mibt	r1,SPACE_MODE
 	lms	r0,[m_pfm]
 	and	r1
-	beq	.noshad
+	bne	.noshad
 	nop
 
 	ibt	r0,#1
@@ -105,22 +218,28 @@ mshowview
 	cmode
 
 
-	lm	r0,[m_meters]
-	lob
-	beq	.skip
+;	lm	r0,[m_meters]
+;	lob
+;	beq	.skip
+;	nop
+;	mcall	mboostmeter
+;	nop
+;	mcall	mdamagemeter
+;f7-7	nop
+	mcall	mENEMYcursor
 	nop
-	mcall	mboostmeter
+	mcall	maltline
 	nop
-	mcall	mdamagemeter
+
 	nop
 	mcall	mdrawbossHP
 	nop
 ;	mcall	mmand
 ;	nop
-.skip
+;.skip
 
-	mcall	mdrawhud
-	nop
+	mcall	mdrawhud	;KAWAGOE changed
+	nop			;KAWAGOE changed
 
 	lm	r0,[m_particlesON]
 	mtest	r0
@@ -133,10 +252,46 @@ mshowview
 
 	mrpix
 
+;;	mlbra	mTurboSprites
+
 	stop
 	nop
 
 
+;컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴�
+; this continues the drawloop after it has been interrupted
+
+mdrawloop_con
+	sub	r0
+	romb
+
+	lm	r10,[m_stackptr_bak]
+	mpop	r0
+	sms	[m_wmat33],r0
+	mpop	r0
+	sms	[m_wmat32],r0
+	mpop	r0
+	sms	[m_wmat31],r0
+	mpop	r0
+	sms	[m_wmat23],r0
+	mpop	r0
+	sms	[m_wmat22],r0
+	mpop	r0
+	sms	[m_wmat21],r0
+	mpop	r0
+	sms	[m_wmat13],r0
+	mpop	r0
+	sms	[m_wmat12],r0
+	mpop	r0
+	sms	[m_wmat11],r0
+	mpop	r11
+	mpop	rlistptr
+
+	mlbra	mdrawloop_backagain
+
+
+;컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴�
+; main draw loop for 3d system
 
 mshow
 	lm	rlistptr,[m_dlptr]
@@ -154,6 +309,51 @@ mdrawloop
 
 	sms	[m_numpnts],r0		; for particles
 
+	lm	r0,[m_debugcount]
+	inc	r0
+	sbk
+
+mdrawloop_backagain
+	lm	r0,[m_mariopoll]
+	moves	r0,r0
+	beq	mdrawloop_in
+	nop
+
+	mpush	rlistptr
+	mpush	r11
+	lms	r0,[m_wmat11]
+	mpush	r0
+	lms	r0,[m_wmat12]
+	mpush	r0
+	lms	r0,[m_wmat13]
+	mpush	r0
+	lms	r0,[m_wmat21]
+	mpush	r0
+	lms	r0,[m_wmat22]
+	mpush	r0
+	lms	r0,[m_wmat23]
+	mpush	r0
+	lms	r0,[m_wmat31]
+	mpush	r0
+	lms	r0,[m_wmat32]
+	mpush	r0
+	lms	r0,[m_wmat33]
+	mpush	r0
+	sm	[m_stackptr_bak],r10
+	sub	r0
+	sm	[m_mariopoll],r0
+	iwt	r0,#mdrawloop_con>>16
+	sm	[m_pollcon+2],r0
+	iwt	r0,#mdrawloop_con&WM
+	sm	[m_pollcon],r0
+
+	stop
+	nop
+
+
+mdrawloop_in
+
+	mcache
 	mpush	rlistptr
 
 	inc	rlistptr
@@ -179,7 +379,6 @@ mdrawloop
 	ldw	[rlistptr]		;shape header
 	inc	rlistptr
 	inc	rlistptr
-
 
 
 ; shadow pass-through only-----
@@ -265,6 +464,115 @@ mdrawloop
 	inc	rlistptr
 
 
+
+	ifne	1			; quick object reject checks
+
+
+	miwt	rwork,asf_partobj!asf_ssprite
+	from	rsflags
+	and	rwork
+	mlbne	.okobj
+
+
+rrad	equr	5
+rzrad	equr	8
+	
+	sub	r0
+	romb
+
+	ibt	r14,#sh_size
+	with	r14
+	add	rshapehdrptr
+	mgetw	rrad
+
+	mtest	rrad
+	bmi	.okobj
+	nop
+;	mlbmi	.okobj
+;	mlbeq	.okobj
+;	mlbra	.okobj
+;	mlbra	.rejectobj
+
+	lms	r0,[m_bigz]
+	to	rzrad
+	asr
+	from	rzrad
+	add	rrad
+	bmi	.rejectobj		; if (z + radius) < 0 reject
+	nop
+
+	with	rrad
+	add	rrad
+
+	with	rzrad
+;	asr
+
+	lms	r7,[m_bigx]
+	mtest	r7
+	bmi	.xmi			; if (x >= 0)
+	nop
+
+	from	r7
+	sub	rrad
+	sub	rzrad
+	bpl	.rejectobj
+	nop
+
+;	mlbra	.okobj
+	mlbra	.checky
+
+.xmi
+	from	rrad
+	not
+	inc	r0
+	sub	r7
+	sub	rzrad
+	bpl	.rejectobj
+	nop
+
+;	mlbra	.okobj
+
+.checky
+	lms	r2,[m_bigy]
+	mtest	r2
+	bmi	.ymi			; if (y >= 0)
+	nop
+
+	from	r2
+	sub	rrad
+	sub	rzrad
+	bpl	.rejectobj
+	nop
+
+	mlbra	.okobj
+
+.ymi
+	from	rrad
+	not
+	inc	r0
+	sub	r2
+	sub	rzrad
+	bpl	.rejectobj
+	nop
+
+	mlbra	.okobj
+
+
+.rejectobj
+
+	ifne	mario_stats3d
+	lm	r0,[m_shapes_notdrawn]
+	swap
+	inc	r0
+	swap
+	sm	[m_shapes_notdrawn],r0
+	endc
+
+	mlbra	.nextobj
+
+.okobj
+	endc
+
 ;------------------------------------------------------------
 	miwt	rwork,asf_partobj
 	from	rsflags
@@ -301,6 +609,7 @@ mdrawloop
 
 	ldb	[rlistptr]		; type
 	lob
+	sm	[m_debugvar2],r0
 	ibt	rwork,#7
 	and	rwork
 	bne	.isinit
@@ -308,6 +617,7 @@ mdrawloop
 	ibt	r0,#-1
 .isinit
 	sms	[m_numpnts],r0
+	sm	[m_debugvar1],r0
 
 
 ;************************************************
@@ -323,6 +633,7 @@ mdrawloop
 	mtest	r0
 	beq	.nopart
 	nop
+
 
 	lms	r0,[m_numpnts]
 	mtest	r0
@@ -475,16 +786,16 @@ mdrawloop
 	move	r0,rzspare
 	miwt	rwork,3000
 	cmp	rwork
-	bcs	.simplest
+	bge	.simplest
 	nop
 	miwt	rwork,2000
 	cmp	rwork
-	bcs	.middle
+	bge	.middle
 	nop
-	miwt	rwork,1000
-	cmp	rwork
-	bcs	.large
-	nop
+;	miwt	rwork,1000
+;	cmp	rwork
+;	bcs	.large
+;	nop
 	bra	.gotshapehd
 	nop
 .simplest
@@ -593,10 +904,10 @@ mdrawloop
 	sex
 	sms	[m_sprxscale],r0	; store size
 
-	lms	r0,[m_pntptr]
-	mtest	r0
-	beq	.notsprite
-	nop
+;	lms	r0,[m_pntptr]
+;	mtest	r0
+;	beq	.notsprite
+;	nop
 
 	mcall	mssprite
 	nop
@@ -626,6 +937,12 @@ mdrawloop
 	sms	[m_spryscroll],r0
 	inc	rlistptr		; texture map y
 
+
+	sub	r0			; set the clipping planes
+	ldb	[rlistptr]
+	sm	[m_clipplanes],r0
+	inc	rlistptr
+
 ;	sub	r0
 ;	sms	(m_player),r0
 ;	iwt	rzspare,myship_0&WM
@@ -642,108 +959,20 @@ mdrawloop
 	beq	.nextobj
 	nop
 
+; --- old reject was here ---
 
-
-	ifne	1			; quick object reject checks
-
-rrad	equr	5
-rzrad	equr	6
-	
-	sub	r0
-	romb
-
-;	ibt	r14,#sh_radius
-	ibt	r14,#sh_size
-	with	r14
-	add	rshapehdrptr
-	mgetw	rrad
-
-;	mtest	rrad
-;	mlbmi	.okobj
-;	mlbeq	.okobj
-;	mlbra	.okobj
-
-	lms	rzrad,[m_bigz]
-	from	rzrad
-	add	rrad
-	bmi	.rejectobj		; if (z + radius) < 0 reject
-	nop
-
-	with	rrad
-	add	rrad
-
-	with	rzrad
-	asr
-
-	lms	r1,[m_bigx]
-	mtest	r1
-	bmi	.xmi			; if (x >= 0)
-	nop
-
-	from	r1
-	sub	rrad
-	sub	rzrad
-	bpl	.rejectobj
-	nop
-
-;	mlbra	.okobj
-	mlbra	.checky
-
-.xmi
-	from	rrad
-	not
+	lms	r0,[m_ybot]
 	inc	r0
-	sub	r1
-	sub	rzrad
-	bpl	.rejectobj
-	nop
-
-;	mlbra	.okobj
-
-.checky
-	lms	r2,[m_bigy]
-	mtest	r2
-	bmi	.ymi			; if (y >= 0)
-	nop
-
-	from	r2
-	sub	rrad
-	sub	rzrad
-	bpl	.rejectobj
-	nop
-
-	mlbra	.okobj
-
-.ymi
-	from	rrad
-	not
-	inc	r0
-	sub	r2
-	sub	rzrad
-	bpl	.rejectobj
-	nop
-
-	mlbra	.okobj
-
-
-.rejectobj
-
-	ifne	mario_stats3d
-	lm	r0,[m_shapes_notdrawn]
-	swap
-	inc	r0
-	swap
-	sm	[m_shapes_notdrawn],r0
-	endc
-
-	mlbra	.nextobj
-
-.okobj
-	endc
+	sbk
 
 
 	mcall	mshowobj2
 	nop
+
+	lms	r0,[m_ybot]
+	dec	r0
+	sbk
+
 
 .nextobj
 	mpop	rlistptr
@@ -757,391 +986,8 @@ rzrad	equr	6
 	mnop		; return to caller
 
 
-boostx	=	22*8
-boosty	=	22*8
-boostheight =	8
-
-mboostmeter
-	mpush	r11
-
-
-	move	r1,#boostx
-	move	r2,#boosty
-	move	r3,#40
-	move	r4,#boostheight
-
-	move	r0,#$d
-	mcall	mdrawbox
-	nop
-
-;	move	r1,#boostx+1
-;	move	r2,#boosty+1
-;	move	r3,#38
-;	move	r4,#boostheight-2
-
-;	move	r0,#10
-;	mcall	mdrawsolidbox
-;	nop
-
-
-	move	r3,[m_boostanim]
-	with	r3
-	lob
-	move	r0,#36
-	cmp	r3
-	bge	.iiyo
-	nop
-	move	r3,r0
-.iiyo
-
-	move	r1,#boostx+2
-	move	r2,#boosty+2
-	move	r4,#boostheight-4
-
-	move	r0,#7
-	mcall	mdrawsolidbox
-	nop
-	
-
-	mpop	pc
-	nop
-
-
-
-
-	IFEQ	1
-	sub	r0
-	cmode
-	mcache
-
-	lms	r12,[m_boostanim]
-	with	r12
-	lob
-	miwt	r10,40
-	with	r10		;r11=remainder
-	sub	r12		;r12=number left
-
-	miwt	r1,22*8
-	miwt	r2,22*8
-
-	ibt	r4,#8
-.lp
-	ibt	r0,#6
-	colour
-	moves	r3,r10
-	beq	.elp2
-	nop
-.lp2	plot
-	dec	r3
-	bne	.lp2
-	nop
-.elp2
-	ibt	r0,#5
-	colour
-	moves	r3,r12
-	beq	.elp3
-	nop
-.lp3	plot
-	dec	r3
-	bne	.lp3
-	nop
-.elp3
-	ibt	r0,#40
-	with	r1
-	sub	r0
-	inc	r2
-
-	dec	r4
-	bne	.lp
-	nop
-
-	jmp	r11
-	nop
-
-	ENDC
-
-damagex	=	8
-damagey	=	22*8
-damageheight =	8
-
-mdamagemeter
-	mpush	r11
-
-	move	r1,#damagex
-	move	r2,#damagey
-	move	r3,#40
-	move	r4,#damageheight
-
-	move	r0,#$d
-	mcall	mdrawbox
-	nop
-
-;	move	r1,#damagex+1
-;	move	r2,#damagey+1
-;	move	r3,#38
-;	move	r4,#damageheight-2
-
-;	move	r0,#1
-;	mcall	mdrawsolidbox
-;	nop
-
-	move	r3,[m_damage]
-	with	r3
-	lob
-	move	r0,#36
-	cmp	r3
-	bge	.iiyo
-	nop
-	move	r3,r0
-.iiyo
-
-	move	r1,#damagex+2
-	move	r2,#damagey+2
-	move	r4,#damageheight-4
-
-	move	r0,#4
-	mcall	mdrawsolidbox
-	nop
-
-	mpop	pc
-	nop
-
-
-	IFEQ	1
-	lms	r12,[m_damage]
-	with	r12
-	lob
-	miwt	r10,40
-	with	r10		;r11=remainder
-	sub	r12		;r12=number left
-
-	miwt	r1,8
-	miwt	r2,22*8
-
-	ibt	r4,#8
-.lp
-	ibt	r0,#2
-	colour
-	moves	r3,r12
-	beq	.elp2
-	nop
-.lp2	plot
-	dec	r3
-	bne	.lp2
-	nop
-.elp2
-	ibt	r0,#1
-	colour
-	moves	r3,r10
-	beq	.elp3
-	nop
-.lp3	plot
-	dec	r3
-	bne	.lp3
-	nop
-.elp3
-	ibt	r0,#40
-	with	r1
-	sub	r0
-	inc	r2
-
-	dec	r4
-	bne	.lp
-	nop
-
-	jmp	r11
-	nop
-
-	ENDC
-
-
-;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-; m_bossmaxHP is the maximum
-; m_bossHP is the current
-
-mdrawbossHP
-	mpush	r11
-
-	move	r0,[m_bossmaxHP]
-	add	#10
-	to	r1
-	lob
-
-	move	r0,[m_bossHP]
-	lob
-	cmp	r1
-	bcc	.nowt
-	nop
-	ibt	r0,#0
-	sms	[m_bossHP],r0
-.nowt
-
-	move	r0,[m_bossmaxHP]
-	to	r3
-	lob
-	beq	.nodraw
-	nop
-	bpl	.nodiv2
-	nop
-	with	r3
-	lsr
-.nodiv2
-
-	inc	r3
-	inc	r3
-	inc	r3
-	inc	r3
-
-	move	r4,#6
-
-	move	r0,#gameNum_col*8-2
-	to	r1
-	sub	r3
-
-	move	r2,#2
-
-	move	r5,r1
-	move	r6,r2		; store x,y
-
-	move	r0,#14		; colour of outer box
-	mcall	mdrawbox
-	nop
-
-	move	r1,r5
-	move	r2,r6
-
-	inc	r1
-	inc	r1
-	inc	r2
-	inc	r2
-
-	move	r0,[m_bossHP]
-	to	r3
-	lob
-	move	r0,[m_bossmaxHP]
-	lob
-	bpl	.nodiv2_2
-	nop
-	with	r3
-	lsr	r3
-.nodiv2_2
-	move	r4,#2
-	move	r0,#2
-	mcall	mdrawsolidbox
-	nop
-.nodraw
-	sub	r0
-	move	[m_bossHP],r0
-
-	mpop	pc
-	nop
-
-;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-; r0    = colour
-; r1,r2 = x,y
-; r3,r4 = width,height
-; r3/r5-r10/r14 unchanged
-; ----- returns:
-; r1/r2 point to the next row
-; r4 returns as 0
-
-mdrawsolidbox
-;	mcache
-;	colour		; set the colour
-
-	moves	r3,r3
-	beq	.nobox
-;	nop
-	colour		; set the colour
-	moves	r4,r4
-	beq	.nobox
-	nop
-
-	mcache
-.nextrow
-	moves	r12,r3
-	move	r13,r15
-	loop		; draw the bottom line
-	plot
-
-	with	r1
-	sub	r3
-
-	dec	r4
-
-	bne	.nextrow
-	inc	r2
-
-
-.nobox	jmp	r11
-	nop
-
-
-;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-; r0 	= colour
-; r1,r2 = x,y
-; r3,r4 = width,height
-; r3-r10/r14 unchanged
-mdrawbox
-	mcache
-	colour		; set the colour
-
-	move	r12,r3	; width
-	move	r13,r15
-	loop		; draw the top line
-	plot
-
-	move	r12,r4
-	dec	r12
-	dec	r12	; height-2
-	move	r13,r15
-; vertical line loop
-	inc	r2	; inc y
-	with	r1
-	sub	r3
-	plot		; plot left side
-	with	r1
-	add	r3
-	dec	r1
-	dec	r1
-	loop
-	plot
-
-	with	r1
-	sub	r3	; subtract width from x
-	inc	r2
-
-	move	r12,r3	; width
-	move	r13,r15
-	loop		; draw the bottom line
-	plot
-
-
-	jmp	r11
-	nop
-
-;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-; r0 = colour
-; r1,r2 = x,y
-; r3 = width
-; r3-r10/r14 unchanged
-mdrawhorzline
-;	colour
-	mcache
-	moves	r12,r3
-	beq	.noloop
-;	nop
-	colour
-	move	r13,r15
-	loop		; draw the bottom line
-	plot
-
-.noloop
-	jmp	r11
-	nop
-
-
 planBMPSZ	equ	16*16*64
+
 
 mclrmapscreen
 	sub	r0
@@ -1158,6 +1004,7 @@ mclrmapscreen
 	nop
 
 pepperscreensize	=	16*24*32
+
 
 mclrpepperscreen
 	sub	r0
@@ -1185,6 +1032,65 @@ mclrbitmaps	; clear the second half of the bitmap
 	inc	r1
 
 	jmp	r11
+	nop
+
+
+mclrbitmap1	; clear player 1's bitmap
+	lms	r1,[m_drawmap]
+	mcalls	mclrbitmap
+	nop
+	stop
+	nop
+mclrbitmap
+	lms	r0,[m_xright]
+	inc	r0
+	div2
+	div2
+	to	r2
+	div2
+
+	lm	r4,[m_screenvheight]
+	lm	r3,[m_screenheight]
+	from	r3
+	sub	r4
+	add	r0
+	to	r3
+	add	r0
+
+;	iwt	r3,#32*4
+
+	sub	r0
+
+	mcache
+
+.mataloop
+;;	lms	r12,[m_ybot]
+	lm	r12,[m_screenvheight]
+;;	inc	r12	;+1
+	with	r12
+	add	r12	;*2 (words)
+	move	r13,r15
+	stw	[r1]
+	inc	r1
+	loop
+	inc	r1
+
+	with	r1
+	add	r3
+
+	dec	r2
+	bne	.mataloop
+	nop
+
+	jmp	r11
+	nop
+
+
+mclrbitmap2	; clear player 2's bitmap
+	iwt	r1,#bitmap2
+	mcalls	mclrbitmap
+	nop
+	stop
 	nop
 
 
@@ -1227,7 +1133,7 @@ mclrbitmaps3	; clear the second half of the bitmap
 
 
 
-
+	IFEQ	1
 
 
 basetunnely	=	60
@@ -1324,6 +1230,7 @@ mtunnelv
 	stop
 	nop
 
+	ENDC
 
 ;--------------------------------------------------------------
 ; MALLROTZSORT
@@ -1387,12 +1294,29 @@ mallrotzsort
 	lob
 	bne	.noret
 	nop
-	stop
+	jmp	r11
 	nop
 .noret
 	mcache
 	move	r13,r15
 .sortloop
+
+	lm	rtemp,[m_viewposx]
+	mldi.w	r0,dl_xx
+	sub	rtemp
+	msti.w	dl_x,r0
+
+	lm	rtemp,[m_viewposy]
+	mldi.w	r0,dl_yy
+	sub	rtemp
+	msti.w	dl_y,r0
+
+	lm	rtemp,[m_viewposz]
+	mldi.w	r0,dl_zz
+	sub	rtemp
+	msti.w	dl_z,r0
+	
+
 	mldi.b	r0,dl_sflags
 	ibt	rtemp,#asf_shadow
 	and	rtemp
@@ -1450,6 +1374,19 @@ mallrotzsort
 	getb
 	inc	r14
 	mldi.w	rtemp,dl_z
+
+	mldi.w	rtemp2,dl_y
+	mabs	rtemp2,rtemp2
+	ibt	rtemp2,#0
+	with	rtemp
+	add	rtemp2
+
+	mldi.w	rtemp2,dl_x
+	mabs	rtemp2,rtemp2
+	with	rtemp
+	add	rtemp2
+	add	rtemp2
+
 	getbh
 	to	rtemp
 	add	rtemp		; add it to the z of the shape
@@ -1513,10 +1450,177 @@ mallrotzsort
 	loop
 	nop
 
+	jmp	r11
+	nop
+
+
+;--------------------------------------------------------------
+
+
+;--------------------------------------------------------------
+;--------------------------------------------------------------
+
+; Kawagoe testing
+
+
+;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+mradarrot
+
+; clear the first ptr
+	sub	r0
+	romb
+
+	iwt	rdlptr,#m_drawlist&WM
+
+	to 	r12
+	ldb	[rdlptr]
+	with	r12
+	lob
+	bne	.noret
+	nop
+	stop
+	nop
+.noret
+	inc 	rdlptr
+	inc 	rdlptr
+
+	mcache
+	move	r13,r15
+.rotloop
+
+	lm	rtemp,[m_viewposx]
+	mldi.w	r0,rl_x
+	sub	rtemp
+	msti.w	rl_outx,r0
+
+	lm	rtemp,[m_viewposy]
+	mldi.w	r0,rl_y
+	sub	rtemp
+	msti.w	rl_outy,r0
+
+	lm	rtemp,[m_viewposz]
+	mldi.w	r0,rl_z
+	sub	rtemp
+	msti.w	rl_outz,r0
+	
+
+; rotate shape's coordinates
+	mldi.w	rx,rl_outx
+	mldi.w	ry,rl_outy
+	mldi.w	rz,rl_outz
+
+	mdotprod16mq	m_wmat11,m_wmat21,m_wmat31
+	msti.w	rl_outx,rsumhi
+	mdotprod16mq	m_wmat12,m_wmat22,m_wmat32
+	msti.w	rl_outy,rsumhi
+	mdotprod16mq	m_wmat13,m_wmat23,m_wmat33
+	msti.w	rl_outz,rsumhi
+
+
+
+	ibt	r0,#rl_sizeof
+	to	rdlptr
+	add	rdlptr
+
+	loop
+	nop
+
 	stop
 	nop
 
 
 
+;-------------------------------------------------------------
+; project point that can be called from 65816
+; m_x1,m_y1,m_z1 => m_x1, m_y1
+
+mproject_a_point
+	sub	r0
+	ramb
+	romb
+
+	miwt	r10,m_stack&WM
+	
+
+	lms	r1,[m_x1]
+	lms	r2,[m_y1]
+	lms	r3,[m_z1]
+
+	mcall	mprojectpnt
+	nop
+
+	sms	[m_x1],r1
+	sms	[m_y1],r2
+
+	stop
+	nop
 
 
+;;;;manswerpoll
+;;;;	mpush	rlistptr
+;;;;	mpush	r11
+;;;;	lms	r0,[m_wmat11]
+;;;;	mpush	r0
+;;;;	lms	r0,[m_wmat12]
+;;;;	mpush	r0
+;;;;	lms	r0,[m_wmat13]
+;;;;	mpush	r0
+;;;;	lms	r0,[m_wmat21]
+;;;;	mpush	r0
+;;;;	lms	r0,[m_wmat22]
+;;;;	mpush	r0
+;;;;	lms	r0,[m_wmat23]
+;;;;	mpush	r0
+;;;;	lms	r0,[m_wmat31]
+;;;;	mpush	r0
+;;;;	lms	r0,[m_wmat32]
+;;;;	mpush	r0
+;;;;	lms	r0,[m_wmat33]
+;;;;	mpush	r0
+;;;;	sm	[m_stackptr_bak],r10
+;;;;	sub	r0
+;;;;	sm	[m_mariopoll],r0
+;;;;	iwt	r0,#.con>>16
+;;;;	sm	[m_pollcon+2],r0
+;;;;	iwt	r0,#.con&WM
+;;;;	sm	[m_pollcon],r0
+;;;;
+;;;;	stop
+;;;;	nop
+;;;;
+;;;;.con
+;;;;	sub	r0
+;;;;	romb
+;;;;	ramb
+;;;;	lm	r10,[m_stackptr_bak]
+;;;;	mpop	r0
+;;;;	sms	[m_wmat33],r0
+;;;;	mpop	r0
+;;;;	sms	[m_wmat32],r0
+;;;;	mpop	r0
+;;;;	sms	[m_wmat31],r0
+;;;;	mpop	r0
+;;;;	sms	[m_wmat23],r0
+;;;;	mpop	r0
+;;;;	sms	[m_wmat22],r0
+;;;;	mpop	r0
+;;;;	sms	[m_wmat21],r0
+;;;;	mpop	r0
+;;;;	sms	[m_wmat13],r0
+;;;;	mpop	r0
+;;;;	sms	[m_wmat12],r0
+;;;;	mpop	r0
+;;;;	sms	[m_wmat11],r0
+;;;;	mpop	r11
+;;;;	mpop	rlistptr
+;;;;
+;;;;.nopoll
+;;;;
+;;;;	jmp	r11
+;;;;	nop
+
+
+	incfile	mscreen.mc
+
+	incfile	mcursor.mc
+

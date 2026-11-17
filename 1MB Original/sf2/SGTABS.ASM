@@ -2,7 +2,7 @@
 ; MATHS TABLES
 ;
 
-	incpublics sgtabs.ext
+	incpub	sgtabs
 tabstart
 ;	?tabstart 
 	incbinfile data\etabs.dat

@@ -88,9 +88,9 @@ mj_LT	equ	3
 ;-------------------------------------------------------------------
 ; structure for motherset
 
-	structure	moth_size
-	struct	ms_size,0
-ms_sizeof	=	ms_size-mapbase
+;	structure	moth_size
+;	struct	ms_size,0
+;ms_sizeof	=	ms_size-mapbase
 
 
 
@@ -157,3 +157,128 @@ mobj_sizeof	equ	mobj_size-mapbase&WM
 mz_sizeof	equ	mz_size-mapbase&WM
 
 
+;-------------------------------------------------------------------
+; structure for m_inertobj
+
+	structure	mapbase&WM
+	struct	mio_ctrl,1
+	struct	mio_x,2
+	struct	mio_y,2
+	struct	mio_z,2
+	struct	mio_roty,1
+	struct	mio_shape,2
+	struct	mio_strat,3
+	struct	mio_size,0
+mio_sizeof	equ	mio_size-mapbase&WM
+
+;-------------------------------------------------------------------
+; structure for m_inertpath
+
+	structure	mapbase&WM
+	struct	mip_ctrl,1
+	struct	mip_x,2
+	struct	mip_y,2
+	struct	mip_z,2
+	struct	mip_roty,1
+	struct	mip_shape,2
+	struct	mip_path,2
+	struct	mip_size,0
+mip_sizeof	equ	mip_size-mapbase&WM
+
+;-------------------------------------------------------------------
+; structure for m_scale
+
+	structure	mapbase&WM
+	struct	ms_ctrl,1
+	struct	ms_scale,1
+	struct	ms_size,0
+ms_sizeof	equ	ms_size-mapbase&WM
+
+
+ols	=	mapbase&WM+1
+oo_id	=	mapbase&WM
+;-------------------------------------------------------------------
+; structure for ols_object
+
+	structure	ols
+	struct	oo_shape,2
+	struct	oo_strategy,3
+	struct	oo_size,0
+oo_sizeof	equ	oo_size-mapbase&WM
+
+;-------------------------------------------------------------------
+; structure for ols_pathobj
+
+	structure	ols
+	struct	opo_shape,2
+	struct	opo_path,2
+	struct	opo_size,0
+opo_sizeof	equ	opo_size-mapbase&WM
+
+;-------------------------------------------------------------------
+; structure for ols_goto
+
+	structure	ols
+	struct	og_condition,1
+	struct	og_addr,2
+	struct	og_size,0
+og_sizeof	equ	og_size-mapbase&WM
+
+;-------------------------------------------------------------------
+; structure for ols_wait
+
+	structure	ols
+	struct	ow_condition,1
+	struct	ow_size,0
+ow_sizeof	equ	ow_size-mapbase&WM
+
+;-------------------------------------------------------------------
+; structure for ols_positions
+
+	structure	ols
+	struct	op_numpos,1
+	struct	op_size,0
+op_sizeof	equ	op_size-mapbase&WM
+
+;-------------------------------------------------------------------
+; structure for ols_link
+
+	structure	ols
+	struct	ol_bypass,2
+	struct	ol_size,0
+ol_sizeof	equ	ol_size-mapbase&WM
+
+;-------------------------------------------------------------------
+; structure for map_area
+
+	structure	mapbase&WM
+	struct	ma_ctrl,1
+	struct	ma_num,1
+	struct	ma_x,1
+	struct	ma_z,1
+	struct	ma_width,1
+	struct	ma_length,1
+	struct	ma_addr,3
+	struct	ma_size,0
+ma_sizeof	equ	ma_size-(mapbase&WM)
+
+;-------------------------------------------------------------------
+; structure for map_setdust
+
+	structure	mapbase&WM
+	struct		msd_ctrl,1
+	struct		msd_dustflags,2
+	struct		msd_size,0
+msd_sizeof	equ	msd_size-(mapbase&WM)
+
+;-------------------------------------------------------------------
+; structure for mapgotoiflevel
+
+	structure	mapbase&WM
+	struct		mgil_ctrl,1
+	struct		mgil_level,1
+	struct		mgil_addr,2
+	struct		mgil_size,0
+mgil_sizeof	equ	mgil_size-(mapbase&WM)
+
+

@@ -1,0 +1,58 @@
+ArgSfx-Extender v1.52 (DBR=OFF)  Copyright (c) Argonaut Software Ltd. 1992
+Optimising, ClearLines version
+6132K Free,  Thursday 29th June 1995
+[01m[32m-- Generating JAPAN/NTSC/FULL DEBUG/21Mhz version for dylan --[00m
+-- BANK 8:
+    -- (2) 00088000 pathdata.asm:    30884
+    -- (2) 0008F8A4 dpathdat.asm:     1795
+-- (1) 00088000 paths.asm:       32679
+-- 89 bytes free.
+-- BANK 9:
+    -- (2) 00098000 kpathdat.asm:     3181
+Crusher length = 995
+Pierrot length = 1
+Dodora length = 1640
+
+DUMMY 50 bytes reserved for Dylan
+mae mitai ni komaranai you ni
+
+    -- (2) 00098C6D bpathdat.asm:    10730
+Destruct length = 981
+Demo0 length = 1501
+    -- (2) 0009B657 tpathdat.asm:    13096
+    -- (2) 0009E97F ppathdat.asm:     1733
+Title demo length = 1451
+    -- (2) 0009F044 gpathdat.asm:     3982
+-- (1) 00098000 paths2.asm:      32722
+-- 46 bytes free.
+-- BANK 13:
+-- (1) 000DB000 slopes.asm:       3298
+-- (1) 000DBCE2 chart.asm:        6502
+-- (1) 000DD648 mapcode.asm:      1523
+-- (1) 000DDC3B weapons.asm:      1344
+    -- (2) 000DE17B font_1.bin:        460
+    -- (2) 000DE347 mmj.bin:          3083
+    -- (2) 000DEF52 mf.bin:            209
+    -- (2) 000DF023 atoz.bin:          425
+-- (1) 000DE17B fonts.asm:        4177
+-- (1) 000DF1CC titlesub.asm:     1544
+-- 2092 bytes free.
+TOTALSAVED=0
+------------------------------- MEMORY USAGE ----------------------------------
+Zero Page Free       =    1 (000%)      Work Ram Free        =   31 (000%)
+Extended Ram Free    =  848 (001%)      Xxtended Ram Free    = 1279 (001%)
+ZMario Ram Free      =    6 (001%)      Mario Ram Free       =  102 (001%)
+-------------------------------------------------------------------------------
+Writing SOB file : bank8.SOB      0 Error(s), 0 Warning(s). (0.0s)
+
+ArgLink SFX v1.11x         (c) 1993 Argonaut Software Ltd.
+
+Constructing Rom Image.
+Processing Externals.
+Sending Image.
+
+-------------------------------------------------------------------------------
+| Publics: 4067   Externs: 34808  Files: 13     Blocks: 186   Rom Size: 1023K |
+| Hash Chains: 970        Dos Memory:    0K            Extended Memory: 1829K |
+-------------------------------------------------------------------------------
+

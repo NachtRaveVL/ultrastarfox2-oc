@@ -82,14 +82,20 @@ hmissile2AP	equ	4
 missile2HP	equ	2		
 missile2AP	equ	4		
 phazerAP	equ	1		
-elaserAP	equ	2			
-playerbeamAP	equ	3
 enemylaserAP	equ	2		
 plasmaAP	equ	10		
 HplasmaAP	equ	10		
 nukeAP	equ	8		; on each object.
 nukeRATE	equ	200		;
 nukeMAXRADIUS	equ	7000		;
+
+	IFEQ	cesdemo-1
+elaserAP	equ	4	
+playerbeamAP	equ	5
+	ELSEIF		
+elaserAP	equ	2
+playerbeamAP	equ	3
+	ENDC	
 
 ;-----------------------------------------------------------------------------
 ; MOVING ENEMY.
@@ -850,40 +856,14 @@ frm128	equ	127
 
 make_sflag		MACRO
 
-curr_sflag	=	1<<sflag_bitnum
+asf_\1	=	1<<(sflag_bitnum-(sflag_bitnum/8)*8)
 
+wsf_\1	=	sflag_bitnum/8+1
 
-	IFGE	sflag_bitnum-24
-	IFLE	sflag_bitnum-31
-asf_\1	equ	curr_sflag>>24
-wsf4_\1	equ	curr_sflag
-	ENDC
-	ENDC
-
-	IFGE	sflag_bitnum-16
-	IFLE	sflag_bitnum-23
-asf_\1	equ	curr_sflag>>16
-wsf3_\1	equ	curr_sflag
-	ENDC
-	ENDC
-
-	IFGE	sflag_bitnum-8
-	IFLE	sflag_bitnum-15
-asf_\1	equ	curr_sflag>>8
-wsf2_\1	equ	curr_sflag
-	ENDC
-	ENDC
-
-	IFLE	sflag_bitnum-7
-asf_\1	equ	curr_sflag
-wsf1_\1	equ	curr_sflag
-	ENDC
-	
-
-
-	IFEQ	sflag_bitnum-32
+	IFEQ	sflag_bitnum-56
 	error	<Too many SFLAGS>
 	ENDC
+
 
 sflag_bitnum	=	sflag_bitnum+1
 		ENDM	
@@ -902,7 +882,7 @@ sflag_bitnum	=	0
 
 	make_sflag	colldisable		; * collsion detection disable.
 	make_sflag	Lcollide		; * last collide.
-	make_sflag	smflag1			; strategy macro flag.
+;	make_sflag	smflag1			; strategy macro flag.
 	make_sflag	noexpsnd		; no explosion sound.
 	make_sflag	sflag1			; 
 	make_sflag	sflag2			; 
@@ -913,19 +893,50 @@ sflag_bitnum	=	0
 	make_sflag	sflag6			; 
 	make_sflag	sflag7			; 
 	make_sflag	realobj			;
-	make_sflag	lockon			; 
+;	make_sflag	lockon			; 
 	make_sflag	nohitaffect
-	make_sflag	nopolyexp
+	make_sflag	whooshobject		; does this object whoosh by?
 	make_sflag	sameshapecollide
 
 	make_sflag	playerobj
 	make_sflag	donesnd
-	make_sflag	relexplode
+	make_sflag	specialbomb	;relexplode
 	make_sflag	invisible
 	make_sflag	childobj
 	make_sflag	sflag8
 	make_sflag	motherobj
 	make_sflag	Cspecial		; 
+	make_sflag	player2
+
+	make_sflag	view1			; in view #1?
+	make_sflag	view2			; in view #2?
+	make_sflag	ontheground		; on the ground
+	make_sflag	notslope		; not a slope object
+	make_sflag	nohitflash		; hit flash disabled?
+	make_sflag	whichside_player1	; used by WhenThrough
+	make_sflag	whichside_player2	; used by WhenThrough
+	make_sflag	sflag9
+
+	make_sflag	sflag10
+	make_sflag	removewithmother	; if mother's removed so's this object
+	make_sflag	dontexplode		; no explosion when dead
+	make_sflag	locked			; this object is locked onto another
+	make_sflag	removeme		; remove this object next frame
+	make_sflag	nohitaffect_really	; *really* make the object invincible
+	make_sflag	insidecockpit		; this object (player) is inside cockpit
+	make_sflag	olsobj			; order list system object
+
+;;	make_sflag	inertwhenmotherdead	; become an inert when mum dead
+	make_sflag	fireobj			; this object is on fire
+	make_sflag	pathobj			; this object is a path object
+	make_sflag	hitbyplayer1		; object hit by player 1
+	make_sflag	hitbyplayer2		; object hit by player 2
+	make_sflag	active			; active during demo?
+	make_sflag	noviewcheck		; no view range checking
+	make_sflag	passsound		; do pass sound or not
+	make_sflag	simpleobj		; this object has no strategies
+
+	make_sflag	quadvel			; quadruple velocity (paths)
 
 ; N.B. flags with *'s must be within the first 8 flags
 
@@ -945,9 +956,9 @@ acf_colltype5		equ	128	; friend type 1
 colltype_laser		equ	acf_colltype1
 colltype_enemy1	equ	acf_colltype2
 colltype_enemy2	equ	acf_colltype3
-colltype_enemyweap	equ	acf_colltype4
+colltype_enemyweap	equ	acf_colltype4!colltype_enemy1
 colltype_friend	equ	acf_colltype5
-colltype_Zenemy	equ	acf_colltype6
+colltype_object	equ	acf_colltype6
 
 
 ;---------------------------------------------------------------------------
@@ -959,40 +970,314 @@ gasf_killtype3	equ	4
 gasf_flag1	equ	8
 
 weaphdr	=	1
+
+
+;
+;e_pn_3of8 : 8 places x,y,z
+pn_1of8_x		=	2000
+pn_1of8_y		=	0
+pn_1of8_z		=	4500
+
+pn_2of8_x		=	2000
+pn_2of8_y		=	0
+pn_2of8_z		=	1000
+
+pn_3of8_x		=	-500
+pn_3of8_y		=	0
+pn_3of8_z		=	2000
+
+pn_4of8_x		=	-4900
+pn_4of8_y		=	0
+pn_4of8_z		=	2000
+
+pn_5of8_x		=	04900
+pn_5of8_y		=	0
+pn_5of8_z		=	-2000
+
+pn_6of8_x		=	500
+pn_6of8_y		=	0
+pn_6of8_z		=	-2000
+
+pn_7of8_x		=	-2000
+pn_7of8_y		=	0
+pn_7of8_z		=	-1000
+
+pn_8of8_x		=	-2000
+pn_8of8_y		=	0
+pn_8of8_z		=	-4500
+
+
+;e_ri_3of8 : 8 places x,y,z
+
+ri_1of8_x		=	3500
+ri_1of8_y		=	-200
+ri_1of8_z		=	2000
+
+ri_2of8_x		=	0500
+ri_2of8_y		=	-300
+ri_2of8_z		=	2000
+
+ri_3of8_x		=	-2000
+ri_3of8_y		=	-250
+ri_3of8_z		=	2000
+
+ri_4of8_x		=	2000
+ri_4of8_y		=	-250
+ri_4of8_z		=	-2000
+
+ri_5of8_x		=	-0500
+ri_5of8_y		=	-300
+ri_5of8_z		=	-2000
+
+ri_6of8_x		=	-3500
+ri_6of8_y		=	-200
+ri_6of8_z		=	-2000
+
+ri_7of8_x		=	1500
+ri_7of8_y		=	-300
+ri_7of8_z		=	0
+
+ri_8of8_x		=	-1500
+ri_8of8_y		=	-300
+ri_8of8_z		=	0
+
+
+;e_ka_3of8 : 8 places x,y,z
+
+ka_1of8_x		=	-2000
+ka_1of8_y		=	00
+ka_1of8_z		=	4500
+
+ka_2of8_x		=	2000
+ka_2of8_y		=	00
+ka_2of8_z		=	2000
+
+ka_3of8_x		=	4900
+ka_3of8_y		=	2000
+ka_3of8_z		=	2000
+
+ka_4of8_x		=	-2000
+ka_4of8_y		=	00
+ka_4of8_z		=	1000
+
+ka_5of8_x		=	2000
+ka_5of8_y		=	00
+ka_5of8_z		=	-1000
+
+ka_6of8_x		=	-4900
+ka_6of8_y		=	00
+ka_6of8_z		=	-2000
+
+ka_7of8_x		=	-2000
+ka_7of8_y		=	00
+ka_7of8_z		=	-2000
+
+ka_8of8_x		=	2000
+ka_8of8_y		=	00
+ka_8of8_z		=	-4500
+
+;----------5 of 16 
+;kakashi
+prk_1of16_kx		=	-5100
+prk_1of16_ky		=	0
+prk_1of16_kz		=	5100
+
+prk_2of16_kx		=	-2000
+prk_2of16_ky		=	0
+prk_2of16_kz		=	4900
+
+prk_3of16_kx		=	2000
+prk_3of16_ky		=	0
+prk_3of16_kz		=	4900
+
+prk_4of16_kx		=	5100
+prk_4of16_ky		=	0
+prk_4of16_kz		=	5100
+
+prk_5of16_kx		=	-4900
+prk_5of16_ky		=	0
+prk_5of16_kz		=	2000
+
+prk_6of16_kx		=	-2000
+prk_6of16_ky		=	0
+prk_6of16_kz		=	2000
+
+prk_7of16_kx		=	2000
+prk_7of16_ky		=	0
+prk_7of16_kz		=	2000
+
+prk_8of16_kx		=	4900
+prk_8of16_ky		=	0
+prk_8of16_kz		=	2000
+
+prk_9of16_kx		=	-4900
+prk_9of16_ky		=	0
+prk_9of16_kz		=	-2000
+
+prk_10of16_kx	=	-2000
+prk_10of16_ky	=	0
+prk_10of16_kz	=	-2000
+
+prk_11of16_kx	=	2000
+prk_11of16_ky	=	0
+prk_11of16_kz	=	-2000
+
+prk_12of16_kx	=	4900
+prk_12of16_ky	=	0
+prk_12of16_kz	=	-2000
+
+prk_13of16_kx	=	-5100
+prk_13of16_ky	=	0
+prk_13of16_kz	=	-5100
+
+prk_14of16_kx	=	-2000
+prk_14of16_ky	=	0
+prk_14of16_kz	=	-4900
+
+prk_15of16_kx	=	2000
+prk_15of16_ky	=	0
+prk_15of16_kz	=	-4900
+
+prk_16of16_kx	=	5100
+prk_16of16_ky	=	0
+prk_16of16_kz	=	-5100
+
+;paneru
+
+prk_1of16_px		=	0
+prk_1of16_py		=	0
+prk_1of16_pz		=	2000
+
+prk_2of16_px		=	0
+prk_2of16_py		=	0
+prk_2of16_pz		=	-2000
+
+prk_3of16_px		=	-4000
+prk_3of16_py		=	0
+prk_3of16_pz		=	2000
+
+prk_4of16_px		=	-4000
+prk_4of16_py		=	0
+prk_4of16_pz		=	-2000
+
+prk_5of16_px		=	4000
+prk_5of16_py		=	0
+prk_5of16_pz		=	2000
+
+prk_6of16_px		=	4000
+prk_6of16_py		=	0
+prk_6of16_pz		=	-2000
+
+prk_7of16_px		=	-4500
+prk_7of16_py		=	0
+prk_7of16_pz		=	4500
+
+prk_8of16_px		=	-2000
+prk_8of16_py		=	0
+prk_8of16_pz		=	4000
+
+prk_9of16_px		=	2000
+prk_9of16_py		=	0
+prk_9of16_pz		=	4000
+
+prk_10of16_px	=	-2000
+prk_10of16_py	=	0
+prk_10of16_pz	=	1000
+
+prk_11of16_px	=	2000
+prk_11of16_py	=	0
+prk_11of16_pz	=	1000
+
+prk_12of16_px	=	-2000
+prk_12of16_py	=	0
+prk_12of16_pz	=	-1000
+
+prk_13of16_px	=	2000
+prk_13of16_py	=	0
+prk_13of16_pz	=	-1000
+
+prk_14of16_px	=	-2000
+prk_14of16_py	=	0
+prk_14of16_pz	=	-4000
+
+prk_15of16_px	=	2000
+prk_15of16_py	=	0
+prk_15of16_pz	=	-4000
+
+prk_16of16_px	=	4500
+prk_16of16_py	=	0
+prk_16of16_pz	=	-4500
+
+;ring
+
+prk_1of16_rx		=	0
+prk_1of16_ry		=	-300
+prk_1of16_rz		=	2000
+
+prk_2of16_rx		=	0
+prk_2of16_ry		=	-300
+prk_2of16_rz		=	-2000
+
+prk_3of16_rx		=	-4000
+prk_3of16_ry		=	-250
+prk_3of16_rz		=	2000
+
+prk_4of16_rx		=	-4000
+prk_4of16_ry		=	-250
+prk_4of16_rz		=	-2000
+
+prk_5of16_rx		=	4000
+prk_5of16_ry		=	-250
+prk_5of16_rz		=	2000
+
+prk_6of16_rx		=	4000
+prk_6of16_ry		=	-250
+prk_6of16_rz		=	-2000
+
+prk_7of16_rx		=	-2000
+prk_7of16_ry		=	-350
+prk_7of16_rz		=	3000
+
+prk_8of16_rx		=	2000
+prk_8of16_ry		=	-350
+prk_8of16_rz		=	3000
+
+prk_9of16_rx		=	-3000
+prk_9of16_ry		=	-250
+prk_9of16_rz		=	2000
+
+prk_10of16_rx	=	3000
+prk_10of16_ry	=	-250
+prk_10of16_rz	=	2000
+
+prk_11of16_rx	=	-1500
+prk_11of16_ry	=	-250
+prk_11of16_rz	=	0
+
+prk_12of16_rx	=	1500
+prk_12of16_ry	=	-250
+prk_12of16_rz	=	0
+
+prk_13of16_rx	=	-3000
+prk_13of16_ry	=	-250
+prk_13of16_rz	=	-2000
+
+prk_14of16_rx	=	3000
+prk_14of16_ry	=	-250
+prk_14of16_rz	=	-2000
+
+prk_15of16_rx	=	-2000
+prk_15of16_ry	=	-350
+prk_15of16_rz	=	-3000
+
+prk_16of16_rx	=	2000
+prk_16of16_ry	=	-350
+prk_16of16_rz	=	-3000
+
+
+
+
 	include	weapons.inc
 
-; Dylan's scale equates
-boss00_scale	=	2
-kichi0_scale	=	6
-kichi0_door	=	-10<<kichi0_scale
-slot_scale	=	2
-
-kichi2_scale	=	3
-kichi2_len	=	49<<kichi2_scale
-
-flingbosswidth	=	40
-armlength	=	80
-sprout_maxy	=	80
-
-; mapmacs
-tsize	=	200
-dirEAST	=	deg270
-dirNORTH	=	deg0
-dirWEST	=	deg90
-dirSOUTH	=	deg180
-
-
-; shapes
-stunnwidth	=	80
-stunnheight	=	100
-iris_h	=	60
-iris_w	=	90
-iris_boxz	=	50
-
-
-
-
-
-
-
+	include	scalevar.inc
 

@@ -1,6 +1,7 @@
 safeinidisptop	equ	1
 
-	incpublics	main.ext
+	incpub	main
+
 
 initialise_l
 
@@ -8,42 +9,67 @@ initialise_l
 	a8
 
 	lda	#40
-	sta	fox			; hack to allow check for fox's hp
+	sta	fox		; hack to allow check for fox's hp
 	sta	frog
 	sta	bunny
 	sta	cock
 	sta	pepper
 	sta	andorf
-
+;========================== kawaguchi params ==============================
+	shorta
+	i16
+	phb
+	db7e
+;* game (1p) continue *
+	ifeq	kexplain
+	km_setmistotalflag	explain1
+	elseif
+	km_clrmistotalflag	explain1
+	endc
+;* Mission Map Saisyo no BGM Sound *
+	km_setval	kw_mmBGM,kbgm_stg1
+;* player HP *
+	jsl	playerstatus_init_l
+	
+;* hdma table ( for window) (!! NOT !! HV-SCROLL)*
+	km_stxval	hdmawindowon,$FF00
+	km_stxval	hdmawindowon+2,$FF00
+	km_stxval	hdmawindowoff,$0001
+	km_stxval	hdmawindowoff+2,$0001
+	plb
+;=====================================================================
 	jsl	playerstart_init_l
 	jsl	initplanets_l
 
 	ai16
-	stz	boss_ptr
-	stz	specptr
 	stz	specialobjtotal
 
-	lda	#allcolscru&WM		;uncrunch colours and copy up
-	sta.l	m_enddata
-	lda	#$1000
-	sta.l	m_decaddr
-	lda	#0
-	sta.l	m_decoffset
-	a8
-	lda	#allcolscru>>16
-	sta.l	m_enddatabnk
-	lda	#mdecrunch>>16
-	ldx	#mdecrunch&WM
-	jsl	runmario_l
+;	lda	#allcolscru&WM		;uncrunch colours and copy up
+;	sta.l	m_enddata
+;	lda	#$1000
+;	sta.l	m_decaddr
+;	lda	#0
+;	sta.l	m_decoffset
+;	a8
+;	lda	#allcolscru>>16
+;	sta.l	m_enddatabnk
+;	lda	#mdecrunch>>16
+;	ldx	#mdecrunch&WM
+;	jsl	runmario_l
 
-	a16
-	ldx	#0
-.lp	lda.l	$701000,x
-	sta.l	gamepalettes,x
-	inx
-	inx
-	cpx	#8192
-	bne	.lp
+;	a16
+;	ldx	#0
+;.lp	lda.l	$701000,x
+;	sta.l	gamepalettes,x
+;	inx
+;	inx
+;	cpx	#__totpallen
+;	bne	.lp
+
+	a8
+	km_setgameflag	debug
+
+	fast
 
 	plp
 	rtl
@@ -51,6 +77,7 @@ initialise_l
 initgame_l
 	php
 	phb
+;-- db 0 ---
 	a8
 	lda	#0
 	pha
@@ -65,11 +92,33 @@ initgame_l
 	sta	inidisp
 	stz	fadedir
 	stz	fade
+	lda	#0
+	sta.l	cockpit_transferred
 
+;* kono wait wa 1 fram matte h-dma ga subete owaruno wo matu !! *
 	waitdma	110
 	waitdma	100	; turn off screen and wait for sync
 
+	lda	#mmaxdust
+	sta	stardustkazu
+
+;* irq flag clear *
+;;;;	stz	trans_flag
+	stz	trans_flag2
+
 	ai16
+	lda	#MAXMAPRANGE
+	sta.l	maxmaprangestore
+
+	lda	#-10000
+	sta	stardustheight
+
+	lda	#1
+	sta.l	m_particlesON
+
+	stz	olslptr
+	stz	olsobjs_num
+	stz	olsobj_dead
 	stz	levelfinished
 	stz	circleanim
 	stz	mapcnt
@@ -79,11 +128,85 @@ initgame_l
 	lda	#1
 	sta.l	m_meters
 	stz	levelfinished
-	stz	cont0l
-	stz	sdgpt3
-	stz	sdspt3
-	stz	sdpck3
+;------------------------------------------------------------------
+;(KAWAGUCHI Parameters)
+	a8i16
+	PHB
+	db7e
+	km_bitcheckgameflag	battle
+	bne	.battle
+;=============================
+.MISSION
+	shorta
+	longi
+;* syori *
+	km_setgamesyori	main
+;* Flag *
+	a16
+	km_setgameflag		keydisable	;[GAME FLAG]
+	km_clrgameflag		areaout		;[GAME FLAG]
+	km_clrmissionflag	parallel	;[MISSION FLAG]
 
+;* radar scale *
+	km_setval	kx_radarscale,scale_ground	;1dot = 128 (gamelist.inc)
+;* Game Timer *
+	km_setval	kx_GameTmAdd,0
+	km_setval	kx_GameTmSub,missgftm	;1 hour time = 10 second
+	km_setval	kx_EnStratTm,enstrattm	;enemy stratage timer
+	km_setval	kw_Gametimer,0		;Game ni kakatta time
+	a8
+;* sprite display wait (for mission) *
+	km_setval	sprdispwait,3
+	brl	.COMMON
+;=============================
+.BATTLE
+	shorta
+	longi
+;* Game Timer *
+	km_stxval	kw_GameTimer,2*60+2
+
+;**** player states ****
+;* player HP *
+	jsl	playerstatus_init_l
+
+;* player1 *
+;---- ring out -----
+	km_plheapptr	1,x
+	km_setval	KRingOutSecTm,second,x		; 1 sec time (15)
+	s_set_alvar	B,x,KRingOutTimer,#ROIntTm  	; Set Init Time(10)
+;* player 2 *
+;---- ring out -----
+	km_plheapptr	2,x
+	km_setval	KRingOutSecTm,second,x		; 1 sec time (15)
+	s_set_alvar	B,x,KRingOutTimer,#ROIntTm  	; Set Init Time(10)
+;=============================
+.COMMON
+	km_setval.l	coltimer_2,3
+	km_setval.l	coltimermax_2,3
+	PLB
+;------------------------------------------------------------------
+;(Yajima's Parameter)
+	jsl	clear_YJgameparam_l
+;------------------------------------------------------------------
+;(Kawagoe's Parameters)
+	stz	demoflag
+	a16
+	stz	player1_horizon_offset
+	stz	player2_horizon_offset
+	stz	player1hscroll_offset
+	stz	player2hscroll_offset
+	a8
+;------------------------------------------------------------------
+;* (Dylan Parameters) *
+	a16
+	km_setval.l	bossmaxhp,0
+	a8
+	lda	#0
+	sta.l	m_meters
+	stz	gameframe
+;---------------------------------------------------
+	jsl	setscreentype_l
+;---------------------------------------------------
 	a8
 	lda	#1
 	sta	sheildon
@@ -93,1305 +216,94 @@ initgame_l
 	stz	restartcol
 	stz	onecredspr
 	stz	doneacircle
-	stz	windowmode
+	stz	windowmode1
+	stz	windowmode2
 	stz	nosetport3
 	stz	pausesnd
 	stz	sdpck3
 	stz	prttraining
 
+	lda	#-1
+	sta	CurrentArea
+	sta	SecondaryArea
+	stz	NumAreas
+	lda	#0
+	sta.l	MessageCount
+
 	jsl	kill_list_l	; format alien list
 	jsl	initmem_l
 
+	jsl	mapsysteminit_l
+	a8
 	lda	mapbank
-	pha
+	pha			;>>>> PUSH Map Bank
 
 	lda.l	mapbase+2	; set up player's objects
 	sta	mapbank
 	ai16
 	lda	mapptr
-	pha
+	pha			;>>>> PUSH Map Address
 	lda.l	mapbase
 	tax
+
+	stz	playpt1
+	stz	playpt2
+
+	lda	screenmode
+	bit	#sm_noplayer
+	bne	.noplayerobjs
+
 	jsl	newobjs_l		;add player
 
-	a8
+.noplayerobjs
+	a8i16
 	jsl	initgame_strats_l	;initialise game
-
 	i16
-	plx
-	pla
+	plx			;<<<< PULL Map Address
+	pla			;<<<< PULL Map Bank
 	sta	mapbank
 	a16
 	stz	levelfinished
 	stx	mapptr
+
 	jsl	newobjs_l		; set new map going
 
 	jsl	initgame3d_l
-
 	jsl	find_window_pri_l
 
 	plb
 	plp
 	rtl
 
+;-------------------------------------------------------------------------
+
 initgame3d_l
 	php
+	ai8
+;	jsr	gameclipwindow
 	a16
 	lda	#$1234
 	sta.l	m_particlerand	
 	lda	#1
 	sta.l	m_clrbitmaps
-	jsl	initscreen_l
+	jsl	screensetup_l
 	a8
 	lda	#deg180
 	sta	roty
 	lda	#-1
 	sta	mariocode
 	stz	trans_flag
-	ai8
-	jsr	gameclipwindow
 	jml	init3d1
 
 
 
-gamestart
-	ai8
-	jsl	initgame_l
-gameloop2
-
-	a8
-;	lda	foxyfoxy
-;	beq	.nofox
-;	stz	foxyfoxy
-;	jsl	foxy_continue_l
-;	jml	planetseq_l
-;.nofox
-
-	a8
-	lda	singlestep
-	bne	.nopause
-	lda	pshipflags
-	bit	#psf_noctrl
-	bne	.nopause
-	lda	bossflags
-	and	#bf_dying
-	bne	.nopause
-	lda	pstratflags
-	and	#pstf_notdie
-	bne	.nopause
-
-	lda	cont0l
-	bit	#key_start
-	beq	.nopause
-	jsr	dopause
-.nopause
-	jsl	setblack_l
-	jsl	stratdebug_l
-	jsl	transfer_l		;transfer bitmap, do strats etc.
-	jsl	friends_messages_l
-
-	a16
-	lda	levelfinished
-	lbeq	gameloop2
-
-	cmp	#le_gameover
-	lbeq	gameover_l
-
-	inc	stage
-
-	a8
-	lda	#1
-	sta	doingend
-	stz	crosshairon
-
-;---------------------------------------------------------------------
-	lda	levelfinished
-	cmp	#le_fadedown
-	beq	exitspec.dofadedown
-	cmp	#le_bhole1
-	beq	exittobhole1
-	cmp	#le_bhole2
-	beq	exittobhole2
-	cmp	#le_bhole3
-	beq	exittobhole3
-	cmp	#le_special
-	beq	exittospecial
-	cmp	#le_enterbhole
-	beq	enterbhole
-	cmp	#le_enterspec
-	beq	exitspec.white
-
-	jsr	end_level_seq
-
-	a8
-	lda	levelfinished
-	cmp	#le_startgame
-	bne	.noplanets
-	stz	doingend
-	jml	gamestart
-.noplanets
-	shorta
-	lda	levelfinished
-	cmp	#le_endofgame
-	lbeq	end_game_seq
-exitspec
-
-.wait
-.dofadedown	local
-	a8
-
-	lda	doneacircle
-	bne	.exit
-
-	lda	levelfinished
-	cmp	#le_fadetowhite
-	bne	.black
-
-.white	local
-	a8
-	lda	#40
-.lp1	pha
-	jsl	fadewhite_l	
-	jsl	transfer_l
-	a8
-	pla
-	dec	a
-	bne	.lp1
-
-.black	fadedown
-.lp	jsl	transfer_l
-	a8
-	lda	fadedir
-	bne	.lp
-
-.exit	a8
-	stz	doingend
-	jml	planetseq_l
-
-
-
-;--------------------------------------------------------------------
-	shorta
-	longi
-exittobhole1	routechange	bhole1
-	bra	gotobholeplanets
-exittobhole2	routechange	bhole2
-	bra	gotobholeplanets
-exittobhole3	routechange	bhole3
-	bra	gotobholeplanets
-exittospecial	routechange	1
-gotobholeplanets
-enterbhole
-	a8i16
-	ldx	specptr
-	lda	#101
-	sta	specbuf,x
-	inx
-	stx	specptr
-	stz	doingend
-	jml	planetseq_l
-
-
-
-;--------------------------------------------------------------------
-setpath	macro
-	jsr	setthepath
-	endm
-
-
-gameover_l	
-
-	jsl	gameoverinit_l
-
-	a8i16
-
-	bgm	gameover
-	stz	defaulttrain
-	lda	#0
-	sta.l	contexit
-
-	jsl	bg_gameover_1
-	decclear
-
-	lda	#1
-	sta	fadedir
-	sta	bg2vofsoverride
-	a16
-	stz	bg2hofsreq
-	lda	#32
-	sta	bg2vofsreq
-
-	lda	#50
-.lp2	pha
-	jsr	setbg23toblack
-	jsl	setblack_l
-	jsl	transfer_l
-	a16
-	pla
-	dec	a
-	bne	.lp2
-
-	a8
-	stz	trig0
-	a16
-	lda	#60*20
-.lp4	pha
-.lp	jsr	fadehalf2norm
-	jsl	setblack_l
-	jsl	transfer_l
-	a8i16
-	window_addr	halffade
-	lda	wm_val,x
-	bne	.lp
-	a8
-	testkeydown	start
-	bne	.ps
-	a16
-	pla
-	dec	a
-	bne	.lp4
-
-.ps
-	a8
-	lda	#-1
-	sta	fadedir
-.lp3	jsr	fadehalf2norm
-	jsl	setblack_l
-	jsl	transfer_l
-	a8
-	untilfaded .lp3
-
-	a8
-	stz	bg2vofsoverride
-	lda	#1
-	sta	defaulttrain
-	lda	#1
-	sta.l	contexit
-
-	jsl	foxy_continue_l
-	jml	planetseq_l
-
-
-end_game_seq
-	a8i16
-	lda	#0
-	sta.l	m_meters
-
-	ifeq	1
-	lda	#100
-	sta	specbuf
-	lda	#15
-	sta	specbuf+1
-	lda	#101
-	sta	specbuf+2
-	lda	#101
-	sta	specbuf+3
-	lda	#70
-	sta	specbuf+4
-	lda	#33
-	sta	specbuf+5
-	lda	#6
-	sta	specptr
-	endc
-
-
-	ai16
-	lda	#-550
-	sta	vram1addr
-	lda	#msg_1
-	sta	vram1len
-	stz	vram2addr
-	lda	#1
-	sta	vram2len
-	stz	vram3addr
-
-
-	a8
-	lda	#200
-	sta	c_type
-
-stagescore	a16
-	dec	vram2len
-	lbne	.skip
-	ldx	vram2addr
-	cpx	specptr
-	lbeq	.skip
-
-	lda	#30
-	sta	vram2len
-
-	lda	#msg_stage
-	ldx	#-500
-	ldy	vram1addr
-	jsr	makeendobj
-	setpath
-
-	lda	vram1len
-	ldx	#000
-	ldy	vram1addr
-	jsr	makeendobj
-	setpath
-	inc	vram1len
-	inc	vram1len
-
-	ldx	vram2addr
-	lda	specbuf,x
-	inx
-	stx	vram2addr
-	and	#$ff
-	sta	tpa
-	asl	a
-	asl	a
-	clc
-	adc	tpa
-	clc
-	adc	#msg_00&WM
-	ldx	#600
-	ldy	vram1addr
-	jsr	makeendobj
-	setpath
-
-	lda	vram1addr
-	clc
-	adc	#200
-	sta	vram1addr
-
-	inc	vram3addr
-	inc	vram3addr
-
-.skip
-	a8
-	lda	c_type
-	cmp	#200
-	beq	.nod
-	dec	c_type
-.nod
-	jsl	transfer_l
-	a8
-	lda	c_type
-	cmp	#201
-	lbne	stagescore
-
-	jsr	maketotalscore
-
-	a16
-	lda	#80
-.lp	pha
-	jsl	transfer_l
-	a16
-	pla
-	dec	a
-	bne	.lp
-
-	a8
-	lda	#le_endtotalscore
-	sta	levelfinished
-
-	a16
-	lda	#400-30
-.lp2	pha
-	jsl	transfer_l
-	a16
-	pla
-	pha
-	cmp	#15
-	bcs	.nnn
-	a8
-	lda	#-1
-	sta	fadedir
-	a16
-.nnn	pla
-	dec	a
-	bne	.lp2
-
-	jsl	endseq_l
-
-	a8i16
-	bgm	staff
-	lda	#creditsmap>>16
-	ldx	#creditsmap&$7fff
-	sta	mapbank
-	stx	mapptr
-	jsl	initgame_l
-	stz	levelfinished
-.lp3	jsl	setblack_l
-	jsl	transfer_l
-	a8
-	lda	levelfinished
-	cmp	#le_endofcreds
-	bne	.lp3
-
-	jsr	maketotalscore2
-
-.lp4	jsl	transfer_l
-	bra	.lp4
-
-
-
-	shorta
-	longi
-setthepath	php
-	a8
-	phx
-	ldx	vram3addr
-	jmp	(.tab,x)
-.tab	dw	.1&WM
-	dw	.2&WM
-	dw	.3&WM
-	dw	.4&WM
-	dw	.5&WM
-	dw	.6&WM
-	dw	.7&WM
-	dw	.8&WM
-	dw	.9&WM
-	dw	.10&WM
-	dw	.11&WM
-.1	plx
-	s_set_path	x,stage1
-	lda	#1
-	jmp	checkifiamend
-.2	plx
-	s_set_path	x,stage2
-	lda	#2
-	jmp	checkifiamend
-.3	plx
-	s_set_path	x,stage3
-	lda	#3
-	jmp	checkifiamend
-.4	plx
-	s_set_path	x,stage4
-	lda	#4
-	jmp	checkifiamend
-.5	plx
-	s_set_path	x,stage5
-	lda	#5
-	jmp	checkifiamend
-.6	plx
-	s_set_path	x,stage6
-	lda	#6
-	jmp	checkifiamend
-.7	plx
-	s_set_path	x,stage7
-	lda	#7
-	jmp	checkifiamend
-
-.8	plx
-	s_set_path	x,total
-	plp
-	rts
-.9	plx
-	s_set_path	x,totaln
-	plp
-	rts
-.10	plx
-	s_set_path	x,ave
-	plp
-	rts
-.11	plx
-	s_set_path	x,aven
-	plp
-	rts
-
-	shorta
-	longi
-checkifiamend
-	cmp	specptr
-	jne	.ok
-	lda	#30
-	sta	c_type
-.ok	plp
-	rts
-
-;------------------------
-maketotalscore
-	a8
-	lda	#1
-	sta	c_type
-
-	ai16
-	lda	#14
-	sta	vram3addr
-
-	jsr	calctotalscore
-	lda	tpa
-	sta.l	m_x1		;divisor
-	lda	specptr
-	sec
-	sbc.l	hadabumhole
-	sta.l	m_y1		;dividend
-	call_mario	mkrisdivu3115
-	lda.l	m_x1		;quotient
-	sta	kval1
-	asl	a
-	asl	a
-	clc
-	adc	kval1
-	clc
-	adc	#msg_00&WM
-	pha
-
-
-	lda	#msg_total&WM
-	ldx	#0
-	ldy	#-1600
-	jsr	makeendobj
-	setpath
-	a16
-	inc	vram3addr
-	inc	vram3addr
-	lda	#25
-.wait	pha
-	jsl	transfer_l
-	a16
-	pla
-	dec	a
-	bne	.wait
-
-	a16
-	jsr	calctotalscore
-	lda	tpa
-	sta	cla2
-	lda	#-200
-	sta	cla1
-	lda	cla2
-	ldx	#-1
-.sub100	inx
-	sec
-	sbc	#100
-	jns	.sub100
-	clc
-	adc	#100
-	sta	cla2
-	txa
-	ora	#0
-	je	.sub10do
-	ldx	#-300
-	ldy	#-1400
-	jsr	makeendobjn
-	setpath
-.sub10do	lda	cla2
-	ldx	#-1
-.sub10	inx
-	sec
-	sbc	#10
-	jns	.sub10
-	clc
-	adc	#10
-	sta	cla2
-	txa
-	ora	#0
-	ldx	#-150
-	ldy	#-1400
-	jsr	makeendobjn
-	setpath
-.sub1do	lda	cla2
-	ldx	#000
-	ldy	#-1400
-	jsr	makeendobjn
-	setpath
-	lda	#0
-	ldx	#150
-	ldy	#-1400
-	jsr	makeendobjn
-	setpath
-	lda	#0
-	ldx	#300
-	ldy	#-1400
-	jsr	makeendobjn
-	setpath
-
-	a16
-	inc	vram3addr
-	inc	vram3addr
-	lda	#25
-.wait2	pha
-	jsl	transfer_l
-	a16
-	pla
-	dec	a
-	bne	.wait2
-
-
-	lda	#msg_ave&WM
-	ldx	#0
-	ldy	#-850
-	jsr	makeendobj
-	setpath
-	inc	vram3addr
-	inc	vram3addr
-
-	lda	#25
-.wait3	pha
-	jsl	transfer_l
-	a16
-	pla
-	dec	a
-	bne	.wait3
-
-	pla
-	ldx	#0
-	ldy	#-650
-	jsr	makeendobj
-	setpath
-	inc	vram3addr
-	inc	vram3addr
-
-	a8
-	stz	c_type
-	a16
-.fail
-	rts
-
-	longa
-	longi
-calctotalscore_l
-	jsr	calctotalscore
-	rtl
-
-calctotalscore	stz	tpa		;add all special perc and print it *100
-	lda	#0
-	sta.l	hadabumhole
-	ldx	#0
-.addlp	cpx	specptr
-	beq	.addx
-	lda.l	specbuf,x
-	and	#$ff
-	cmp	#101
-	bne	.ok
-	lda.l	hadabumhole
-	inc	a
-	sta.l	hadabumhole
-	lda	#0
-.ok	clc
-	adc	tpa
-	sta	tpa
-	inx
-	bra	.addlp
-.addx	rts
-
-totalxpos	equ	500
-totalypos	equ	750
-totalzpos	equ	3600
-
-maketotalscore2
-	ai16
-	jsr	calctotalscore
-	lda	tpa
-	sta.l	m_x1		;divisor
-	lda	specptr
-	sec
-	sbc.l	hadabumhole
-	sta.l	m_y1		;dividend
-	call_mario	mkrisdivu3115
-	lda.l	m_x1		;quotient
-	sta	kval1
-	asl	a
-	asl	a
-	clc
-	adc	kval1
-	clc
-	adc	#msg_00&WM
-	pha
-
-
-	lda	#msg_total&WM
-	ldx	#totalxpos
-	ldy	#totalypos
-	jsr	makeendobj2
-	a16
-	lda	#10
-.wait	pha
-	jsl	transfer_l
-	a16
-	pla
-	dec	a
-	bne	.wait
-
-	a16
-	jsr	calctotalscore
-	lda	tpa
-	sta	cla2
-	lda	#-200
-	sta	cla1
-	lda	cla2
-	ldx	#-1
-.sub100	inx
-	sec
-	sbc	#100
-	jns	.sub100
-	clc
-	adc	#100
-	sta	cla2
-	txa
-	ora	#0
-	je	.sub10do
-	ldx	#totalxpos-300
-	ldy	#totalypos+150
-	jsr	makeendobjn2
-.sub10do	lda	cla2
-	ldx	#-1
-.sub10	inx
-	sec
-	sbc	#10
-	jns	.sub10
-	clc
-	adc	#10
-	sta	cla2
-	txa
-	ora	#0
-	ldx	#totalxpos-150
-	ldy	#totalypos+150
-	jsr	makeendobjn2
-.sub1do	lda	cla2
-	ldx	#totalxpos+0
-	ldy	#totalypos+150
-	jsr	makeendobjn2
-	lda	#0
-	ldx	#totalxpos+150
-	ldy	#totalypos+150
-	jsr	makeendobjn2
-	lda	#0
-	ldx	#totalxpos+300
-	ldy	#totalypos+150
-	jsr	makeendobjn2
-	a16
-	lda	#10
-.wait2	pha
-	jsl	transfer_l
-	a16
-	pla
-	dec	a
-	bne	.wait2
-
-
-	lda	#msg_ave&WM
-	ldx	#totalxpos
-	ldy	#totalypos+300
-	jsr	makeendobj2
-
-	a16
-	lda	#10
-.wait3	pha
-	jsl	transfer_l
-	a16
-	pla
-	dec	a
-	bne	.wait3
-
-	pla
-	ldx	#totalxpos+0
-	ldy	#totalypos+450
-	jsr	makeendobj2
-.fail
-	rts
-
-
-	longa
-	longi
-makenumt	asl	a		;*2
-	clc
-	adc	#msg_0&WM
-makenump	sta	kval1
-	a8
-	phb
-	lda	#$7e
-	pha
-	plb
-	ldx	allst
-	s_make_obj	#zaco_4,.fail
-	tyx
-	s_set_strat	x,patht_istrat
-	s_text_obj	x,kval1,#14
-	s_set_alvar	B,x,al_ty,#7
-	s_set_path	x,total
-	ldy		viewpt
-	s_copy_pos	x,y
-	a16
-	lda	al_worldx,x
-	clc
-	adc	cla1
-	sta	al_worldx,x
-	a8
-	s_add_alvar W,x,al_worldy,#1100
-	s_add_alvar W,x,al_worldz,#4000
-.fail	plb
-	a16
-	lda	cla1
-	clc
-	adc	#150
-	sta	cla1
-	rts
-
-
-	longa
-	longi
-makeendobjn	asl	a		;*2
-	clc
-	adc	#msg_0&WM
-makeendobj	sta	kval1
-	stx	ktpx
-	sty	ktpy
-	php
-	a8
-	phb
-	lda	#$7e
-	pha
-	plb
-	ldx		allst
-	s_make_obj	#zaco_4,.fail
-	tyx
-	s_set_strat	x,patht_istrat
-	s_text_obj	x,kval1,#3
-	s_set_alvar	B,x,al_ty,#3
-	s_set_path	x,total
-	ldy	viewtoobj	playpt
-	s_copy_pos	x,y
-	s_add_alvar W,x,al_worldx,ktpx
-	s_add_alvar W,x,al_worldy,ktpy
-	s_add_alvar W,x,al_worldz,#4000
-	a8
-.fail	plb
-	plp
-	rts
-
-	longa
-	longi
-makeendobjn2	asl	a		;*2
-	clc
-	adc	#msg_0&WM
-makeendobj2	sta	kval1
-	stx	ktpx
-	sty	ktpy
-	php
-	a8
-	phb
-	lda	#$7e
-	pha
-	plb
-	ldx		allst
-	s_make_obj	#zaco_4,.fail
-	tyx
-	s_set_strat	x,patht_istrat
-	s_text_obj	x,kval1,#5
-	s_set_alvar	B,x,al_ty,#3
-	s_set_path	x,fadeintotal
-	ldy	playpt
-	s_copy_pos	x,y
-	s_add_alvar W,x,al_worldx,ktpx
-	s_add_alvar W,x,al_worldy,ktpy
-	s_add_alvar W,x,al_worldz,#totalzpos
-.fail	a8
-	plb
-	plp
-	rts
-
-
-;----------------------------------------------------------------------------------------------
-nametxt	dw	bunnytxt&WM,cocktxt&WM,frogtxt&WM
-namepos	dw	15,96,173
-deadnamepos	dw	11,91,170
-namegfxpos	db	2,11*8
-	db	12,11*8
-	db	22,11*8
-
-calcstageperc	php
-	ai8				;take 7% of total killed for every friend alive and add to total killed
-	lda	#0
-	ldx	bunny
-	beq	.deadb
-	clc
-	adc	#5
-.deadb	ldx	frog
-	beq	.deadf
-	clc
-	adc	#5
-.deadf	ldx	cock
-	beq	.deadcock
-	clc
-	adc	#5
-.deadcock	ai16
-	and	#$ff
-	sta	tpa
-
-	a8
-	stz	stageclear
-
-;--------------------------------------
-	a16
-	lda	specialobjtotal
-	and	#$ff
-	beq	.zero
-	sta.l	m_y1
-	lda	specials_dead
-	and	#$ff
-	sta.l	m_x1
-	call_mario	mcalcperc
-	lda.l	m_x1
-.zero	clc
-	adc	tpa
-	cmp	#100
-	bcc	.n100
-	lda	#100
-.n100	sta	cla2
-	plp
-	rts
-
-
-end_level_seq	ai16
-	jsr	calcstageperc
-
-	lda	levelfinished
-	cmp	#le_endofgame
-	lbeq	finis1
-
-
-; what ALCS used are...
-;  cla1 - current percentage
-;  cla2 - target percentage
-;  clb1 - 0 = prt graph, 1=print bonus, 2=graph and credit sound and dec clb1,  3=graph and dec clb1
-;  clb2 - 1 = exit printing loop, 1 =  exit to planets, 2 = exit printing loop but display screen
-;  clam - 0 = increment cla1 to cla2 1=nothing 2=add value <>0 <>1 <>2 = decrement
-;  clbm - old total score
-;plotx1 - counter to display fox sprite and inc credit.
-
-	ai16
-	jsr	calctotalscore
-	lda	tpa
-	sta	clbm
-  
-	stz	cla1
-	stz	clb1
-	stz	clam
-	stz	plotx1
-printspeclp
-	jsl	transfer_l
-
-	ai16
-	clrmes	totalscoretxt,16,44	;total score
-	a16
-	jsr	calctotalscore
-	lda	tpa
-	sta.l	m_z1
-
-	lda	#176
-	sta.l	m_x1
-	lda	#39
-	sta.l	m_y1
-	call_mario mprtperc		;this subtracts 8 from x1 if >=100 and adds 8 if <10
-
-	call_mario mprt2zeros
-
-
-	lda	clb1
-	beq	.graph
-	dec	a
-	bne	.graph
-	clrmes	bonustxt,16,24		;print 'bonus...'
-	lda	plotx1
-	lbeq	.doneg
-	dec	a
-	sta	plotx1
-	cmp	#1
-	lbne	.doneg
-	a8
-	inc	credits
-	lda	#1
-	sta	onecredspr
-	a16
-	jmp	.doneg
-.graph
-	sta	clb1
-	cmp	#2			;bonus sound
-	bne	.nc
-	a8
-	trigse	01ah
-	a16
-	lda	#10
-	sta	plotx1
-.nc
-	clrmes	scoretxt,16,24
-
-	lda	#60
-	sta.l	m_x1
-	lda	#24
-	sta.l	m_y1
-	lda	cla1
-	sta.l	m_xp2
-	call_mario	mshowpercgraph
-
-	lda	#176
-	sta.l	m_x1
-	lda	#24
-	sta.l	m_y1
-	lda	cla1
-	sta.l	m_z1
-	call_mario	mprtperc
-
-	lda.l	m_x1
-	clc
-	adc	#4
-	sta.l	m_x1
-	lda	#percenttxt2&WM
-	sta.l	m_txtdata
-	call_mario	mprintstr
-.doneg
-
-	lda	clam			;no increment
-	bne	.ok
-	a8
-	trigse	$12
-	a16
-	lda	cla1
-	clc
-	adc	#3
-	sta	cla1
-	cmp	cla2
-	jl	.doneadd
-	lda	cla2
-	sta	cla1
-	lda	#20
-	sta	clam
-	bra	.doneadd
-.ok
-	cmp	#1
-	beq	.doneadd
-	dec	a
-	sta	clam
-	cmp	#2
-	bne	.doneadd
-	a8
-	trigse	011h
-	ldx	specptr			;add to buffer
-	lda	cla2
-	sta.l	specbuf,x
-	inx
-	stx	specptr
-	a16
-	jsr	checkbonus
-.doneadd
-
-;----------------
-	a16
-	clrmes	teamtxt,48,69		;print "shield of team mate"
-
-	ldx	#0
-	ldy	#0
-	lda	#11			;position
-	sta.l	m_x1
-	sta	ktpx
-.lp
-	longa
-	lda	#136
-	sta.l	m_y1
-	lda.w	friends_hp,y
-	and	#$ff
-	sta.l	m_z1
-	phx
-	a8
-	lda	#mshowteammate>>16
-	ldx	#mshowteammate&WM
-	jsl	runmario_l
-	plx
-
-	phx
-	a16
-	lda.l	m_z1
-	beq	.dead
-	lda.l	namepos,x		;print name
-	sta.l	m_x1
-	lda	#150
-	sta.l	m_y1
-	lda.l	nametxt,x
-	sta.l	m_txtdata
-	a8
-	lda	#mprintstr>>16
-	ldx	#mprintstr&WM
-	jsl	runmario_l
-	bra	.notdead
-.dead
-	longa
-	lda.l	namepos,x		;print name
-	sta.l	m_x1
-	lda	#137
-	sta.l	m_y1
-	lda.l	nametxt,x
-	sta.l	m_txtdata
-	a8
-	lda	#mprintstr>>16
-	ldx	#mprintstr&WM
-	jsl	runmario_l
-	a16
-	plx
-	phx
-	lda.l	deadnamepos,x		;print dead
-	sta.l	m_x1
-	lda	#151
-	sta.l	m_y1
-	lda	#deadtxt&WM
-	sta.l	m_txtdata
-	a8
-	lda	#mprintstr>>16
-	ldx	#mprintstr&WM
-	jsl	runmario_l
-.notdead	plx
-
-	phx
-
-	lda.l	namegfxpos,x
-	sta.l	m_bigx
-	lda.l	namegfxpos+1,x
-	sta.l	m_bigy
-	lda	#0
-	sta.l	m_bigx+1
-	sta.l	m_bigy+1
-
-	lda.w	friends_hp,y
-	bne	.stillalive
-	lda	gameframe
-	and	#1
-	a16
-	bne	.oneframe
-	lda	#facedata&WM+640*17
-	bra	.writeit
-.oneframe
-	lda	#facedata&WM+640*4
-	bra	.writeit
-.stillalive
-	a16
-	cpx	#0
-	beq	.bunny
-	cpx	#2
-	beq	.falco
-	lda	#facedata&WM+640*11
-	bra	.writeit
-.bunny	lda	#facedata&WM+640*7
-	bra	.writeit
-.falco	lda	#facedata&WM+640*9
-.writeit
-	sta.l	m_faceptr
-
-	call_mario	mcopyface
-
-	plx
-	a16
-	inx
-	inx
-	iny
-	lda.l	ktpx
-	clc
-	adc	#80
-	sta	ktpx
-	sta.l	m_x1
-	cpy	#3
-	lbne	.lp
-
-;	a16
-;	lda	#2000
-;.lll	dec	a
-;	bne	.lll
-
-	a8
-	lda	clb2
-	cmp	#0
-	lbeq	printspeclp
-
-.wait	a8
-	lda	clb2
-	cmp	#2
-	lbne	.exit
-	jsl	transfer_l
-	bra	.wait
-.exit
-	stz	onecredspr
-	rts
-
-finis1
-	ldx	specptr
-	lda	cla2
-	sta.l	specbuf,x
-	inx
-	stx	specptr
-	rts
-
-	longa
-	longi
-checkbonus	jsr	calctotalscore
-
-	ldx	#0
-.cklp	lda.l	bonertab,x
-	cmp	tpa
-	jbe	.hmm
-	inx
-	inx
-	bra	.cklp
-.hmm
-	cmp	clbm
-	jg	.set
-	rts
-.set	lda	#20			;wait 20 frames before bonus
-	sta	clb1
-	rts
-
-bonertab	dw	2100,1900,1700,1500,1300,1100,900,700,500,300,100,0
-
-
-
-
-
-;--------------------------------------------------------------------
-dopause	php
-	a8i16
-	lda	doingwipe
-	bne	.nop
-	lda	stayblack
-	cmp	#-1
-	bne	.nop
-	lda	#se_pauseon
-	sta	pausesnd
-	jsl	transfer_l		;transfer bitmap, do strats etc.
-	jsr	printpause
-	jsl	transfer_l		;transfer bitmap, do strats etc.
-	a8
-.wait	waitdma	100
-	lda	joy1h
-	bit	#key_start
-	bne	.wait
-.wait2	waitdma	100
-	lda	joy1h
-	bit	#key_start
-	beq	.wait2
-.wait3	waitdma	100
-	lda	joy1h
-	bit	#key_start
-	bne	.wait3
-	stz	cont0
-	stz	contl0
-	stz	cont0l
-	stz	contl0l
-	lda	#se_pauseoff
-	sta	pausesnd
-.nop	plp
-	rts
-
-
-printpause	ai16
-	lda	#90
-	sta.l	m_x1
-	lda	#90
-	sta.l	m_y1
-	lda	#pausetxt&WM
-	sta.l	m_txtdata
-	a8
-	lda	#mprintstr>>16
-	ldx	#mprintstr&WM
-	jsl	runmario_l
-	rts
+	IFEQ	1
 
 halfbg23	php
 	a8i16
 	phx
 
-	alloc_window	halffade
+	alloc_window	halffade,1
 	stz	wm_ts,x
 	lda	#2
 	sta	wm_cgswsel,x
@@ -1412,7 +324,7 @@ halfbg23	php
 fadehalf2norm	php
 	a8i16
 	phx
-	alloc_window	halffade
+	alloc_window	halffade,1
 	stz	wm_ts,x
 	lda	#2
 	sta	wm_cgswsel,x
@@ -1431,7 +343,7 @@ fadehalf2norm	php
 	plp
 	rts
 .done	
-	dealloc_window	halffade
+	dealloc_window	halffade,1
 	plx
 	plp
 	rts
@@ -1440,7 +352,7 @@ setbg23toblack
 	php
 	a8i16
 	phx
-	alloc_window	halffade
+	alloc_window	halffade,1
 	stz	wm_ts,x
 	lda	#2
 	sta	wm_cgswsel,x
@@ -1456,38 +368,7 @@ setbg23toblack
 	plp
 	rts
 
-
-dogameframe	php
-	a8i16
-.wait	lda	trans_flag
-	bne	.wait
-	lda	#2		;start screen transferring
-	sta	trans_flag
-	stz	framec
-.twait	lda	transbmp1
-	beq	.twait
-
-	jsl	clronehalf_l
-.twait2	lda	transbmp1
-	cmp	#2
-	bne	.twait2
-
-	stz	transbmp1
-	jsl	find_window_pri_l
-
-	jsl	dmahpos_l
-
-	ai16
-	lda	dotsflag
-	sta.l	m_dotsorstars
-	beq	.skip
-	jsl	mshowgrid_l
-.skip	jsl	showview_l
-	jsl	do_3d_display_l
-	plp
-	rts
-
-
+	ENDC
 
 *****************************************************************************
 *****************************************************************************
@@ -1496,353 +377,188 @@ dogameframe	php
 
 
 
-initscreen_l
-	ai8
-
-	disable
-
-	stz	nmitimen
-	stz	trans_flag
-	stz	fade
-
-	lda	timeupr		;clear IRQ's
-	a16
-	lda.l	mflags
-
-
-;Set Mario Chip for 16 colours 192 pixel high
-	lda	#gamemdm
-	sta	mario_draw_mode
-
-;clear video RAM
-	screen_off
-
-	stz	cgadd
-	stz	vmaddl
-	stz	vmaddh
-	lda	#$80
-	sta	inidisp
-	sta	vmainc
-
-;Clear VRAM
-	lda	#$00
-	ldx	#127
-.ly	ldy	#0
-.li	sta	vmdatal
-	sta	vmdatah
-	dey
-	bne	.li
-	dex
-	bne	.ly
-
-
-;Set screen to blank chars
-	ai16
-	lda	#vsc_base1
-	sta	vmaddl
-	lda	#gamenum_col*gamenum_row+1
-	ldx	#1024
-.cl	sta	vmdatal
-	dex
-	bne	.cl
-
-;Set character map 22 wide by 20 high
-	a8i16
-	jsl	setcharmapgame_l
-
-;Set double buffering (VRAM only)
-	i16
-	ldx	#vchr_base1
-	stx	vmap1
-	ldx	#vchr_base2
-	stx	vmap2
-	ldx	#bitmap1
-	stx	drawmap
-	ldx	#bitmap1
-	stx	showmap
-	lda	drawmap+1		;set mario draw base
-	lsr	a
-	lsr	a
-	sta	mscrbase
-
-;Set hardware pointers to screen
-	lda	vmap1+1
-	lsr	a
-	lsr	a
-	lsr	a
-	lsr	a
-	ora	#(vchr_physback>>12)<<4
-	sta	bg12nba
-
-	lda	#3
-	sta	objsel
-
-;Set bg screen base address'
-	lda	#vsc_base1>>8
-	sta	bg1sc
-	lda	#vsc_base2>>8+3
-	sta	bg2sc
-	lda	#2
-	sta	bgmode
-
-	jsl	calcbg2voffsets_l
-	jsl	dmabg2voffsets_l
-
-	a8i16
-	lda	#1
-	jsl	setpal_l
-	jsl	init_sprites_l
-	dmacgram	0,128,spritepal,256
-
-;Set window logic, position, size.
-	stz	w12sel
-	stz	w34sel		;wh0,1 set with hdma
-	lda	#%00100000
-	sta	wobjsel
-	stz	wbglog
-	lda	#%1100
-	sta	wobjlog
-	stz	tmw
-	stz	tsw
-	stz	wh0
-	stz	wh1
-
-	lda	#1+2+4+16
-	sta	tm
-	lda	#7
-	sta	ts
-
-;Setup HDMA tables
-;	a16
-;	ldx	#0
-;.loop	lda.l	hdma_start,x
-;	sta.l	xhdma_start,x
-;	inx
-;	inx
-;	cpx	#hdma_end-hdma_start
-;	bcc	.loop
-
-	jsl	setnoclash_l
-
-	a8
-	lda	#0		;inidisp
-	sta	ch1params
-	lda	#inidisp&$ff
-	sta	ch1addrb
-	ldx	#xhdma_inidisp&WM
-	stx	ch1addra1tl
-	lda	#xhdma_inidisp>>16
-	sta	ch1atbank
-	stz	ch1databank
-
-	lda	#%010		;bg2hofs
-	sta	ch2params
-	lda	#bg2hofs&$ff
-	sta	ch2addrb
-	ldx	#xhdma_bg2hofs1&WM
-	stx	ch2addra1tl
-	lda	#xhdma_bg2hofs1>>16
-	sta	ch2atbank
-	stz	ch2databank
-
-	lda	#1		;wh0
-	sta	ch3params
-	lda	#wh0&$ff
-	sta	ch3addrb
-	ldx	#xhdma_wh0wh1_1&WM
-	stx	ch3addra1tl
-	lda	#xhdma_wh0wh1_1>>16
-	sta	ch3atbank
-	stz	ch3databank
-
-	lda	#%010		;bg2vofs
-	sta	ch4params
-	lda	#bg2vofs&$ff
-	sta	ch4addrb
-	ldx	#xhdma_bg2vofs&WM
-	stx	ch4addra1tl
-	lda	#xhdma_bg2vofs>>16
-	sta	ch4atbank
-	stz	ch4databank
-
-	lda	#%11110
-	sta	hdmaen_gc
-
-	ldx	#xhdma_bg2hofs1&WM
-	stx	hdmabg2hofs1
-	ldx	#xhdma_bg2hofs2&WM
-	stx	hdmabg2hofs2
-
-	ldx	#xhdma_wh0wh1_1&WM
-	stx	hdmacirclebuf1
-	ldx	#xhdma_wh0wh1_2&WM
-	stx	hdmacirclebuf2
-	stz	whichcircle
-
-	jsl	clearhvofs_l
-
-;Enable key pad reading + hdma tables (includes inidisp)
-	a8
-	ldx	#gamevw_pos
-	stx	vtimel
-	ldx	#0
-	stx	htimel
-
-	lda	#$80
-	setinidisp1
-	sta	inidisp
-	stz	fade
-
-	lda	#%10	; just inidisp
-	sta	hdmaen
-
-	waitdma	190		;wait for HDMA to init.(inidisp)
-	waitdma	100		;wait for HDMA to init.(inidisp)
-
-
-	lda	rdnmir
-
-	lda	#%00110001
-	sta	nmitimen
-
-	lda	#255
-	sta	crosshairon
-
-	enable
-	rtl
-
-
-
-setcharmapfrommap_l
-	php
-	disable
-	jsl	setcharmapgame_l
-	enable
-	plp
-	rtl
-
-SetCharMapgame_l
-	a8
-	phb
-	lda	#0
-	pha
-	plb
-	lda	#128
-	sta	vmainc
-	ai16
-	lda	#vsc_base1+32*gameStRow		;128
-	sta	vmaddl
-	lda	#1024*pal3d
-	ldy	#0
-.lolv
-	pha
-	lda	#gamenum_col*gamenum_row+(6<<10)+(1<<13)
-	rept	(32-gamenum_col)/2		;clear out borders
-	sta	vmdatal
-	endr
-	pla
-
-	ldx	#0
-.lolh	sta	vmdatal
-	clc
-	adc	#gamenum_row
-	inx
-	cpx	#gamenum_col
-	bne	.lolh
-
-	pha
-	lda	#gamenum_col*gamenum_row+(6<<10)+(1<<13)
-	rept	(32-gamenum_col)/2
-	sta	vmdatal
-	endr
-	pla
-
-	sec
-	sbc	#gamenum_col*gamenum_row-1
-	iny
-	cpy	#gamenum_row
-	bne	.lolv
-
-	lda.l	m_meters
-	and	#255
-	beq	.nometers
-
-	lda	#vsc_base1+24*32+3	;damage
-	sta	vmaddl
-	lda	#46+(2<<10)+(1<<13)
-	sta	vmdatal
-	lda	#vsc_base1+24*32+4
-	sta	vmaddl
-	lda	#70+(2<<10)+(1<<13)
-	sta	vmdatal
-	lda	#vsc_base1+24*32+5
-	sta	vmaddl
-	lda	#94+(2<<10)+(1<<13)
-	sta	vmdatal
-	lda	#vsc_base1+24*32+6	;******************
-	sta	vmaddl
-	lda	#118+(2<<10)+(1<<13)
-	sta	vmdatal
-	lda	#vsc_base1+24*32+7
-	sta	vmaddl
-	lda	#142+(2<<10)+(1<<13)
-	sta	vmdatal
-
-	lda	#vsc_base1+24*32+22+2	;boost
-	sta	vmaddl
-	lda	#550+(2<<10)+(1<<13)
-	sta	vmdatal
-	lda	#vsc_base1+24*32+23+2
-	sta	vmaddl
-	lda	#574+(2<<10)+(1<<13)
-	sta	vmdatal
-	lda	#vsc_base1+24*32+24+2
-	sta	vmaddl
-	lda	#598+(2<<10)+(1<<13)
-	sta	vmdatal
-	lda	#vsc_base1+24*32+25+2
-	sta	vmaddl
-	lda	#622+(2<<10)+(1<<13)
-	sta	vmdatal
-	lda	#vsc_base1+24*32+26+2
-	sta	vmaddl
-	lda	#646+(2<<10)+(1<<13)
-	sta	vmdatal
-
-.nometers
-
-	ldx	#((gamenum_col*gamenum_row)*16)+vchr_base1
-	stx	vmaddl
-	ldx	#-1
-	ldy	#16
-.lp	stx	vmdatal
-	dey
-	bne	.lp
-
-	ldx	#((gamenum_col*gamenum_row)*16)+vchr_base2
-	stx	vmaddl
-	ldx	#-1
-	ldy	#16
-.lp2	stx	vmdatal
-	dey
-	bne	.lp2
-	plb
-	a8
-	rtl
+	IFEQ	1
 
 	shorta
 	shorti
 gameclipwindow_l
 	jsr gameclipwindow
 	rtl
+
 gameclipwindow
+	a16
+	test_screenmode	training
+	lbne	.training
+	test_screenmode	3dglasses
+	lbne	.3dglasses
+	test_screenmode	onescreen
+	lbeq	.twoscreen
+	test_screenmode	cockpit
+	lbeq	.nocock		; you said it
+	
+	movi	0,clx1
+	movi	bitmapwidth_1c*8-1,clx2
+	movi	0,cly1
+	movi	bitmapvheight_1c*8-1,cly2
+	movi	bitmapwidth_1c*4,vanishx
+	movi	bitmapvheight_1c*4,vanishy
+
+	lda	#bitmapvheight_1c*8
+	sta	screenvheight
+	lda	#bitmapheight_1c*8
+	sta	screenheight
+	lda	#bitmapwidth_1c*8
+	sta	screenwidth
+	lda	#player1_wx_1c
+	sta	screen3dxpos_1
+	lda	#player1_wy_1c
+	sta	screen3dypos_1
+
+	lda	#pal3d<<10
+	sta	screen3dpalette_1
+	lda	#(0<<10)!(1<<13)	; set priority and palette 7 for blanking char
+	sta	blankpalette
+
+	brl	.setem
+.3dglasses
+	movi	0,clx1
+	movi	bitmapwidth_3d*8-1,clx2
+	movi	0,cly1
+	movi	bitmapvheight_3d*8-1,cly2
+	movi	bitmapwidth_3d*4,vanishx
+	movi	bitmapvheight_3d*4,vanishy
+
+	lda	#bitmapvheight_3d*8
+	sta	screenvheight
+	lda	#bitmapheight_3d*8
+	sta	screenheight
+	lda	#bitmapwidth_3d*8
+	sta	screenwidth
+	lda	#player1_wx_3d
+	sta	screen3dxpos_1
+	lda	#player1_wy_3d
+	sta	screen3dypos_1
+
+	lda	#1<<10
+	sta	screen3dpalette_1
+	lda	#3<<10
+	sta	screen3dpalette_2
+	lda	#(7<<10)!(1<<13)	; set priority and palette 7 for blanking char
+	sta	blankpalette
+	brl	.setem
+
+.training
+	movi	0,clx1
+	movi	bitmapwidth_tr*8-1,clx2
+	movi	0,cly1
+	movi	bitmapvheight_tr*8-1,cly2
+	movi	bitmapwidth_tr*4,vanishx
+	movi	bitmapvheight_tr*4,vanishy
+
+	lda	#bitmapvheight_tr*8
+	sta	screenvheight
+	lda	#bitmapheight_tr*8
+	sta	screenheight
+	lda	#bitmapwidth_tr*8
+	sta	screenwidth
+	lda	#player1_wx_tr
+	sta	screen3dxpos_1
+	lda	#player1_wy_tr
+	sta	screen3dypos_1
+
+	lda	#pal3d<<10
+	sta	screen3dpalette_1
+	lda	#(0<<10)!(1<<13)	; set priority and palette 7 for blanking char
+	sta	blankpalette
+
+	brl	.setem
+
+.nocock
 	movi 0,clx1
-	movi gamenum_col*8-1,clx2
+	movi bitmapwidth_1*8-1,clx2
 	movi 0,cly1
-	movi gamenum_row*8-1,cly2
-	movi gamenum_col*4,vanishx
-	movi gamenum_row*4,vanishy
+	movi bitmapvheight_1*8-1,cly2
+	movi bitmapwidth_1*4,vanishx
+	movi bitmapvheight_1*4,vanishy
+
+	lda	#bitmapvheight_1*8
+	sta	screenvheight
+	lda	#bitmapheight_1*8
+	sta	screenheight
+	lda	#bitmapwidth_1*8
+	sta	screenwidth
+	lda	#player1_wx_1
+	sta	screen3dxpos_1
+	lda	#player1_wy_1
+	sta	screen3dypos_1
+
+	lda	#pal3d<<10
+	sta	screen3dpalette_1
+	lda	#(0<<10)!(1<<13)	; set priority and palette 7 for blanking char
+	sta	blankpalette
+
+	bra	.setem
+.twoscreen
+	movi 0,clx1
+	movi bitmapwidth*8-1,clx2
+	movi 0,cly1
+	movi bitmapvheight*8-1,cly2
+	movi bitmapwidth*4,vanishx
+	movi bitmapvheight*4,vanishy
+
+	lda	#bitmapvheight*8
+	sta	screenvheight
+	lda	#bitmapheight*8
+	sta	screenheight
+	lda	#bitmapwidth*8
+	sta	screenwidth
+	lda	#player1_wx
+	sta	screen3dxpos_1
+	lda	#player1_wy
+	sta	screen3dypos_1
+	lda	#player2_wx
+	sta	screen3dxpos_2
+	lda	#player2_wy
+	sta	screen3dypos_2
+
+	lda	#pal3d<<10
+	sta	screen3dpalette_1
+	lda	#pal3d<<10
+	sta	screen3dpalette_2
+	lda	#(7<<10)!(1<<13)	; set priority and palette 7 for blanking char
+	sta	blankpalette
+
+.setem
+	a16
+	lda	screenheight
+	sta.l	m_screenheight
+	lda	screenvheight
+	sta.l	m_screenvheight
+	lda	screenwidth
+	sta.l	m_screenwidth
+	lda	screen3dxpos_1
+	sta.l	m_screen3dxpos_1
+	lda	screen3dxpos_2
+	sta.l	m_screen3dxpos_2
+	lda	screen3dypos_1
+	sta.l	m_screen3dypos_1
+	lda	screen3dypos_2
+	sta.l	m_screen3dypos_2
+
+	lda	screen3dpalette_1
+	sta.l	m_screen3dpalette_1
+	lda	screen3dpalette_2
+	sta.l	m_screen3dpalette_2
+	lda	blankpalette
+	sta.l	m_blankpalette
+
+	lda	screenmode
+	sta.l	m_screenmode
+	a8
 	rts
+
+	ENDC
+
 
 clearhvofs_l
 	php
@@ -1896,18 +612,20 @@ setpal_l	php
 	bne	.loop
 	plp
 	rtl
-
+;-------------------------------------------------------------------------
 setgamepal_l	php
 	phb
 	ai16
+;Acc :Game Palette Pointer
+
 	and #$ff
 	xba
 	lsr a
 	lsr a
-	lsr a
+	lsr a		;* 32 (1 palette no length)
 	tax
 
-	disable
+;;;	disable
 	a8
 	lda	#$7e
 	pha
@@ -1916,15 +634,16 @@ setgamepal_l	php
 	ldy	#0
 	a16
 .loop	lda.l	paladdr,x
-	sta.w	gamepalbuff&WM,y
-	sta.w	pal0palette+7*32,y
+;;	sta.w	gamepalbuff&WM,y
+;;	sta.w	pal0palette+7*32,y
+	sta.w	kx_palette&WM+7*32,y
 	inx
 	inx
 	iny
 	iny
 	cpy	#32
 	bne	.loop
-	enable
+;;;;	enable
 	plb
 	plp
 	rtl
@@ -1968,44 +687,6 @@ alienflags_l
 ;	s_jmp_alsflag		y,invisible,.nextal
 
 	a16
-	lda.w	al_shape,y
-	stx	tpa
-	tax
-	lda.l	sh_zmax,x
-	ldx	tpa
-	adc.l	dl_z,x
-	bpl	.dontkill
-
-
-; kill the alien if its z is behind the view
-	a8
-	lda.w	al_flags,y
-	and	#~affrontpl
-	sta.w	al_flags,y
-
-	s_test_var	B,gameflags,#gf_nozremove
-	bne	.dontkill	
-;	s_jmp_varAND		B,gameflags,#gf_nozremove,.dontkill
-
-	test_alcollflags	y,acf_firstframe
-	bne	.dontkill
-	lda.w	al_type,y
-	and	#atzremove
-	beq	.dontkill
-	phx
-	tyx
-	ldy	_next,x
-	jsl	removedeadal_l
-	a16
-	pla
-	clc
-	adc	#dl_sizeof
-	tax
-	tya
-	bra	.killed
-
-
-.dontkill	a16
 	lda.l	dl_x,x
 	bpl	.right
 .left	lda.w	al_flags,y
@@ -2712,150 +1393,6 @@ drawlistexit
 
 
 
-;---------------------------------------------------------------------------------------------------------
-fadepalto_l	ai16
-	ldy	palnum
-	bne	.do
-	rtl
-.do
-	ldx	palfade
-	ldy	palnum
-
-	lda.l	seapal,x
-	sta.w	pal0palette+4*32,y
-
-	dec	palfade
-	dec	palfade
-	dec	palnum
-	dec	palnum
-	rtl
-
-
-palgoto_l	a8
-	lda	pshipflags2
-	and	#psf2_playerHP0
-	beq	.set
-	rtl
-.set
-	lda	fadepal
-	bne	.fadeit
-	rtl
-.fadeit	dec	a
-	sta	fadepal
-
-	ai16
-	ldx	palfrom
-	ldy	palto
-	lda	pallen
-.lp
-	pha
-	lda.w	pal0palette,y
-	and	#%111110000000000
-	sta	tpa
-	lda.l	mist2col,x
-	and	#%111110000000000
-	cmp	tpa
-	beq	.skipb
-	bcs	.incb
-.decb	lda	tpa
-	sec
-	sbc	#%000010000000000
-	bra	.skipb
-.incb	lda	tpa
-	clc
-	adc	#%000010000000000
-.skipb	sta	tpx
-
-	lda.w	pal0palette,y
-	and	#%1111100000
-	sta	tpa
-	lda.l	mist2col,x
-	and	#%1111100000
-	cmp	tpa
-	beq	.skipg
-	bcs	.incg
-.decg	lda	tpa
-	sec
-	sbc	#%0000100000
-	bra	.skipg
-.incg	lda	tpa
-	clc
-	adc	#%0000100000
-.skipg	sta	tpy
-
-	lda.w	pal0palette,y
-	and	#%11111
-	sta	tpa
-	lda.l	mist2col,x
-	and	#%11111
-	cmp	tpa
-	beq	.skipr
-	bcs	.incr
-.decr	lda	tpa
-	dec	a
-	bra	.skipr
-.incr	lda	tpa
-	inc	a
-.skipr	ora	tpx
-	ora	tpy
-	sta.w	pal0palette,y
-
-	iny
-	iny
-	inx
-	inx
-	pla
-	dec	a
-	lbne	.lp
-	rtl
-
-fadered_l	php
-	phy
-	phx
-	phb
-
-	a8
-	lda	#0
-	pha
-	plb
-
-	
-	ai16
-	ldy	#0
-	lda	#8*16
-.lp
-	pha
-	lda.w	pal0palette,y
-	and	#%111111111100000
-
-	sta	tpx
-	lda.w	pal0palette,y
-	and	#%11111
-	cmp	#3
-	ja	.ok
-	ora	#3
-.ok
-	asl	a
-	cmp	#31
-	bcc	.nsh
-	lda	#31
-.nsh	and	#%11111
-	ora	tpx
-	sta.w	pal0palette,y
-	iny
-	iny
-	pla
-	dec	a
-	bne	.lp
-.out
-	lda	#0
-	sta	pal0palette+6*32+30
-
-	plb
-	plx
-	ply
-	plp
-	rtl
 
 makeBG2black_l
 	phx
@@ -2868,15 +1405,6 @@ makeBG2black_l
 	plx
     	rtl
 
-
-seapal	dw $0000,$34c0,$38e0,$3d00,$4120,$4540,$4960,$4d80
-	dw $51a0,$55c0,$59e0,$5e00,$6220,$6640,$6a60,$6e80
-groundpal	dw $0000,$0088,$00c9,$04ea,$090b,$0d2c,$114d,$156e
-	dw $198f,$1db0,$21d1,$25f2,$2a13,$2e34,$3255,$3676
-mist2col	inccolfile	data\gfx\mist.col,6,8
-daycol	inccolfile	data\gfx\bg2-c.col,1,2
-	inccolfile	data\gfx\bg2-c.col,5,6
-gameoverpal	inccolfile	data\gfx\over_d.col,7,8
 
 ;---------------------------------------------------------------------------
 
@@ -2895,11 +1423,11 @@ setinidisp1_l
 setnoclash_l
 	php
 	a8
-	lda	#95
+	lda	#99
 	sta.l	xinidisp1-1
-	lda	#45
+	lda	#49
 	sta.l	xinidisp2-1
-	lda	#50
+	lda	#58
 	sta.l	xinidisp1a-1
 	plp
 	rtl
@@ -2908,14 +1436,62 @@ screenoff_l
 	php
 	a8i16
 	stz	hdmaen
+	stz	trans_flag
+	waitdma	150
+	waitdma	140	; wait for it all to take effect
 	lda	#$80
 	sta	inidisp
 	setinidisp1
-	waitdma	150
-	waitdma	140	; wait for it all to take effect
 	plp
 	rtl
 
 
+;---------------------------------------------------------------------------
 
+
+batabata_name	db	" MOTH GLIDER ",0
+dandou_name		db	" PLANET MISSILE ",0
+sos_0_name		db	" NIGHT FANG ",0
+taigun_name		db	" HAL BIRD ",0
+sos_1_name		db	" SKULL TOAD ",0
+jyouge_name		db	" GOLD STAR ",0
+demo_senkan_name	db	" CANNON BETRAYER ",0
+dragon_name		db	" MIRAGE DRAGON ",0
+wolf_name		db	" THE WOLF TEAM ",0
+andorf_name		db	" ANDORF",0
+andross_name		db	" ANDROSS",0
+
+enkin_name		db	" SKY KICKER ",0
+baramiss_name	db	" SPREAD MISSILE ",0
+virus_name		db	" BRAIN SPOILER ",0
+speed_name		db	" SPIRAL KITE ",0
+baku_name		db	" CANNON BOMBER ",0
+ninja_name		db	" TEKTRON ",0
+stepup_0_name	db	" HUNTER FANTRON ",0
+
+gattai_name		db	" TURTLE MISSILE ",0
+toge_name		db	" STATION MISSILE ",0
+kuru0_name		db	" THE SPINNERS ",0
+sos_2_name		db	" METAL BOOMERANG ",0
+crusher_name		db	" SPACE BLADE ",0
+suisei_name		db	" ASTROPOLIS ",0
+jyouge_1_name	db	" PRISON BOW ",0
+
+name_algy	db	"ALGY",0
+name_pigma	db	"PIGMA",0
+name_leon	db	"LEON",0
+name_wolf	db	"WOLF",0
+name_kani	db	"QUEEN DRAGOON",0
+name_kama	db	"KAMANTIS",0
+name_fantron	db	"H.FANTRON",0
+name_tectron	db	"TEKTRON",0
+name_mirage	db	"MIRAGE DRAGON",0
+name_knight	db	"KNIGHT NACK",0
+name_kick	db	"KICK GUNNER",0
+name_yoyo	db	"HEAVY CHARIOT",0
+
+name_tako	db	"QUEEN DIORAY",0
+name_runner	db	"TAL KONG",0
+name_crusher	db	"SPACE BLADE",0
+name_dodora	db	"KING DODORA",0
 

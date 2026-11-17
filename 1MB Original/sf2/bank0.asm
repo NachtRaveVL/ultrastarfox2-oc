@@ -1,46 +1,13 @@
 	include	header.inc
 	include	shmacs.inc
 
-
 	include	stratmac.inc
 	include	stratlib.inc
 
-	include	stratrou.ext
-	include	game.ext
-	include	world.ext
-	include	main.ext
-	include	draw.ext
-;	include	blink.ext
-	include	mario.ext
-	include	mother.ext
-	include	sound.ext
-	include	trans.ext
-	include	sprites.ext
-	include	windows.ext
+	include	mmacs.mc
+	include	marioi.inc
 
-
-	include	gstrats.ext
-	include	dstrats.ext
-	include	kstrats.ext
-	include	d2strats.ext
-	include	gastrats.ext
-	include	ga2strats.ext
-	include	gbstrats.ext
-	include	gb2strats.ext
-	include	gb3strats.ext
-	include	gistrats.ext
-	include	gcstrats.ext
-	include	pstrats.ext
-	include	pistrats.ext
-	include	pcstrats.ext
-	include	expstrat.ext
-
-	include	coltabs.ext
-	include	bootnmi.ext
-	include	colboxes.ext
-	include	paths.ext
-	include	mem.ext
-	include	endseq.ext
+	include	pathmacs.inc
 
 ;------------------------------------
 	bank	0		;Bank 0
@@ -52,29 +19,36 @@
 	incfile	sgtabs.asm
 	incfile	sgdata.asm
 
-	incfile	data\arctan.asm
-
-
 	incfile	istrats.asm
 
 Do_HDR	=	1
+	INCPUB	shapes
+
 	incfile	ushapes.asm
+	incfile	pshapes.asm
+	incfile	pshapes2.asm
+	incfile	pshapes3.asm
 	incfile	shapes.asm
 	incfile	shapes2.asm
-	incfile	shapes3.asm
-	incfile	pshapes.asm
-	incfile	shapes4.asm
-	incfile	shapes5.asm
-	incfile	kshapes.asm
-Do_HDR	=	0
+	incfile bshapes.asm
+	incfile wshapes.asm
+	incfile eshapes.asm
+	incfile eshapes2.asm
 
 
-	incfile	d3strats.asm
+;------------------------------------------------------------
+; relocated mario chip routines:
 
-	public	bgandpcr
-	inccru	bgandpcr,data\and.pcr
+;	mario_on
+;	mario_off
+;------------------------------------------------------------
 
-start	jmp.l	startboot
+
+
+start	sei
+	clc
+	xce
+	jmp.l	startboot
 
 
 cop_ve
@@ -87,19 +61,44 @@ break_vn
 abort_vn
 	rti
 
+
 	bankend	0
 
-	org	$00ffc0,$7fc0
+	org	$00ffb0,$7fb0
+
+    db    $30,$31,$58,$4a,$20,$20,$00,$00 ; 01XJ
+    db    $00,$00,$00,$00,$00,$06,$00,$00
+
+	run	" db %q%$version_name%q"
 
 	IFEQ	JANGLISH
 
-	db	"STAR FOX             "
-	db	$20,$13,$a,$0,$1,$1,$0,$ff,$ff,$0,$0
+	IFEQ	PAL
+; american
+	db	$20,$15,$0a,$0,$1,$33,$0,$ff,$ff,$0,$0
+	ELSEIF
+
+	IFEQ	GERMAN+FRENCH
+; british
+	db	$20,$15,$0a,$0,$2,$33,$0,$ff,$ff,$0,$0
+
+	ENDC
+
+	IFNE	GERMAN
+; german
+	db	$20,$15,$0a,$0,$9,$33,$0,$ff,$ff,$0,$0
+	ENDC
+
+	IFNE	FRENCH
+; france
+	db	$20,$15,$0a,$0,$6,$33,$0,$ff,$ff,$0,$0
+	ENDC
+
+	ENDC
 
 	ELSEIF
 
-	db	"STAR FOX             "
-	db	$20,$13,$a,$0,$0,$1,$0,$ff,$ff,$0,$0
+	db	$20,$15,$0a,$0,$0,$33,$0,$ff,$ff,$0,$0
 
 	ENDC
 
@@ -124,10 +123,9 @@ abort_vn
 
 
 
-
 ;------------------------------------
 
 
 	include	tail.inc
-
-
+
+

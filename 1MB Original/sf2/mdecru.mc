@@ -41,11 +41,6 @@ call	macro
 
 
 
-m_enddata	equ	m_x1
-m_enddatabnk	equ	m_x2
-m_decaddr	equ	m_y1
-m_decoffset	equ	m_y2
-m_decend	equ	m_tr1
 
 rdest	equr	1
 rd0h	equr	2
@@ -359,5 +354,5 @@ mdecclear
 
 
 
-
-
+
+

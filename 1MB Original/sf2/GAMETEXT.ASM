@@ -1,3 +1,5 @@
+	IFEQ	1
+
 	IFEQ	GERMAN
 pausetxt	TXT	14,<PAUSED>
 	ELSEIF
@@ -47,6 +49,9 @@ cesmintxt	TXT	2,<m>
 cessectxt	TXT	2,<s>
 scoretxt2	TXT	2,<score>
 
+shieldbonustxt	TXT	14,<SHIELD BONUS    X1OO>
+bombbonustxt		TXT	14,<BOMB BONUS      X1OOO>
+
 ;-------------------------------------------------------------------
 
 helpsnd	=	0
@@ -83,6 +88,6 @@ msgnum	=	1
 
 messages	include	msgs.txt
 
-
+	ENDC
 
 

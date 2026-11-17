@@ -34,8 +34,9 @@ rtyi		equr	r5
 ;---------------------------------------------------------------
 
 
-
 mdrawsprite32
+
+	IFEQ	1
 
 	ibt	r0,#textureaddrtab>>16
 	romb
@@ -78,10 +79,10 @@ mdrawsprite32
 
 
 	ibt	r0,#-16
-	lms	rsprx,[mspr_x]
+	lm	rsprx,[mspr_x]
 	to	rsprx
 	add	rsprx
-	lms	rspry,[mspr_y]
+	lm	rspry,[mspr_y]
 	to	rspry
 	add	rspry
 
@@ -123,7 +124,7 @@ mdrawsprite32
 	stop
 	nop
 
-
+	ENDC
 
 ;--------------------------------------------------------------
 ; musprite
@@ -137,16 +138,22 @@ mdrawsprite32
 ;--------------------------------------------------------------
 
 musprite
+	mcall	musprite_m
+	nop
+	stop
+	nop
+musprite_m
 	miwt	rsp,m_stack
+	mpush	r11
 
 	ibt	r0,#textureaddrtab>>16
 	romb
 	sub	r0
 	cmode
 
-	lms	r0,[mspr_x]
+	lm	r0,[mspr_x]
 	sms	[m_sprx],r0
-	lms	r0,[mspr_y]
+	lm	r0,[mspr_y]
 	sms	[m_spry],r0
 
 	ibt	r1,#16
@@ -154,7 +161,7 @@ musprite
 	mult	r1
 	colour
 
-	iwt	r2,#32
+	iwt	r2,#128
 	lms	r1,[msprite]
 	from	r1
 	lob
@@ -165,8 +172,9 @@ musprite
 .firstsprbank
 	or	#1<<3
 	cmode
-	
-	from	r1
+
+	ibt	r0,#127
+	and	r1
 	umult	#3
 	iwt	r1,#textureaddrtab&WM
 	to	r14
@@ -185,7 +193,8 @@ musprite
 	nop
 
 	mrpix
-	stop
+
+	mpop	r15
 	nop
 
 
@@ -228,10 +237,10 @@ mssprite
 
 ; calculate centre position
 
-	iwt	r0,#128
+	iwt	r0,#0	;128
 	lms	r3,[m_bigz]
 	sub	r3
-	bpl	.exit2			; if (z < 128) exit
+	bpl	.exit2			; if (z < zplane) exit
 	nop
 
 	mcache
@@ -243,6 +252,10 @@ mssprite
 ;	lms	r12,[m_scale]
 ;	with	r1
 ;	umult	r12
+
+;	lm	r0,[m_globalscale]
+;	to	r1
+;	mult	r1
 
 	lms	r12,[m_shift]
 	moves	r12,r12
@@ -267,7 +280,7 @@ mssprite
 
 	move	r1,#1
 .tisok
-
+	
 
 
 ;	ibt	r2,#0		; r2 = 0 (unused)
@@ -364,7 +377,8 @@ musprite_entry_nopush
 	inc	r3
 	sms	[m_clipleft],r3	; left clip = -size of char
 
-	iwt	r3,#28*8-1
+	lms	r3,[m_xright]
+;	iwt	r3,#28*8-1
 	with	r3
 	sub	r1
 	sms	[m_clipright],r3 ; right clip = 28*8-size of char
@@ -396,7 +410,8 @@ musprite_entry_nopush
 .noabsleftclip
 
 ; right clip
-	iwt	r3,#28*8-1
+	lms	r3,[m_xright]
+;	iwt	r3,#28*8-1
 	cmp	r3
 ;	bmi	.noabsrightclip
 	bpl	.exit3
@@ -525,7 +540,8 @@ musprite_entry_nopush
 
 ; inner loop for right clipping
 
-	iwt	r0,#28*8-1
+	lms	r0,[m_xright]
+;	iwt	r0,#28*8-1
 	move	r12,rtemp2
 	move	r13,r15
 
@@ -552,7 +568,8 @@ musprite_entry_nopush
 .yloop
 
 ; y clip
-	iwt	r0,#192
+	lms	r0,[m_ybot]
+;	iwt	r0,#192
 	sub	r2
 	bcc	.outofplot
 	nop
@@ -654,7 +671,7 @@ mfast_projectpnt
 
 	from	rx		; x = (x * 32767/z) >> 15
 	fmult
-	rol
+;	rol
 ;	ibt	rx,#mvanishx	; add vanishx
 	lms	rx,[m_vanishx]
 
@@ -665,7 +682,7 @@ mfast_projectpnt
 
 	from	ry		; y = (y * 32767/z) >> 15
 	fmult
-	rol
+;	rol
 ;	ibt	ry,#mvanishy	; add vanishy
 	lms	ry,[m_vanishy]
 
@@ -676,8 +693,9 @@ mfast_projectpnt
 
 	from	r5		; y = (y * 32767/z) >> 15
 	fmult
-	to	r5
-	rol
+	move	r5,r0
+;	to	r5
+;	rol
 
 	jmp	r11
 	nop	
@@ -741,7 +759,8 @@ rxinctmp	equr	11
 
 	move	r13,rtemp2
 
-	miwt	r0,28*8-1
+	lms	r0,[m_xright]
+;	miwt	r0,28*8-1
 	to	r6
 	sub	rtemp
 	
@@ -814,7 +833,8 @@ rxinctmp	equr	11
 	bmi	.outofplot
 	nop
 
-	iwt	r0,#191
+	lms	r0,[m_ybot]
+;	iwt	r0,#191
 	sub	r2
 ;	mlbmi	.outofplot
 ;	mlbmi	.finished
@@ -858,7 +878,8 @@ rxinctmp	equr	11
 ; inner loop for last pixel
 
 	move	rxinc,r0
-	iwt	r0,#28*8-1
+	lms	r0,[m_xright]
+;	iwt	r0,#28*8-1
 
 .rightcliploop
 .reptplot2
@@ -1093,8 +1114,6 @@ mfontwidth	equ	mfontheight
 
 msprint
 
-	printf	mlargesspr-mssprite,"%n"
-	printf	msprint-mssprite,"%n"
 
 
 	mpush	r11
@@ -1154,11 +1173,11 @@ msprint
 	mcall	mprojectpnt
 	nop
 
-	iwt	r0,#mvanishx
+	lms	r0,[m_vanishx]
 	with	r1
 	sub	r0
 
-	iwt	r0,#mvanishy
+	lms	r0,[m_vanishy]
 	with	r2
 	sub	r0
 
@@ -1203,7 +1222,7 @@ msprint
 	inc	r3
 	sms	[m_clipleft],r3	; left clip = -size of char
 
-	iwt	r3,#28*8
+	lms	r3,[m_xright]
 	with	r3
 	sub	r1
 	sms	[m_clipright],r3 ; right clip = 28*8-size of char
@@ -1240,7 +1259,7 @@ msprint
 ; y clip
 	moves	r2,r2
 	mlbmi	.outofplot
-	iwt	r0,#191
+	lms	r0,[m_ybot]
 	cmp	r2
 	mlbmi	.outofplot
 ; y loop set up
@@ -1286,8 +1305,6 @@ msprint
 .noabsleftclip
 
 	lms	rtemp,[m_clipright]
-	dec	rtemp
-	dec	rtemp
 	with	rtemp
 	cmp	r1
 	bmi	.outofplot	; if out of clipping boundary stop
@@ -1603,13 +1620,16 @@ facey	=	21*8
 
 mcopyface
 
+	IFEQ	1
+
 	sub	r0
 	ramb
-	ibt	r0,#facedata>>16
+	ibt	r0,#cm_cgx>>16
 	romb
 	mcache
 
 ; r4 = bitmap1+facex*col_size+facey*4
+
 	lms	r4,[m_bigx]
 	iwt	r0,#col_size/4
 	umult	r4
@@ -1654,11 +1674,111 @@ mcopyface
 	bne	.looptohere
 	nop
 
+	ENDC
+
 	stop
 	nop
 
 
+;컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴�
+; Draws a friends face at m_x1,m_y1 (face sprite is m_spra)
+;컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴�
 
+mDisplayFace_l
+
+	link	#4
+	iwt	r15,#mDisplayFace_s&WM
+	nop
+	lm	r8,[m_rtl+2]	; << return long bank	 >>
+	lm	r0,[m_rtl+0]	; << return long address >>
+	ljmp	r8
+	nop
+
+;----------------------------------------------------------
+
+mDisplayFace
+
+	link	#4
+	iwt	r15,#mDisplayFace_s&WM
+	nop
+	stop
+	nop
+
+;----------------------------------------------------------
+
+mDisplayFace_s
+
+	sm	[m_returnaddr],r11
+
+	ibt	r0,#textureaddrtab>>16
+	romb
+
+	iwt	r2,#128
+	lms	r1,[m_spra]
+	from	r1
+	lob
+	and	r2
+	beq	.firstsprbank
+	nop
+	ibt	r0,#1<<2
+.firstsprbank
+	cmode		; set hi-nybble
+	
+	from	r1
+	umult	#3	; index into textureaddr table for address
+	iwt	r1,#textureaddrtab&WM
+	to	r14
+	add	r1
+
+;	iwt	r14,#textureaddrtab&WM+3*(fox1_spr&127)
+	getb
+	inc	r14
+	to	r1
+	getbh
+	inc	r14
+	getb
+	romb
+	move	r14,r1
+
+
+	lms	r1,[m_x1]
+	lms	r2,[m_y1]
+
+	move	rtempx,r1
+
+
+	iwt	ryloopcount,#5*8
+	iwt	rsprinc,#256-4*8
+	iwt	rtemploopa,#.xloop&WM
+	ibt	rtemploopc,#4*8
+
+
+	mcache
+
+.yloop
+	move	rloopcount,rtemploopc
+	move	rloopaddr,r15
+.xloop
+	getc
+	inc	r14
+	loop
+	plot
+
+	nop			; cache bug
+
+	with	r14
+	add	rsprinc
+
+	move	r1,rtempx
+
+	dec	ryloopcount
+	bne	.yloop
+	inc	r2
+
+	mrpix
+
+	lm	r15,[m_returnaddr]
+	nop
 
 
 

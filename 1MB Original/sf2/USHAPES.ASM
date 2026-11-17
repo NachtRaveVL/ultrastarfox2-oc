@@ -3,566 +3,288 @@
 	start_shapes
 
 	ifne	DO_HDR
-demoshapes
-	endc
+nullshape	shapehdr 0,0,0,0,0,0,0,0,0,0,0,0,0,id_0_C,0,0,0,0,<null>
+center_p	shapehdr 0,0,0,0,0,0,0,0,0,0,0,0,0,id_0_C,0,0,0,0,<null>
+marker	shapehdr 0,0,0,0,0,0,0,3,0,0,0,0,110,id_0_C,0,0,0,0,<null>
+stg_checker	shapehdr 0,0,0,0,0,0,0,3,0,0,0,0,110,id_0_C,0,0,0,0,<null>
+zaco_mother	shapehdr 0,0,0,0,0,0,0,3,0,0,0,0,110,id_0_C,0,0,0,0,<null>
+demo_target	shapehdr 0,0,0,0,0,0,0,3,0,0,0,0,110,id_0_C,0,0,0,0,<null>
+station	shapehdr 0,0,0,0,0,0,0,4,0,0,0,0,110,id_0_C,0,0,0,0,<null>
+;paintball	shapehdr 0,0,0,0,0,0,0,3,0,4,4,4,4,id_0_c,boll,0,0,0,<paintball>
+;bullet	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,id_0_c,0,0,0,0,<paintball>
+bomb	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,bomb_c,0,0,0,0,<bomb>
+smoke	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,smoke_C,0,0,0,0,<smoke>
+explosion	shapehdr 0,0,0,0,0,0,0,3,0,4,4,4,4,explode_C,0,0,0,0,<P EXPLODE>
+explosion2	shapehdr 0,0,0,0,0,0,0,4,0,4,4,4,4,explode2_C,0,0,0,0,<P EXPLODE>
+explosion3	shapehdr 0,0,0,0,0,0,0,5,0,4,4,4,4,explode3_C,0,0,0,0,<P EXPLODE>
+explosion4	shapehdr 0,0,0,0,0,0,0,6,0,4,4,4,4,explode3_C,0,0,0,0,<P EXPLODE>
+explosion5	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,explode3_C,0,0,0,0,<P EXPLODE>
+explosion6	shapehdr 0,0,0,0,0,0,0,4,0,4,4,4,4,explode3_C,0,0,0,0,<P EXPLODE>
+tametame	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,tametame_C,0,0,0,0,<tametame>
+tametamel	shapehdr 0,0,0,0,0,0,0,4,0,4,4,4,4,tametame_C,0,0,0,0,<tametame>
+tamatama	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,tamatama_C,0,0,0,0,<tamatama>
+tamatamal	shapehdr 0,0,0,0,0,0,0,4,0,4,4,4,4,tamatama_C,0,0,0,0,<tamatama>
+boost	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,boost_C,0,0,0,0,<boost>
+ring_mark	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,boost_C,0,0,0,0,<boost>
+boost_big	shapehdr 0,0,0,0,0,0,0,4,0,4,4,4,4,boost_C,0,0,0,0,<boost_big>
+splash	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,splash_C,0,0,0,0,<splash>
+item_00	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,item_00_c,0,0,0,0,<item_00>
+jet	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,jet_c,0,0,0,0,<jet>
+plasma1	shapehdr 0,0,0,0,0,0,0,2,elaser2_col,120,120,120,8,plasma1_c,0,0,0,0,<plasma1>
+plasma1s	shapehdr 0,0,0,0,0,0,0,2,beam_s_col,120,120,120,4,plasma1_c,0,0,0,0,<plasma1>
+plasma1sps	shapehdr 0,0,0,0,0,0,0,3,elaser2s_col,120,120,120,4,plasma1_c,0,0,0,0,<plasma1>
+plasma1m	shapehdr 0,0,0,0,0,0,0,3,elaser2m_col,120,120,120,8,plasma1_c,0,0,0,0,<plasma1>
+plasma1b	shapehdr 0,0,0,0,0,0,0,3,elaser2b_col,120,120,120,16,plasma1_c,0,0,0,0,<plasma1>
+egplasma1	shapehdr 0,0,0,0,0,0,0,2,0,8,8,8,8,plasma1_c,0,0,0,0,<plasma1>
+;;;;robobomb	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,robobomb_c,0,0,0,0,<robobomb>
+enemybomb	shapehdr 0,0,0,0,0,0,0,2,0,12,12,12,12,enemybomb_c,0,0,0,0,<enemybomb>
+;help	shapehdr 0,0,0,0,0,0,0,0,0,4,4,4,4,help_c,0,0,0,0,<help>
+;thanks	shapehdr 0,0,0,0,0,0,0,0,0,4,4,4,4,thanks_c,0,0,0,0,<thanks>
+kusa	shapehdr 0,0,0,0,0,0,0,3,0,4,4,4,4,kusa_c,0,0,0,0,<kusa>
+kusabig	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,kusa_c,0,0,0,0,<kusa_big>
+msplash	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,msplash_C,0,0,0,0,<msplash>
+magmaball	shapehdr 0,0,0,0,0,0,0,3,0,20,20,20,20,magmaball_C,0,0,0,0,<magmaball>
+wallflash	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,wallflash_C,0,0,0,0,<wallflash>
+bubble	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,bubble_c,0,0,0,0,<bubble>
+flame	shapehdr 0,0,0,0,0,0,0,4,0,4,4,4,4,flame_c,0,0,0,0,<bubble>
+smallflame	shapehdr 0,0,0,0,0,0,0,3,0,4,4,4,4,flame_c,0,0,0,0,<bubble>
+kirakira	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,kirakira_c,0,0,0,0,<kirakira>
+meteo	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,meteo_c,0,0,0,0,<meteo>
+bigmeteo	shapehdr 0,0,0,0,0,0,0,5,b_meteo_col,55,55,55,32,bigmeteo_c,0,0,0,0,<bigmeteo>
+meramera	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,meramera_c,0,0,0,0,<meramera>
+ringlaser	shapehdr 0,0,0,0,0,0,0,2,0,12,12,12,12,ringlaser_c,0,0,0,0,<ringlaser>
+;kakusan	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,kakusan_c,0,0,0,0,<kakusan>
+;p_1up	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,p_1up_c,0,0,0,0,<p_1up>
+;shield	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,shield_c,0,0,0,0,<shield>
+;dummy	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,dummy_c,0,0,0,0,<dummy>
+;twin	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,twin_c,0,0,0,0,<twin>
+;hadou	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,hadou_c,0,0,0,0,<hadou>
+bossball	shapehdr 0,0,0,0,0,0,0,3,0,16,16,16,16,bossball_C,0,0,0,0,<bossball>
+dokuro	shapehdr 0,0,0,0,0,0,0,3,0,16,16,16,16,dokuro_c,0,0,0,0,<dokuro>
 
-
-
-
-;------------------------------------------------------------------------------
-
-s	=	playerW_boxsize
-	ifne	DO_HDR
-pcolLW		
-pcolRW
-	IFNE		player_showcolboxes	
-	shapehdr	PWcube_P,0,Pcube_F,0,0,0,0,0,0,playerW_boxsize,playerW_boxsize,playerW_boxsize,69,default_c,0,0,0,0,<cube>
-	ELSEIF
-	shapehdr	0,0,0,0,0,0,0,0,0,playerW_boxsize,playerW_boxsize,playerW_boxsize,69,default_c,0,0,0,0,<cube>
-	ENDC
-
-	elseif
-
-PWcube_P
-	datahdr
-	Pointsb	3
-	pb	s,-s,s	;0
-	pb	-s,s,s	;1
-	pb	s,s,-s	;2
-	PointsXb	1
-	pb	s,-s,-s	;3
-	Pointsb	3
-	pb	-s,-s,s	;5
-	pb	-s,s,-s	;6
-	pb	s,s,s	;7
-
-	EndPoints
-
-	ENDC
-
-;------------------------------------------------------------------------------
-
-s	=	playerB_boxsize
-	ifne	DO_HDR
-pcolB
-	IFNE		player_showcolboxes	
-	shapehdr	Pcube_P,0,Pcube_F,0,0,0,0,0,0,playerB_boxsize,playerB_boxsize,playerB_boxsize,69,default_c,0,0,0,0,<cube>
-	ELSEIF
-	shapehdr	0,0,0,0,0,0,0,0,0,playerB_boxsize,playerB_boxsize,playerB_boxsize,69,default_c,0,0,0,0,<cube>
-	ENDC
-	elseif
-
-
-Pcube_P
-	datahdr
-	Pointsb	3
-	pb	s,-s,s	;0
-	pb	-s,s,s	;1
-	pb	s,s,-s	;2
-	PointsXb	1
-	pb	s,-s,-s	;3
-	Pointsb	3
-	pb	-s,-s,s	;5
-	pb	-s,s,-s	;6
-	pb	s,s,s	;7
-
-	EndPoints
-Pcube_F
-	Vizis	4
-	Viz	5,4,3,0,127,0	;0
-	Viz	5,1,6,127,0,0	;1
-	Viz	4,6,2,0,0,-127	;2
-	Viz	7,0,3,-127,0,0	;3
-
-	Faces
-	Face4	18,0,0,127,0,5,4,3,0
-	Face4	16,1,127,0,0,5,1,6,4
-	Face4	14,2,0,0,-127,4,6,2,3
-	Face4	12,3,-127,0,0,7,0,3,2
-	Fend
-	EndShape
-
-	ENDC
-
-;------------------------------------------------------------------------------
-
-	ifne	DO_HDR
-andross	shapehdr TXsquare100_P,0,TXsquare_F2,0,0,0,0,1,0,100,100,100,100,andross_C,0,0,0,0,<fire>
-androsshole	shapehdr TXsquare100_P,0,TXsquare_F3,0,0,0,0,2,0,100,100,100,100,androsshole_C,0,0,0,0,<fire>
-	endc
-
-	ifeq	1
-	ifne	DO_HDR
-andross	shapehdr andross_P,0,andross_F,0,0,0,0,1,0,100,100,100,100,andross_C,0,0,0,0,<fire>
-androsshole	shapehdr andross_P,0,andross_F,0,0,0,0,2,0,100,100,100,100,androsshole_C,0,0,0,0,<fire>
-	elseif
-
-andross_P	POINTSXB	2
-	PB	4,4,0	;0
-	PB	-4,-4,0	;2
-	POINTSB	1
-	PB	0,0,0	;4
-	ENDPOINTS
-
+firesize	=	100
+firebr	shapehdr FBsquare_P,0,FBsquare_F,0,0,0,0,dodora_scale+2,firebr_col,firesize,firesize,firesize,firesize*8,fire_c,0,0,0,0,<fire>
+clipshape	shapehdr clipshape_P,0,clipshape_F,0,0,0,0,4,0,100,100,100,100,fire_c,0,0,0,0,<clipshape>
+clipshape2	shapehdr clipshape2_P,0,clipshape2_F,0,0,0,0,4,0,100,100,100,100,fire_c,0,0,0,0,<clipshape2>
 	ELSEIF
 
-andross_F 	vizis	1
-	viz	2,3,0,0,0,127
-	s_sprite	4,0,4
-	ENDSHAPE
-	endc
-
-	endc
-;------------------------------------------------------------------------------
-
-as	=	200
-
-	ifne	DO_HDR
-androsscube	shapehdr	androsscube_P,0,androsscube_F,0,0,0,0,0,0,as,as,as,as,andross_C,0,0,0,0,
-	elseif
 
 
-androsscube_P
-	PointsXw	4
-	pw	as,as,-as	;0
-	pw	as,-as,-as	;2
-	pw	as,as,as 	;4
-	pw	as,-as,as	;6
-
-	EndPoints
-androsscube_F
-	Vizis	6
-	Viz	5,7,6,0,0,127	;0
-	Viz	2,3,1,0,0,-127	;1
-	Viz	4,6,2,-127,0,0	;2
-	Viz	3,7,5,127,0,0	;3
-	Viz	2,6,7,0,127,0	;4
-	Viz	5,4,0,0,-127,0	;5
-
-	Faces
-	Face4	0,0,0,0,127,5,7,6,4
-	Face4	0,1,0,0,-127,2,3,1,0
-	Face4	0,2,-127,0,0,4,6,2,0
-	Face4	0,3,127,0,0,3,7,5,1
-	Face4	0,4,0,127,0,2,6,7,3
-	Face4	0,5,0,-127,0,5,4,0,1
-
-	Fend
-	EndShape
-
-	ENDC
-
-
-
-
-softsprites	=	1	; software sprites off/on (0/1)
-
-
-	ifne	DO_HDR
-nullshape	shapehdr 0,0,0,0,0,0,0,2,0,34,34,36,47,burnmark_C,0,0,0,0,<null>
-FOlargeshape	shapehdr 0,0,0,0,0,0,0,0,0,0,0,1000,1000,0,0,0,0,0,<bigshape>
-largeshape	shapehdr 0,0,0,0,0,0,0,0,0,0,0,200,200,0,0,0,0,0,<bigshape>
-mediumshape	shapehdr 0,0,0,0,0,0,0,0,0,0,0,90,90,0,0,0,0,0,<bigshape>
-smallshape	shapehdr 0,0,0,0,0,0,0,0,0,0,0,50,50,0,0,0,0,0,<bigshape>
-
-firesize	=	10
-firebreath	shapehdr TXsquare_P,0,TXsquare_F,0,0,0,0,1+1,0,firesize,firesize,firesize,firesize,fire_C,0,0,0,0,<fire>
-fire	shapehdr square_P,0,square_F2,0,0,0,0,1+1,0,34,34,36,47,burnmark_C,0,0,0,0,<fire>
-ringlaser	shapehdr square_P,0,square_F3,0,0,0,0,2,0,firesize,firesize,firesize*3,firesize,ringlaser_C,0,0,0,0,<fire>
-ironball	shapehdr square_P,0,square_F3,0,0,0,0,2+1,0,firesize,firesize,firesize*3,firesize,ironball_C,boll,0,0,0,<fire>
-fireball	shapehdr square_P,0,square_F2,0,0,0,0,1+1,0,firesize,firesize,firesize,firesize,fireball_C,boll,0,0,0,<fire>
-Lfireball	shapehdr square_P,0,square_F3,0,0,0,0,2+1,0,firesize,firesize,firesize,firesize,fireball_C,boll,0,0,0,<fire>
-smoke	shapehdr square_P,0,square_F3,0,0,0,0,2,0,firesize,firesize,firesize,firesize,smoke_C,0,0,0,0,<smoke>
-Lsmoke	shapehdr square_P,0,square_F4,0,0,0,0,3,0,firesize,firesize,firesize,firesize,smoke_C,0,0,0,0,<smoke>
-L2smoke	shapehdr square_P,0,square_F4,0,0,0,0,4,0,firesize,firesize,firesize,firesize,smoke_C,0,0,0,0,<smoke>
-FOLsmoke	shapehdr square_P,0,square_F4,0,0,0,0,5,0,firesize,firesize,firesize,firesize,smoke_C,0,0,0,0,<smoke>
-
-plane1LW	shapehdr 0,0,0,0,0,0,0,0,0,36,30,98,98,default_c,0,0,0,0,<plane1LW>
-plane1RW	shapehdr 0,0,0,0,0,0,0,0,0,36,30,98,98,default_c,0,0,0,0,<plane1RW>
-plane1B 	shapehdr 0,0,0,0,0,0,0,0,0,36,30,98,98,default_c,0,0,0,0,<plane1B>
-
-mother1	shapehdr 0,0,0,0,0,0,0,0,0,0,0,0,0,default_c,0,0,0,0,<MOTHER1>
-Ssplash	shapehdr square_P,0,square_F,0,0,0,0,2,0,4,4,4,4,splash_C,0,0,0,0,<P EXPLODE>
-splash 	shapehdr square_P,0,square_F1,0,0,0,0,3,0,4,4,4,4,splash_C,0,0,0,0,<P EXPLODE>
-bouncyball	shapehdr square_P,0,square_F3,0,0,0,0,3,0,4,4,4,4,bouncyball_C,0,0,0,0,<P EXPLODE>
-largeplasma	shapehdr square_P,0,square_F3,0,0,0,0,3+1,0,4,4,4,4,bouncyball_C,0,0,0,0,<P EXPLODE>
-
-grabber2	shapehdr square_P,0,square_F5,0,0,0,0,4,0,7,7,7,7,ballandchain_C,0,0,0,0,<P EXPLODE>
-nuke    	shapehdr square_P,0,square_F3,0,0,0,0,3,0,4,4,4,4,specialweapon_C,0,0,0,0,<P EXPLODE>
-
-asteroid1	shapehdr square_P,0,square_F4,0,0,0,0,4,0,4,4,4,4,asteroid_C,0,0,0,0,<P EXPLODE>
-asteroid2	shapehdr square_P,0,square_F4,0,0,0,0,4,0,4,4,4,4,asteroid2_C,0,0,0,0,<P EXPLODE>
-
-asteroid3	shapehdr square_P,0,square_F2,0,0,0,0,2,0,4,4,4,4,asteroid_C,0,0,0,0,<P EXPLODE>
-asteroid4	shapehdr square_P,0,square_F2,0,0,0,0,2,0,4,4,4,4,asteroid2_C,0,0,0,0,<P EXPLODE>
-big_meteor	shapehdr txsquare_P,0,txsquare_F,0,0,0,0,6,0,4,4,4,4,big_meteor_C,0,0,0,0,<P EXPLODE>
-clasteroid	shapehdr square_P,0,square_F2,0,0,0,0,2,0,4,4,4,4,asteroid_C,0,0,0,0,<P EXPLODE>
-
-blackhole	shapehdr square_P,0,square_F4,0,0,0,0,4,0,4,4,4,4,blackhole_C,0,0,0,0,<P EXPLODE>
-
-ovalbeam 	shapehdr square_P,0,square_F3,0,0,0,0,3,0,4,4,4,4,ovalbeam_c,0,0,0,0,<P EXPLODE>
-
-plasma 	shapehdr square_P,0,square_F2,0,0,0,0,2,0,4,4,4,4,id_5_c,0,0,0,0,<P EXPLODE>
-egg    	shapehdr square_P,0,square_F3,0,0,0,0,3,0,6,6,6,6,egg_c,0,0,0,0,<P EXPLODE>
-
-Lflash_0	shapehdr square_P,0,square_F4,0,0,0,0,4,0,4,4,4,4,flash_c,0,0,0,0,<P EXPLODE>
-Mflash_0	shapehdr square_P,0,square_F3,0,0,0,0,3,0,4,4,4,4,flash_c,0,0,0,0,<P EXPLODE>
-Sflash_0	shapehdr square_P,0,square_F2,0,0,0,0,2,0,4,4,4,4,flash_c,0,0,0,0,<P EXPLODE>
-
-helpball	shapehdr TXsquare_P,0,TXsquare_F,0,0,0,0,2,0,4,4,4,4,specialweapon_C,0,0,0,0,<P EXPLODE>
-Shelpball	shapehdr TXsquare_P,0,TXsquare_F,0,0,0,0,2,0,10,10,10,4,specialweapon_C,0,0,0,0,<P EXPLODE>
-explosion	shapehdr TXsquare_P,0,TXsquare_F,0,0,0,0,3,0,4,4,4,4,explode_C,0,0,0,0,<P EXPLODE>
-explosion2    	shapehdr TXsquare_P,0,TXsquare_F,0,0,0,0,4,0,4,4,4,4,explode2_C,0,0,0,0,<P EXPLODE>
-explosion3    	shapehdr TXsquare_P,0,TXsquare_F,0,0,0,0,5,0,4,4,4,4,explode3_C,0,0,0,0,<P EXPLODE>
-explosion4    	shapehdr TXsquare_P,0,TXsquare_F,0,0,0,0,6,0,4,4,4,4,explode3_C,0,0,0,0,<P EXPLODE>
-explosion5    	shapehdr TXsquare_P,0,TXsquare_F,0,0,0,0,2,0,4,4,4,4,explode3_C,0,0,0,0,<P EXPLODE>
-amoeba1	shapehdr TXsquare_P,0,TXsquare_F,0,-100,0,0,1+1,0,firesize,firesize,firesize,firesize,amoeba_C,0,0,0,0,<fire>
-amoeba2	shapehdr TXsquare_P,0,TXsquare_F,0,-100,0,0,2+1,0,firesize,firesize,firesize,firesize,amoeba_C,0,0,0,0,<fire>
-PEXPLOD	shapehdr TXsquare_P,0,TXsquare_F,0,0,0,0,1,0,4,4,4,4,PEXPLOD2S_C,0,0,0,0,<P EXPLODE>
-rockbeam 	shapehdr square_P,0,square_F2,0,0,0,0,3,0,4,4,4,4,rockbeam_c,0,0,0,0,<P EXPLODE>
-playerbeam	shapehdr square_P,0,square_F3,0,0,0,0,2,0,8*2,5*2,30,4,playerbeam_C,0,0,0,0,<P EXPLODE>
-boostshape	shapehdr square_P,0,square_F3,0,0,0,0,1,0,firesize,firesize,firesize,firesize,boost_C,0,0,0,0,<fire>
-
-gamesh	shapehdr TXsquare_P2,0,TXsquare_F2,0,0,0,0,3,0,firesize,firesize,firesize,firesize,game_C,0,0,0,0,<fire>
-oversh	shapehdr TXsquare_P2,0,TXsquare_F2,0,0,0,0,3,0,firesize,firesize,firesize,firesize,over_C,0,0,0,0,<fire>
-
-escapee	shapehdr TXsquare_P,0,TXsquare_F2,0,0,0,0,3,0,4,4,4,4,escapee_C,0,0,0,0,<P EXPLODE>
-
-
-				    
-SPEXPLOD	shapehdr TXsquare_P,0,TXsquare_F,0,0,0,0,2,0,4,4,4,4,spark_c,0,0,0,0,<P EXPLODE>
-lfDie   	shapehdr LFDIE_P,0,LFDIE_F,0,0,0,0,2,0,4,4,4,4,lfdie_c,0,0,0,0,<P EXPLODE>
-
-	endc
-
-
-
-
-	ifne	DO_HDR
-line	shapehdr	line_P,0,line_F,0,0,0,0,0,0,20,20,0,22,line_c,0,0,0,0,<line>
-line2	shapehdr	line_P,0,line_F,0,0,0,0,1,0,20,20,0,22,line_c,0,0,0,0,<line>
-line3	shapehdr	line_P,0,line_F,0,0,0,0,2,0,20,20,0,22,line_c,0,0,0,0,<line>
-laserline	shapehdr	line_P,0,line_F,0,0,0,0,1,0,20,20,20,22,line_c,0,0,0,0,<line>
-	elseif			 
-line_P
-	datahdr
-	Pointsb	3
-	pb	0,0,0		
-	pb	0,10,0	
-	pb	-10,10,0	
-
-	EndPoints
-line_F
-
-line_f1
-	vizis	2
-	viz	0,1,2,0,0,127
-	viz	2,1,0,0,0,127
-	Faces
-	Face2	0,0,0,0,0,0,1
-	Face2	0,1,0,0,0,0,1
-	Fend
-	EndShape
-
-	endc
-
-
-;--Shape file ----- elaser2.asm ----
-	ifne	DO_HDR
-
-Welaser2
-	shapehdr	elaser2_P,0,elaser2_F,0,0,0,0,2,0,8,5,30,99,white_c,0,0,0,0,<elaser2>
-elaser2a
-	shapehdr	elaser2_P,0,elaser2_F,0,0,0,0,2,0,2,2,30,99,Ebullet_c,0,0,0,0,<elaser2>
-
-elaser2
-	shapehdr	elaser2_P,0,elaser2_F,0,0,0,0,2,0,8,5,30,99,bullet_c,0,0,0,0,<elaser2>
-elaser2_s2
-	shapehdr	elaser2_Ps2,0,elaser2_Fs2,0,0,0,0,2,0,6,2,70,99,bullet_c,0,0,0,0,<elaser2>
-	elseif
-
-mlaser	macro	length of nose, middle, length of tail (70/49/-99)
-	pointsb	6
-	pb	0,0,\3	;0
-	pb	-\4,0,\2	;1
-	pb	0,0,\1	;2
-	pb	\4,0,\2	;3
-	pb	0,-2,\2	;4
-	pb	0,2,\2	;5
+;-----------------------------------------------------
+; This generates clipping planes for plane_BOSS and plane_BOSS2
+; which are opposite to each other
+clipshape_p
+	pointsb	1
+	pb	0,0,0
 	endpoints
-	endm
-	
+clipshape_f
+	CLIP_PLANE	plane_boss,0,0,0,0,-4095,0
+	CLIP_PLANE	plane_boss2,0,0,0,0,4095,0
 
-elaser2_P
-	datahdr
-	frames	9
-	jumptab	.a0a
-	jumptab	.a1a
-	jumptab	.a2a
-	jumptab	.a3a
-	jumptab	.a4a
-	jumptab	.a5a
-	jumptab	.a6a
-	jumptab	.a7a
-	jumptab	.a8a
+	ENDSHAPE
 
-.a0a	mlaser	0,-10,0,1
-.a1a	mlaser	0,-10,-20,2
-.a2a	mlaser	0,-10,-40,3
-.a3a	mlaser	0,-10,-60,4
-.a4a	mlaser	0,-10,-80,4	; frame 4 = normal laser
+;-----------------------------------------------------
+; This generates clipping planes for plane_BOSS and plane_BOSS2
+; which are opposite to each other
+clipshape2_p
+	pointsb	1
+	pb	0,0,0
+	endpoints
+clipshape2_f
+	CLIP_PLANE	plane_boss3,0,0,0,0,-4095,0
+	CLIP_PLANE	plane_boss4,0,0,0,0,4095,0
 
-.a5a	mlaser	0,0,-60,4
-.a6a	mlaser	0,0,-40,4
-.a7a	mlaser	0,0,-20,3
-.a8a	mlaser	0,0,-20,2
+	ENDSHAPE
 
-elaser2_ps2
-	Pointsb	4
-	pb	0,0,-99	;0
-	pb	-8,0,49	;1
-	pb	0,0,70	;2
-	pb	8,0,49	;3
+;-----------------------------------------------------
+
+FBSQUARE_P	POINTSB	4
+	PB	4,0,100	;0
+	PB	-4,0,100	;1
+	PB	-2,0,-4	;2
+	PB	2,0,-4	;3
+	ENDPOINTS
+
+FBSQUARE_F	vizis	2
+	viz	3,2,1,0,127,0
+	viz	1,2,3,0,-127,0
+	FACES
+	FACE4	0,0,0,0,-127,1,0,3,2
+	FACE4	0,1,0,0,-127,0,1,2,3
+	FEND
+	ENDSHAPE
+
+	ENDC
+
+;--Shape file ----- C:\SHED\SHAPES5\BOLL.TXT ----
+	ifne	DO_HDR
+
+boll
+	ShapeHdr	boll_P,0,boll_F,0,0,0,0,1,0,20,0,20,20,id_0_c,0,0,0,0,<boll>
+	elseif
+boll_P
+	Pointsb	2
+	pb	0,0,-20	;0
+	pb	0,0,20	;1
+	PointsXb	3
+	pb	14,0,-14	;2
+	pb	20,0,0	;4
+	pb	14,0,14	;6
 
 	EndPoints
-elaser2_F
-	vizis	6
-	viz	2,1,0,0,0,127
-	viz	0,1,2,0,0,-127
-	viz	2,4,0,0,0,-127
-	viz	4,2,0,0,0,127
-	viz	1,4,3,0,0,-127
-	viz	3,4,1,0,0,127
-	Faces
-	Face4	0,0,0,127,0,2,1,0,3
-	Face4	0,1,0,-127,0,0,1,2,3
+boll_F
+	Vizis	1
+	Viz	7,5,3,0,127,0	;0
 
-	Face4	0,2,0,-127,0,2,4,0,5
-	Face4	0,3,0,-127,0,5,0,4,2
-
-	Face4	0,4,0,-127,0,1,4,3,5
-	Face4	0,5,0,-127,0,5,3,4,1
-
-
-	Fend
-	EndShape
-
-
-elaser2_Fs2
-	vizis	2
-	viz	2,1,0,0,0,127
-	viz	0,1,2,0,0,-127
-	Faces
-	Face4	0,0,0,127,0,2,1,0,3
-	Face4	0,1,0,-127,0,0,1,2,3
-
+boll_f1	Faces
+	Face8	0,0,0,127,0,7,5,3,0,2,4,6,1
 	Fend
 	EndShape
 
 	endc
 
 
-;--Shape file ----- flat 1 poly ----
-	ifne	DO_HDR
-Smark	shapehdr mark_P,0,mark_F,0,0,0,0,0,0,4,4,4,4,burnmark_C,0,0,0,0,<>
-Mmark	shapehdr mark_P,0,mark_F,0,0,0,0,1,0,4,4,4,4,burnmark_C,0,0,0,0,<>
-Lmark	shapehdr mark_P,0,mark_F,0,0,0,0,2,0,4,4,4,4,burnmark_C,0,0,0,0,<>
-	elseif
-
-mark_P	POINTSB	4
-	PB	50,0,50		;0
-	PB	-50,0,50	;1
-	PB	-50,0,-50	;2
-	PB	50,0,-50	;3
-	ENDPOINTS
-
-
-mark_F
-	vizis	1
-	viz	0,1,2,0,-127,0
-	FACES
-	FACE4	0,0,0,-127,0,0,1,2,3
-	FEND
-	ENDSHAPE
-
-	IFEQ	softsprites
-
-LFDIE_F
-	vizis	1
-	viz	2,3,0,0,0,127
-	FACES
-	FACE4	0,0,0,0,-127,2,3,0,1
-	FEND
-	ENDSHAPE
-
-LFDIE_P	POINTSB	4
-	PB	4,4,0	;0
-	PB	-4,4,0	;1
-	PB	-4,-4,0	;2
-	PB	4,-4,0	;3
-	ENDPOINTS
-
-	ELSEIF
-
-LFDIE_F
-	vizis	1
-	viz	2,3,0,0,0,127
-	s_sprite	4,0,1
-	ENDSHAPE
-
-LFDIE_P	POINTSB	5
-	PB	4,4,0	;0
-	PB	-4,4,0	;1
-	PB	-4,-4,0	;2
-	PB	4,-4,0	;3
-	PB	0,0,0
-	ENDPOINTS
-	endc
-
-
-
-
-;-----------------------------------------------------
-TXSQUARE_F	vizis	1
-	viz	2,3,0,0,0,127
-	FACES
-	FACE4	0,0,0,0,-127,2,3,0,1
-	FEND
-	ENDSHAPE
-
-TXSQUARE_P	POINTSB	4
-	PB	4,4,0	;0
-	PB	-4,4,0	;1
-	PB	-4,-4,0	;2
-	PB	4,-4,0	;3
-	ENDPOINTS
-
-TXSQUARE100_P	POINTSXB	2
-	PB	100,100,0	;0
-	PB	-100,-100,0	;2
-	ENDPOINTS
-
-
-
-TXSQUARE_P2	POINTSB	4
-	PB	32,8,0	;0
-	PB	-32,8,0	;1
-	PB	-32,-8,0	;2
-	PB	32,-8,0	;3
-	ENDPOINTS
-
-TXSQUARE_F2	vizis	2
-	viz	2,3,0,0,0,127
-	viz	0,3,2,0,0,-127
-	FACES
-	FACE4	0,0,0,0,-127,2,3,0,1
-	FACE4	1,1,0,0,127,3,2,1,0
-	FEND
-	ENDSHAPE
-
-
-TXSQUARE_F3	vizis	2
-	viz	2,3,0,0,0,127
-	viz	0,3,2,0,0,-127
-	FACES
-	FACE4	0,0,0,0,-127,2,3,0,1
-	FACE4	1,1,0,0,127,1,0,3,2
-	FEND
-	ENDSHAPE
-
-;-----------------------------------------------------
-
-
-
-
-
-	IFEQ	softsprites
-
-SQUARE_F
-SQUARE_F1
-SQUARE_F2
-SQUARE_F3
-SQUARE_F4
-SQUARE_F5
-SQUARE_F6
-	vizis	1
-	viz	2,3,0,0,0,127
-	FACES
-	FACE4	0,0,0,0,-127,2,3,0,1
-	FEND
-	ENDSHAPE
-
-SQUARE_P	POINTSB	4
-	PB	4,4,0	;0
-	PB	-4,4,0	;1
-	PB	-4,-4,0	;2
-	PB	4,-4,0	;3
-	ENDPOINTS
-
-	ELSEIF
-
-SQUARE_F 	vizis	1
-	viz	2,3,0,0,0,127
-	s_sprite	4,0,0
-	ENDSHAPE
-
-
-SQUARE_F6
-SQUARE_F5
-SQUARE_F4
-SQUARE_F3
-SQUARE_F2
-SQUARE_F1 	vizis	1
-	viz	2,3,0,0,0,127
-	s_sprite	4,0,1
-	ENDSHAPE
-
-	ifeq	1
-SQUARE_F2 	vizis	1
-	viz	2,3,0,0,0,127
-	s_sprite	4,0,2
-	ENDSHAPE
-
-SQUARE_F3	vizis	1
-	viz	2,3,0,0,0,127
-	s_sprite	4,0,3
-	ENDSHAPE
-
-SQUARE_F4 	vizis	1
-	viz	2,3,0,0,0,127
-	s_sprite	4,0,4
-	ENDSHAPE
-
-SQUARE_F5 	vizis	1
-	viz	2,3,0,0,0,127
-	s_sprite	4,0,5
-	ENDSHAPE
-
-SQUARE_F6 	vizis	1
-	viz	2,3,0,0,0,127
-	s_sprite	4,0,6
-	ENDSHAPE
-	endc
-
-
-
-SQUARE_P	POINTSB	5
-	PB	4,4,0	;0
-	PB	-4,4,0	;1
-	PB	-4,-4,0	;2
-	PB	4,-4,0	;3
-	PB	0,0,0
-	ENDPOINTS
-	endc
-	endc
-
-
-	end_shapes
-
-
-
-
-
-
-
-
+;;
+;;
+;;
+;;	start_shapes
+;;
+;;	ifne	DO_HDR
+;;nullshape	shapehdr 0,0,0,0,0,0,0,0,0,0,0,0,0,id_0_C,0,0,0,0,<null>
+;;center_p	shapehdr 0,0,0,0,0,0,0,0,0,0,0,0,0,id_0_C,0,0,0,0,<null>
+;;marker	shapehdr 0,0,0,0,0,0,0,3,0,0,0,0,110,id_0_C,0,0,0,0,<null>
+;;stg_checker	shapehdr 0,0,0,0,0,0,0,3,0,0,0,0,110,id_0_C,0,0,0,0,<null>
+;;zaco_mother	shapehdr 0,0,0,0,0,0,0,3,0,0,0,0,110,id_0_C,0,0,0,0,<null>
+;;demo_target	shapehdr 0,0,0,0,0,0,0,3,0,0,0,0,110,id_0_C,0,0,0,0,<null>
+;;station	shapehdr 0,0,0,0,0,0,0,4,0,0,0,0,110,id_0_C,0,0,0,0,<null>
+;;paintball	shapehdr 0,0,0,0,0,0,0,3,0,4,4,4,4,id_0_c,boll,0,0,0,<paintball>
+;;bullet	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,id_0_c,0,0,0,0,<paintball>
+;;bomb	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,bomb_c,0,0,0,0,<bomb>
+;;smoke	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,64,smoke_C,0,0,0,0,<smoke>
+;;explosion	shapehdr 0,0,0,0,0,0,0,3,0,4,4,4,64,explode_C,0,0,0,0,<P EXPLODE>
+;;explosion2	shapehdr 0,0,0,0,0,0,0,4,0,4,4,4,64,explode2_C,0,0,0,0,<P EXPLODE>
+;;explosion3	shapehdr 0,0,0,0,0,0,0,5,0,4,4,4,64,explode3_C,0,0,0,0,<P EXPLODE>
+;;explosion4	shapehdr 0,0,0,0,0,0,0,6,0,4,4,4,64,explode3_C,0,0,0,0,<P EXPLODE>
+;;explosion5	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,64,explode3_C,0,0,0,0,<P EXPLODE>
+;;explosion6	shapehdr 0,0,0,0,0,0,0,4,0,4,4,4,64,explode3_C,0,0,0,0,<P EXPLODE>
+;;kawaguchibeem	shapehdr 0,0,0,0,0,0,0,2,0,40,40,40,64,kawaguchibeem_C,0,0,0,0,<P EXPLODE>
+;;boost	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,64,boost_C,0,0,0,0,<boost>
+;;boost_big	shapehdr 0,0,0,0,0,0,0,4,0,4,4,4,64,boost_C,0,0,0,0,<boost>
+;;splash	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,splash_C,0,0,0,0,<splash>
+;;item_00	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,item_00_c,0,0,0,0,<item_00>
+;;jet	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,jet_c,0,0,0,0,<jet>
+;;plasma1	shapehdr 0,0,0,0,0,0,0,2,elaser2_col,4,4,4,4,plasma1_c,0,0,0,0,<plasma1>
+;;plasma1s	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,plasma1_c,0,0,0,0,<plasma1>
+;;;plasma1s	shapehdr 0,0,0,0,0,0,0,2,beam_s_col,4,4,4,4,plasma1_c,0,0,0,0,<plasma1>
+;;plasma1m	shapehdr 0,0,0,0,0,0,0,3,elaser2m_col,4,4,4,4,plasma1_c,0,0,0,0,<plasma1>
+;;plasma1b	shapehdr 0,0,0,0,0,0,0,4,elaser2b_col,4,4,4,4,plasma1_c,0,0,0,0,<plasma1>
+;;plasma1f	shapehdr 0,0,0,0,0,0,0,5,elaser2b_col,4,4,4,4,plasma1_c,0,0,0,0,<plasma1>
+;;egplasma1	shapehdr 0,0,0,0,0,0,0,2,0,8,8,8,8,plasma1_c,0,0,0,0,<plasma1>
+;;;;;;robobomb	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,robobomb_c,0,0,0,0,<robobomb>
+;;enemybomb	shapehdr 0,0,0,0,0,0,0,2,0,12,12,12,8,enemybomb_c,0,0,0,0,<enemybomb>
+;;help	shapehdr 0,0,0,0,0,0,0,0,0,4,4,4,64,help_c,0,0,0,0,<help>
+;;thanks	shapehdr 0,0,0,0,0,0,0,0,0,4,4,4,64,thanks_c,0,0,0,0,<thanks>
+;;kusa	shapehdr 0,0,0,0,0,0,0,3,0,4,4,4,16,kusa_c,0,0,0,0,<kusa>
+;;kusabig	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,16,kusa_c,0,0,0,0,<kusa_big>
+;;msplash	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,msplash_C,0,0,0,0,<msplash>
+;;magmaball	shapehdr 0,0,0,0,0,0,0,2,0,20,20,20,20,magmaball_C,0,0,0,0,<magmaball>
+;;wallflash	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,wallflash_C,0,0,0,0,<wallflash>
+;;bubble	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,bubble_c,0,0,0,0,<bubble>
+;;flame	shapehdr 0,0,0,0,0,0,0,4,0,4,4,4,4,flame_c,0,0,0,0,<bubble>
+;;smallflame	shapehdr 0,0,0,0,0,0,0,3,0,4,4,4,4,flame_c,0,0,0,0,<bubble>
+;;kirakira	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,kirakira_c,0,0,0,0,<kirakira>
+;;meteo	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,meteo_c,0,0,0,0,<meteo>
+;;meramera	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,meramera_c,0,0,0,0,<meramera>
+;;ringlaser	shapehdr 0,0,0,0,0,0,0,2,0,12,12,12,8,ringlaser_c,0,0,0,0,<ringlaser>
+;;kakusan	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,kakusan_c,0,0,0,0,<kakusan>
+;;p_1up	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,p_1up_c,0,0,0,0,<p_1up>
+;;shield	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,shield_c,0,0,0,0,<shield>
+;;dummy	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,dummy_c,0,0,0,0,<dummy>
+;;twin	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,twin_c,0,0,0,0,<twin>
+;;hadou	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,hadou_c,0,0,0,0,<hadou>
+;;bossball	shapehdr 0,0,0,0,0,0,0,3,0,16,16,16,24,bossball_C,0,0,0,0,<bossball>
+;;dokuro	shapehdr 0,0,0,0,0,0,0,2,0,4,4,4,4,dokuro_c,0,0,0,0,<dokuro>
+;;
+;;firesize	=	4
+;;firebr	shapehdr FBsquare_P,0,FBsquare_F,0,0,0,0,dodora_scale+2,0,firesize,firesize,firesize,firesize*8,fire_c,0,0,0,0,<fire>
+;;clipshape	shapehdr clipshape_P,0,clipshape_F,0,0,0,0,4,0,100,100,100,100,fire_c,0,0,0,0,<clipshape>
+;;clipshape2	shapehdr clipshape2_P,0,clipshape2_F,0,0,0,0,4,0,100,100,100,100,fire_c,0,0,0,0,<clipshape2>
+;;	ELSEIF
+;;
+;;
+;;
+;;;-----------------------------------------------------
+;;; This generates clipping planes for plane_BOSS and plane_BOSS2
+;;; which are opposite to each other
+;;clipshape_p
+;;	pointsb	1
+;;	pb	0,0,0
+;;	endpoints
+;;clipshape_f
+;;	CLIP_PLANE	plane_boss,0,0,0,0,-4095,0
+;;	CLIP_PLANE	plane_boss2,0,0,0,0,4095,0
+;;
+;;	ENDSHAPE
+;;
+;;;-----------------------------------------------------
+;;; This generates clipping planes for plane_BOSS and plane_BOSS2
+;;; which are opposite to each other
+;;clipshape2_p
+;;	pointsb	1
+;;	pb	0,0,0
+;;	endpoints
+;;clipshape2_f
+;;	CLIP_PLANE	plane_boss3,0,0,0,0,-4095,0
+;;	CLIP_PLANE	plane_boss4,0,0,0,0,4095,0
+;;
+;;	ENDSHAPE
+;;
+;;;-----------------------------------------------------
+;;
+;;FBSQUARE_P	POINTSB	4
+;;	PB	4,0,100	;0
+;;	PB	-4,0,100	;1
+;;	PB	-2,0,-4	;2
+;;	PB	2,0,-4	;3
+;;	ENDPOINTS
+;;
+;;FBSQUARE_F	vizis	2
+;;	viz	3,2,1,0,127,0
+;;	viz	1,2,3,0,-127,0
+;;	FACES
+;;	FACE4	0,0,0,0,-127,1,0,3,2
+;;	FACE4	0,1,0,0,-127,0,1,2,3
+;;	FEND
+;;	ENDSHAPE
+;;
+;;	ENDC
+;;
+;;;--Shape file ----- C:\SHED\SHAPES5\BOLL.TXT ----
+;;	ifne	DO_HDR
+;;
+;;boll
+;;	ShapeHdr	boll_P,0,boll_F,0,0,0,0,1,0,20,0,20,20,id_0_c,0,0,0,0,<boll>
+;;	elseif
+;;boll_P
+;;	Pointsb	2
+;;	pb	0,0,-20	;0
+;;	pb	0,0,20	;1
+;;	PointsXb	3
+;;	pb	14,0,-14	;2
+;;	pb	20,0,0	;4
+;;	pb	14,0,14	;6
+;;
+;;	EndPoints
+;;boll_F
+;;	Vizis	1
+;;	Viz	7,5,3,0,127,0	;0
+;;
+;;boll_f1	Faces
+;;	Face8	0,0,0,127,0,7,5,3,0,2,4,6,1
+;;	Fend
+;;	EndShape
+;;
+;;	endc
+;;
+;;
+;;

@@ -1,10 +1,29 @@
-;------------------------------------------------------------------------
 
 wait	macro
 	a8
 	stz	gamevwpos
 	lda	gamevwpos		;wait for screen off
 	beq	*-3
+	endm
+
+;------------------------------------------------------------------------
+
+poll_mario	macro
+	IFNE	LONGA
+	error	<Must be in SHORTA>
+	ENDC
+	storenasty
+	jsl	pollmario_l
+	endm
+
+;------------------------------------------------------------------------
+
+unpoll_mario	macro
+	IFNE	LONGA
+	error	<Must be in SHORTA>
+	ENDC
+	restorenasty
+	jsl	unpollmario_l
 	endm
 
 ;------------------------------------------------------------------------
@@ -2593,9 +2612,7 @@ projlogmac	macro
 ;------------------------------------------------------------------------
 chkalc	MACRO
 	IFEQ	alcon
-	progress_off
-	printf	"Error: ALC used in %$6:%l%n"
-	progress_on
+	Error	<ALC used in invalid place>
 	ENDC
 	ENDM
 
@@ -2824,26 +2841,132 @@ a16i8sec	macro
 
 sprint	macro
 	IFEQ	LONGA
-	lda	#<((\1)*col_size+(\2)*32)
+	lda	screenmode
+	bit	#sm_onescreen
+	bne	.1scr\@
+	lda	#<((\1)*bitmapheight*32+(\2)*32)
 	sta	printpt
-	lda	#>((\1)*col_size+(\2)*32)
+	lda	#>((\1)*bitmapheight*32+(\2)*32)
 	sta	printpt+1
-	ELSEIF
-	lda	#(\1)*col_size+(\2)*32
+	bra	.\@
+.1scr\@
+	lda	#<((\1)*bitmapheight_1*32+(\2)*32)
 	sta	printpt
+	lda	#>((\1)*bitmapheight_1*32+(\2)*32)
+	sta	printpt+1
+	
+.\@
+	ELSEIF
+	lda	screenmode
+	bit	#sm_onescreen
+	bne	.1scr\@
+	lda	#(\1)*bitmapheight*32+(\2)*32
+	sta	printpt
+	bra	.\@
+.1scr\@
+	lda	#(\1)*bitmapheight_1*32+(\2)*32
+	sta	printpt
+.\@
 	ENDC
 	endm
+
+
+;------------------------------------------------------------------------
+printmac	MACRO	[mode,sexorand,string,user]
+
+	IFNE	debuginfo2
+
+	IFNE	user-user_anyone
+	IFEQ	NARG-4
+	IFD	user_{user}
+	IFNE	user_{user}-user_anyone
+	IFNE	user-user_{user}
+	MEXIT
+	ENDC
+	ENDC
+	ELSEIF
+	MEXIT
+	ENDC
+	ENDC
+	ENDC
+
+olda	=	LONGA
+__pmand	=	0
+	a16
+	pha
+	IFEQ	olda
+	IFD	__pm{sexorand}
+	and	#255
+	ELSEIF
+	sexa
+	ENDC
+	ENDC
+	sta	printpt
+	lda	#.s\@&WM
+	sta	textpt
+	lda	#.s\@>>16
+	sta	textpt+2
+	bra	.wob\@
+
+	IFEQ	*>>16-$7f
+	error	<Can't use print in ram bank yet>
+	ENDC
+	IFEQ	*>>16-$7e
+	error	<Can't use print in ram bank yet>
+	ENDC
+.s\@
+	defs	1,"{string}"
+	IFEQ	(strlen 1)
+	defs	1,"%c"
+	defs	2,"NARG"
+	IFNE	(strcmp 1,2)
+	defs	1,"%p.%c"
+	ELSEIF
+	defs	1,"%p"
+	ENDC
+	lower	1
+	run	" db %q%$1%q,0"
+	ELSEIF
+	run	" db %q{string}%q,0"
+	ENDC
+.wob\@
+	lda	#dt_{mode}
+	jsl	addprintw_l
+	pla
+	IFEQ	olda
+	a8
+	ENDC
+	ENDC
+	ENDM
 
 ;------------------------------------------------------------------------
 
-printb	macro
-	IFNE	NARG
-	pha
-	sprint	(\1),(\2)
-	pla
+printb	macro	[string,user]
+
+	IFEQ	NARG
+	printmac	bin,and
+	ELSEIF
+
+	IFEQ	NARG-1
+	IFD	user_{string}
+	printmac	bin,and,,{string}
+	ELSEIF
+	printmac	bin,and,<{string}>
 	ENDC
-	jsl	printb_l
+	ELSEIF
+
+	IFD	user_{user}
+	printmac	bin,and,<{string}>,{user}
+	ELSEIF
+	printmac	bin,and
+	ENDC
+
+	ENDC
+
+	ENDC
+
 	endm
+
 ;------------------------------------------------------------------------
 printmt	macro	[x,y,clip]	; prints string in X
 	savemode
@@ -2868,13 +2991,29 @@ printmt	macro	[x,y,clip]	; prints string in X
 	returnmode
 	endm
 ;------------------------------------------------------------------------
-printd	macro
-	IFNE	NARG
-	pha
-	sprint	(\1),(\2)
-	pla
+printd	macro	[string,user]
+	IFEQ	NARG
+	printmac	dec,sex
+	ELSEIF
+
+	IFEQ	NARG-1
+	IFD	user_{string}
+	printmac	dec,sex,,{string}
+	ELSEIF
+	printmac	dec,sex,<{string}>
 	ENDC
-	jsl	printbd_l
+	ELSEIF
+
+	IFD	user_{user}
+	printmac	dec,sex,<{string}>,{user}
+	ELSEIF
+	printmac	dec,sex
+	ENDC
+
+	ENDC
+
+	ENDC
+
 	endm
 
 ;------------------------------------------------------------------------
@@ -2889,14 +3028,32 @@ printsd	macro
 
 ;------------------------------------------------------------------------
 
-printw	macro
-	IFNE	NARG
-	pha
-	sprint	(\1),(\2)
-	pla
+printh	macro	[string,user]
+	IFEQ	NARG
+	printmac	hex,and
+	ELSEIF
+
+	IFEQ	NARG-1
+	IFD	user_{string}
+	printmac	hex,and,,{string}
+	ELSEIF
+	printmac	hex,and,<{string}>
 	ENDC
-	jsl	printw_l
+	ELSEIF
+
+	IFD	user_{user}
+	printmac	hex,and,<{string}>,{user}
+	ELSEIF
+	printmac	hex,and
+	ENDC
+
+	ENDC
+
+	ENDC
 	endm
+
+;------------------------------------------------------------------------
+
 
 ;------------------------------------------------------------------------
 
@@ -3407,23 +3564,26 @@ ar_size	=	longa
 	jmp	\3
 	longa
 
-.ok\@	lda	_next,x	;re-link free list
+.ok\@	lda.\0	_next,x	;re-link free list
 	sta	\2
 			;y prev x new
 	tya
 	bne	.NotStart\@
 	lda	\1
-	sta	_next,x
-	stz	_prev,x
+	sta.\0	_next,x
+	stz.\0	_prev,x
 	stx	\1
 	bra	.WasStart\@
 .NotStart\@	lda.w	_next,y
-	sta	_next,x
-	stx	_next,y
-	sty	_prev,x
-.WasStart\@	ldy	_next,x
+	sta.\0	_next,x
+	txa
+	sta.w	_next,y
+	tya
+	sta.\0	_prev,x
+.WasStart\@	ldy.\0	_next,x
 	beq	.EndList\@
-	stx	_prev,y
+	txa
+	sta.w	_prev,y
 .EndList\@             		;X points to new item
 	ifeq	ar_size
 	a8
@@ -3445,53 +3605,26 @@ ar_size	=	longa
 	a16
 	endc
 
-;******* Remove immunity ptr
-	phx
-	txa
-	ldx	allst
-
-.rem\@	cmp	al_immuneptr,x
-	bne	.rem2\@
-	stz	al_immuneptr,x
-.rem2\@
-	cmp	al_ptr,x
-	bne	.rem3\@
-	stz	al_ptr,x
-.rem3\@
-	cmp	al_fireobjptr,x
-	bne	.rem4\@
-	stz	al_fireobjptr,x
-.rem4\@
-	cmp	al_collobjptr,x
-	bne	.remok\@
-	stz	al_collobjptr,x
-
-.remok\@	ldy	_next,x
-	tyx
-	bne	.rem\@
-	plx
-
-	jsl	sallfree_l	; free any memory allocated
-
-	ldy	_prev,x
+	ldy.\0	_prev,x
 	bne	.NotFirst\@
-	ldy	_next,x
+	ldy.\0	_next,x
 	sty	\1
 	lda	#0
 	sta.w	_prev,y
 	bra	.AddToFree\@
 .NotFirst\@	phx
-	lda	_next,x
+	lda.\0	_next,x
 	tax
-	stx	_next,y
+	sta.w	_next,y
 	cmp	#0
 	beq	.justpullit\@
-	sty	_prev,x
+	tya
+	sta.\0	_prev,x
 .justpullit\@
 	plx
 .AddToFree\@
 	lda	\2
-	sta	_next,x
+	sta.\0	_next,x
 	stx	\2
 	ifeq	ar_size
 	a8
@@ -3509,14 +3642,14 @@ FmtFreeLst	macro	*FreeListPtr,MemBlock,Number,StructSize
 	lda	#\2
 	sta	\1
 	ldy	#\3
-.1\@	tax
+.1\@
+	tax
 	clc
 	adc	#\4
-	sta	_next,x
+	sta.\0	_next,x
 	dey
 	bne	.1\@
-;	tax
-	stz	_next,x
+	stz.\0	_next,x
 	endm
 
 ;------------------------------------------------------------------------
@@ -3771,11 +3904,11 @@ dmabitmap macro
 ;------------------------------------------------------------------------
 
 blink	macro
-	IFNE	debuginfo2
+;	IFNE	debuginfo2
 	jsl	doblink\1
-	ELSEIF
-	jml	restart
-	ENDC
+;	ELSEIF
+;	jml	restart
+;	ENDC
 	endm
 
 ;------------------------------------------------------------------------
@@ -3852,13 +3985,14 @@ dmavram macro	;---chan,vmadd,sadd,length
 	sta	ch\1params
 	lda	#1<<(\1)
 	sta	mdmaen
+
 	endm
 
 dmaramram	macro	;---chan,xdestadd,sadd,length
 	ifd	\2
-	ifne	$7e-\2
-	ifne	$7f-\2
-	error	"Destination must be in extended RAM"
+	ifne	$7e0000-\2&$ff0000
+	ifne	$7f0000-\2&$ff0000
+	error	<Destination must be in extended RAM>
 	endc
 	endc
 	endc
@@ -3868,7 +4002,7 @@ dmaramram	macro	;---chan,xdestadd,sadd,length
 
 	ldx	#(\2)&WM
 	stx	wmaddl
-	lda	#(\2)&1
+	lda	#((\2)>>16)&1
 	sta	wmaddh
 
 	ldx	#(\3&WM)
@@ -3975,7 +4109,7 @@ trigse	macro
 	endc
 	endc
 
-	jsl	setport3_l
+;	jsl	setport3_l
 
 	endm
 
@@ -4004,7 +4138,7 @@ trigse_rge	macro
 
 txt	macro
 	db	\1
-	ifeq	janglish
+	ifeq	janglish+german
 	db	"\2",0
 	elseif
 	IFEQ	NARG-2
@@ -4062,6 +4196,9 @@ dmaclear	macro
 ;------------------------------------------------------------------------
 
 dmaxvram macro	;---chan,sadd,length
+	IFNE	LONGA
+	error	<SHORT A required.>
+	ENDC
 	lda	#$80
 	sta	vmainc
 	lda	#(vmdatal&$ff)
@@ -4076,6 +4213,35 @@ dmaxvram macro	;---chan,sadd,length
 	lda	#1
 	sta	ch\1params
 	lda	#1<<(\1)
+	sta	mdmaen
+	endm
+
+
+;------------------------------------------------------------------------
+; dma's source+y into x (vram)
+dmayxvram macro	[channel,source,length]
+	IFNE	LONGA
+	error	<SHORT A required.>
+	ENDC
+
+	lda	#$80
+	sta	vmainc
+	lda	#(vmdatal&$ff)
+	sta	ch{channel}addrb
+	stx	vmaddl
+	a16
+	tya
+	clc
+	adc	#(({source})&WM)
+	sta	ch{channel}addra1tl
+	a8
+	lda	#(({source})>>16)
+	sta	ch{channel}atbank
+	ldx	#{length}
+	stx	ch{channel}dataddrl
+	lda	#1
+	sta	ch{channel}params
+	lda	#1<<({channel})
 	sta	mdmaen
 	endm
 
@@ -4107,13 +4273,11 @@ deccgram	macro
 ;------------------------------------------------------------------------
 
 inccru	macro
-	incbin	\2
+	incbinfile	\2
 \1
 	ifeq	NARG-3
 \3
 	endc
-
-	fileslog	\2
 
 	endm
 
@@ -4202,6 +4366,21 @@ setlevel	macro
 	endm
 
 ;------------------------------------------------------------------------
+bankend64	macro	[banknum]
+	IFNE	NARG-1
+		error	<bankend64 needs to know which bank!>
+	ENDC
+
+bank{banknum}left	=	(({banknum}/2+$41)<<16)-*
+
+	IFLT	bank{banknum}left
+	run	"error	<Bank {banknum} is out of space by ",bank{banknum}left," bytes!>"
+	ELSEIF
+	printf	"%01%36-- %xbank{banknum}left  bytes free.%00%n"
+	ENDC
+
+	endm
+;------------------------------------------------------------------------
 
 
 bankend	macro
@@ -4226,17 +4405,11 @@ totalromspaceleft	=	0
 totalromspaceleft = totalromspaceleft+bank\1left
 
 	IFLT	bank\1left
-		IFD	_SASM
-		progress_off
-		printf	"[0;5;31;1mError: Bank \1 is out of space by ",-bank\1left," bytes.[0m%n"
-		progress_on
-		ELSEIF
-Bank_over_flow_in_Bank	=	\1
-		?Bank_over_flow_in_Bank
-		ENDC
+	printf	"%00%05%31%01** %q%f%q (%l) Error: Bank \1 is out of space by ",-bank\1left," bytes.%00%n"
+	error+
 	ENDC
 
-	printf	"%01-- %xbank\1left bytes free.%00%n"
+	printf	"%01-- %xbank\1left  bytes free.%00%n"
 
 	IFND	_SASM
 	?bank\1left
@@ -4244,6 +4417,19 @@ Bank_over_flow_in_Bank	=	\1
 
 	endm
 
+;------------------------------------------------------------------------
+bank64	macro	[banknum]
+
+	IFNE	NARG-1
+	error	<ebank requires a bank number>
+	MEXIT
+	ENDC
+
+	printf	"%01%36-- 64K BANK {banknum}:%00%n"
+
+	org	(($40+{banknum}/2)<<16),$8000*{banknum}
+
+	endm
 ;------------------------------------------------------------------------
 ;;	list	T+ on macros
 bank	macro
@@ -4276,52 +4462,91 @@ Assembling_bank	=	\1
 
 ;--- Mario Nasty mode macros -------------
 nastyon	macro
-;	php
-;	sei
+	IFNE	LONGA
+	error	<Must be in SHORTA>
+	ENDC
 	lda	mario_draw_mode
 	ora	#mm_ramn+mm_romn
-;	sta	mario_draw_mode
- 	sta	mio_mode
-;	plp
+	sta	mario_draw_mode
+ 	sta.l	mio_mode
 	endm
 
 ;------------------------------------------------------------------------
 
 ramnastyon	macro
+	IFNE	LONGA
+	error	<Must be in SHORTA>
+	ENDC
 	lda	mario_draw_mode
 	ora	#mm_ramn
- 	sta	mio_mode
+	sta	mario_draw_mode
+ 	sta.l	mio_mode
 	endm
 
 ;------------------------------------------------------------------------
 
 romnastyon	macro
+	IFNE	LONGA
+	error	<Must be in SHORTA>
+	ENDC
 	lda	mario_draw_mode
 	ora	#mm_romn
- 	sta	mio_mode
+	sta	mario_draw_mode
+ 	sta.l	mio_mode
+	endm
+;------------------------------------------------------------------------
+storenasty	macro
+	IFNE	LONGA
+	error	<Must be in SHORTA>
+	ENDC
+	lda	mario_draw_mode
+	pha
+	endm
+
+;------------------------------------------------------------------------
+restorenasty	macro
+	IFNE	LONGA
+	error	<Must be in SHORTA>
+	ENDC
+	pla
+	sta	mario_draw_mode
+	sta.l	mio_mode
 	endm
 
 ;------------------------------------------------------------------------
 
 nastyoff	macro
+	IFNE	LONGA
+	error	<Must be in SHORTA>
+	ENDC
 	lda	mario_draw_mode
- 	sta	mio_mode
+	and	#~(mm_romn!mm_ramn)
+	sta	mario_draw_mode
+ 	sta.l	mio_mode
 	endm
 
 ;------------------------------------------------------------------------
 
 ramnastyoff	macro
+	IFNE	LONGA
+	error	<Must be in SHORTA>
+	ENDC
 	lda	mario_draw_mode
 	and	#~mm_ramn
- 	sta	mio_mode
+	sta	mario_draw_mode
+ 	sta.l	mio_mode
 	endm
 
 ;------------------------------------------------------------------------
 
 romnastyoff	macro
+	IFNE	LONGA
+	error	<Must be in SHORTA>
+	ENDC
 	lda	mario_draw_mode
-	and	#mm_romn
- 	sta	mio_mode
+	and	#~mm_romn
+	sta	mario_draw_mode
+ 	sta.l	mio_mode
 	endm
 
 ;------------------------------------------------------------------------
@@ -5078,6 +5303,7 @@ cr_line	MACRO
 ;------------------------------------------------------------------------
 
 del_line	MACRO
+	IFNE	PROGRESS_INDICATOR
 	cr_line
 	IFEQ	ANSI
 	printf	"[79]"
@@ -5085,6 +5311,7 @@ del_line	MACRO
 	printf	"[K"
 	ENDC
 	cr_line
+	ENDC
 	ENDM
 
 ;------------------------------------------------------------------------
@@ -5359,16 +5586,93 @@ progress_off	MACRO
 	ENDM
 	ENDC
 ;------------------------------------------------------------------------
-INCFILE	MACRO
-	IFND	totalfiles
-totalfiles	=	0
+filelevel	=	0
+fll	=	0
+
+	STRING	_ext[20]
+
+INCFILE	MACRO	[name,limit,start,len]
+	IFEQ	NARG-1
+fmlimit	=	8192
+	ELSEIF
+fmlimit	=	{limit}
 	ENDC
-totalfiles	=	totalfiles+1
-	IFEQ	1
-	progress	totalfiles,oldtotalfiles,<\1>
+
+__m	=	_MARIO
+	IFNE	_MARIO
+	mario	off
 	ENDC
-	include	\1
-	fileslog	\1
+
+	defs	1,"{name}"
+	defs	_ext,"{name}"
+	defs	2,"asm"
+	substr	(strlen _ext)-3,(strlen _ext),_ext
+
+	IFNE	(strcmp _ext,2)
+	substr	0,(strlen 1)-4,1	; string 1 is root filename (no ext)
+
+	run	' IFFE %qext\\%$1.ext%q'
+
+	run	' INCPUB %$1'
+;	printf	"Including ext\\%$1.ext%n"
+	ENDC
+	
+	ELSEIF
+
+	defs	2,".mc"
+
+	IFNE	(strcmp _ext,2)
+	substr	0,(strlen 1)-3,1	; string 1 is root filename (no ext)
+
+	run	' IFFE %qext\\%$1.ext%q'
+
+	run	' INCPUB %$1'
+;	printf	"Including ext\\%$1.ext%n"
+	ENDC
+
+	ENDC
+
+	ENDC
+
+	IFNE	__m
+	mario	on
+	ENDC
+
+	run	"	IFND	numfiles",filelevel
+	run	"numfiles",filelevel,"	=	0"
+	ENDC
+
+	run	"numfiles",filelevel,"	=	numfiles",filelevel,"+1"
+
+	run	"nf	=	numfiles",filelevel
+
+	run	"fn",filelevel,"_",nf
+
+filelevel	=	filelevel+1
+	IFGT	fmlimit
+	include	{name}
+	ELSEIF
+	IFEQ	fmlimit
+	incbin	{name}
+	ELSEIF
+	inccol	{name},{start},{len}
+	ENDC
+	ENDC
+filelevel	=	filelevel-1
+
+	run	"nf	=	numfiles",filelevel
+	run	"fta	=	fn",filelevel,"_",nf
+
+	run	"	printf	%q[",filelevel*4,"]%q"
+	printf	"%01-- (",filelevel+1,") %00%33",:$fta," ","[17]%01%33{name}:",[5]*-fta,"%00"
+	IFGT	fmlimit
+	IFGT	(*-fta)-fmlimit
+;	printf	" %01%31WARNING: File exceeds ",fmlimit,".%00"
+	ENDC
+	ENDC
+	printf	"%n"
+	fileslog	{name}
+
 	ENDM
 
 ;------------------------------------------------------------------------
@@ -5495,44 +5799,43 @@ oli	=	LONGI
 
 ;------------------------------------------------------------------------
 ; pass window number as \1
-alloc_window	MACRO
+alloc_window	MACRO	[window,player]
 	savemode
-	a8i16
-	lda	windowmode
-	ora	#wf_\1
-	sta	windowmode
-	window_addr	\1
+	ai16
+	lda	windowmode{player}
+	ora	#wf_{window}
+	sta	windowmode{player}
+	window_addr	{window},{player}
 	returnmode
 		ENDM
 
 ;------------------------------------------------------------------------
 ; pass window number as \1
-dealloc_window	MACRO
+dealloc_window	MACRO	[window,player]
 	savemode
-	a8
-	lda	windowmode
-	and	#~wf_\1
-	sta	windowmode
+	a16
+	lda	windowmode{player}
+	and	#~wf_{window}
+	sta	windowmode{player}
 	returnmode
 			ENDM
 ;------------------------------------------------------------------------
 ; get the address of a window in x
-window_addr		MACRO
+window_addr		MACRO	[window,player]
 	IFEQ	longi
 	progress_off
-	printf	"%31Error: window_addr needs to be in longi mode.%n"
+	error	<Window_addr needs to be in longi mode>
 	progress_on
 	ENDC
-	ldx	#wa_\1*wm_sizeof+windowarray
+	ldx	#wa_{window}*wm_sizeof+windowarray{player}
 	ENDM
 ;------------------------------------------------------------------------
-chk_window	MACRO
+chk_window	MACRO	[window,player]
 	IFNE	longa
-	delline
-	printf	"%31Error: chk_window needs to be in shorta mode.%n"
+	error	<chk_window needs to be in shorta mode>
 	ENDC
-	lda	windowmode
-	and	#wf_\1
+	lda	windowmode{player}
+	and	#wf_{window}
 	ENDM
 ;------------------------------------------------------------------------
 
@@ -5793,12 +6096,12 @@ sndoffset	=	rompos-(sndbank*$8000)
 	org	sndbank*$10000+$8000+sndoffset,rompos
 
 
-\1	incbin	\2
+\1	incfile	\2,0
 \1len	equ	@-rompos
 
 musicsize	=	musicsize+\1len
 
-	fileslog	\2
+;	fileslog	\2
 
 	ENDM
 
@@ -5813,7 +6116,7 @@ bgm	MACRO			;DNLDS THE BGM AND SET
 ;-------------------------------------------------------------------
 startbgm	MACRO			;SET PORT 0 IF IRQ'S ENABLED
 	ifne	longa
-	error	"wrong mode"
+	error	<wrong mode>
 	endc
 	lda	#\1
 	sta	bgm_music
@@ -5822,7 +6125,7 @@ startbgm	MACRO			;SET PORT 0 IF IRQ'S ENABLED
 
 startbgmi	MACRO			;SET PORT 0 IF IRQ'S DISABLED
 	ifne	longa
-	error	"wrong mode"
+	error	<wrong mode>
 	endc
 .re\@	lda	#\1
 	sta	apu_port0
@@ -5875,49 +6178,90 @@ size_al_\1	=	\2
 	ENDM
 ;-------------------------------------------------------------------
 
-
 TESTJOYPAD	MACRO
-	IFEQ	pad_\1>>8
-	lda	trig0
+	IFEQ	NARG-1
+trig	=	trig0
 	ELSEIF
-	lda	trig0h
+trig	=	\2
+	ENDC
+
+	IFEQ	pad_\1>>8
+	lda	trig
+	ELSEIF
+	lda	trig+1
+	ENDC
+	bit	#padl_\1
+	ENDM
+
+
+;-------------------------------------------------------------------
+TESTJOYPAD2	MACRO
+	IFEQ	pad_\1>>8
+	lda	trig1
+	ELSEIF
+	lda	trig1+1
 	ENDC
 	bit	#padl_\1
 	ENDM
 
 ;-------------------------------------------------------------------
 TESTKEYDOWN	MACRO
-	IFEQ	NARG-2
-	lda	\2
+	IFEQ	NARG-1
+cont	=	cont0
 	ELSEIF
-	IFEQ	pad_\1>>8
-	lda	contl0
-	ELSEIF
-	lda	cont0
+cont	=	\2
 	ENDC
+
+	IFEQ	pad_\1>>8
+	lda	cont
+	ELSEIF
+	lda	cont+1
 	ENDC
 	bit	#padl_\1
 	ENDM
 
 ;-------------------------------------------------------------------
 TESTKEYDOWN2	MACRO
-	IFEQ	NARG-2
-	lda	\2
-	ELSEIF
 	IFEQ	pad_\1>>8
-	lda	contl1
-	ELSEIF
 	lda	cont1
-	ENDC
+	ELSEIF
+	lda	cont1+1
 	ENDC
 	bit	#padl_\1
 	ENDM
 ;-------------------------------------------------------------------
 
-irv	macro
-	dw	(\1)&WM
+irvlist	macro
+irvcount	=	0
 	endm
 
+irv	macro	[routine]
+iv_{routine}	equ	irvcount
+	dw	({routine})&WM
+irvcount	=	irvcount+2
+	endm
+
+;-------------------------------------------------------------------
+	string	jmplistname[]="xx"
+
+jmplist	macro	[name]
+jmpcount	=	0
+	defs	jmplistname,"[2]{name}"
+	endm
+
+jmpentry	macro	[routine]
+	defs	1,"{routine}"
+	stripdot	1
+	run	"%$jmplistname","_%$1 = jmpcount"
+	dw	({routine})&WM
+jmpcount	=	jmpcount+2
+	endm
+
+stripdot	macro	[string]
+	IFS	{string},0,"."
+	substr	1,,{string}
+	ENDC
+	endm
 ;-------------------------------------------------------------------
 
 
@@ -5998,10 +6342,23 @@ global	MACRO
 
 	ELSEIF
 
+	IFEQ	publics-1
+
 	rept	narg
+	defs	1,""
 	irs	1,"\1","\2","\3","\4","\5","\6","\7","\8","\9","\a","\b","\c","\d"
 	run	" public %$1"
 	endr
+
+	ELSEIF
+
+	rept	narg
+	defs	1,""
+	irs	1,"\1","\2","\3","\4","\5","\6","\7","\8","\9","\a","\b","\c","\d"
+	run	"_x_%$1 equ 0"
+	endr
+
+	ENDC
 
 	ENDC
 	ENDM
@@ -6012,16 +6369,39 @@ global	MACRO
 
 publics	=	0
 
-INCEXTERNS	MACRO
-	INCLUDE	\1
+INCEXT	MACRO	[filename]
+	IFND	_ext_{filename}
+_ext_{filename}	=	0
+	fopen	+externs.log
+	printf	"	PUB_OR_EXT	{filename}%n"
+	fclose
+	ENDC
 	ENDM
 
-INCPUBLICS	MACRO
+;-------------------------------------------------------------------
+INC_X_	MACRO	[filename]
+publics	=	2
+	include	ext\\{filename}.ext
+	ENDM
+;-------------------------------------------------------------------
+INCPUB	MACRO	[filename]
+	IFND	_ext_{filename}
+_ext_{filename}	=	1
+	ELSEIF
+_ext_{filename}	=	1
+	ENDC
+
 publics	=	1
-	INCLUDE	\1
-publics	=	0
+	include	ext\\{filename}.ext
 	ENDM
 
+;-------------------------------------------------------------------
+PUB_OR_EXT	MACRO	[filename]
+	IFEQ	_ext_{filename}
+publics	=	_ext_{filename}
+	include	ext\\{filename}.ext
+	ENDC
+	ENDM
 
 ;-------------------------------------------------------------------
 makeshade	macro
@@ -6041,7 +6421,7 @@ bit	=	bit<<2
 incshapes	macro
 Do_Hdr	=	1
 hdrpublics	=	0
-	incfile	\1
+	include	\1
 Do_Hdr	=	0
 	incfile	\1
 	endm
@@ -6049,16 +6429,40 @@ Do_Hdr	=	0
 ;-------------------------------------------------------------------
 
 incbinfile	MACRO
-	incbin	\1
-	fileslog	\1
+	incfile	\1,0
+;	incbin	\1
+;	fileslog	\1
 	ENDM
 
 ;-------------------------------------------------------------------
 
 inccolfile	MACRO
-	inccol	\1,\2,\3
-	fileslog	\1
+	incfile	\1,-1,\2,\3
+;	inccol	\1,\2,\3
+;	fileslog	\1
 	ENDM
+
+;-------------------------------------------------------------------
+inccgx8	MACRO	[name,numchrs]
+	inccolfile	{name},0,{numchrs}*2
+	ENDM
+	
+;-------------------------------------------------------------------
+inccgx4	MACRO	[name,numchrs]
+	inccolfile	{name},0,{numchrs}
+	ENDM
+
+;-------------------------------------------------------------------
+inccgx2	MACRO	[name,numchrs]
+	inccolfile	{name},0,{numchrs}/2
+	ENDM
+
+
+;-------------------------------------------------------------------
+incscr	MACRO	[name,numchrs]
+	inccolfile	{name},0,{numchrs}*64
+	ENDM
+
 
 ;-------------------------------------------------------------------
 weapon	MACRO	; name,fire weapon strategy.
@@ -6118,6 +6522,7 @@ clrmes	MACRO
 
 ;---------------------------------------------------
 fast	MACRO
+	IFNE	fast
 	IFEQ	LONGA
 	lda	#1
 	sta	$3039
@@ -6126,6 +6531,7 @@ fast	MACRO
 	lda	#1
 	sta	$3039
 	a16
+	ENDC
 	ENDC
 	ENDM
 
@@ -6360,12 +6766,6 @@ sprtemp	=	0
 	endm
 
 
-;--------------------------------------------------------------
-defpac	macro
-\1	equ	gamepalettes+__totpallen
-__totpallen	=	__totpallen+(\2*32)
-	endm
-
 ;---------------------------------------------------------------
 xxalc	macro
 	chkalc
@@ -6373,4 +6773,318 @@ xxalc	macro
 xxmempt	=	xxmempt+\2
 	endm
 
+;---------------------------------------------------------------
+defflaglist	MACRO	[flagname]
+	defs	2,"{flagname}"
+fbit	=	0
+	ENDM
+;---------------------------------------------------------------
+defflag	MACRO	[flagname]
+
+	run	"%$2_{flagname}	equ	(1<<fbit)"
+
+fbit	=	fbit+1
+	ENDM
+;---------------------------------------------------------------
+word	macro	[val]
+	dw	{val}
+	endm
+;---------------------------------------------------------------
+byte	macro	[val]
+	db	{val}
+	endm
+;---------------------------------------------------------------
+globalscale_a MACRO
+;	jsl	scale_jump_l
+	ENDM
+;---------------------------------------------------------------
+getbitnum	MACRO	[label,val]
+_bitnum	=	31
+{label}	=	_bitnum
+
+	REPT	32
+	IFNE	({val})&(1<<_bitnum)
+{label}	=	_bitnum
+	ENDC
+_bitnum	=	_bitnum-1
+	ENDR
+
+	ENDM
+;---------------------------------------------------------------
+lda_screenmode	MACRO	[flag]
+	IFND	sm_{flag}
+	error	<screenmode: flag undefined>
+	ELSEIF
+	IFEQ	sm_{flag}&$ff
+	lda	screenmode+1
+	ELSEIF
+	lda	screenmode
+	ENDC
+	ENDC
+		ENDM
+
+;---------------------------------------------------------------
+test_screenmode	MACRO	[flag]
+	lda_screenmode	{flag}
+	IFEQ	sm_{flag}&$ff
+	bit	#sm_{flag}>>8
+	ELSEIF
+	bit	#sm_{flag}
+	ENDC
+		ENDM
+
+;---------------------------------------------------------------
+set_screenmode	MACRO	[flags]
+sets_a16	=	0
+	IFEQ	LONGA
+sets_a16	=	1
+	a16
+	ENDC
+	lda	{flags}
+	sta	screenmode
+
+	IFNE	sets_a16
+	a8
+	ENDC
+		ENDM
+;---------------------------------------------------------------
+sta_screenmode	MACRO	[flag]
+stas_a8	=	0
+	IFNE	LONGA
+stas_a8	=	1
+	a8
+	ELSEIF
+	IFND	sm_{flag}
+	error	<screenmode: flag undefined>
+	ELSEIF
+	IFEQ	sm_{flag}&$ff
+	sta	screenmode+1
+	ELSEIF
+	sta	screenmode
+	ENDC
+	ENDC
+	ENDC
+	IFNE	stas_a8
+	a16
+	ENDC
+		ENDM
+
+;---------------------------------------------------------------
+ERROR	MACRO
+	progress_off
+	printf	"%00%31%01** %q%f%q (%l) Error: \1 **%00%n"
+	ERROR+
+	progress_on
+	ENDM
+
+
+
+;---------------------------------------------------------------
+swapshowmap	MACRO
+	IFNE	LONGA
+	error	<Must be in SHORTA>
+	ENDC
+	a16
+	lda	showmap
+	cmp	#bitmap1
+	beq	.setdbl\@
+	lda	#bitmap1
+	bra	.swapit\@
+.setdbl\@	lda	#bitmap1_dbl
+.swapit\@	sta	showmap
+	a8
+	ENDM
+
+
+;---------------------------------------------------------------
+swapdrawmap	MACRO
+	IFNE	LONGA
+	error	<Must be in SHORTA>
+	ENDC
+	a16
+	lda	drawmap
+	cmp	#bitmap1
+	beq	.setdbl\@
+	lda	#bitmap1
+	bra	.swapit\@
+.setdbl\@	lda	#bitmap1_dbl
+.swapit\@	sta	drawmap
+	a8
+	ENDM
+
+;***************************************************************************
+; TIMER MACROS
+
+;-----------------------------------------------------------------------
+check_timer	MACRO	[timer]
+	IFND	{timer}_timer
+	printf	"[0;5;31;1m INVALID TIMER","[0m%n"
+	fail
+	ENDC
+	ENDM
+
+;-----------------------------------------------------------------------
+reset_timer	MACRO	[timer]
+	savemode
+	check_timer	{timer}
+
+	a16
+	lda	#0
+	sta.l	timers+{timer}_timer
+	sta.l	timers+{timer}_timer+2
+	
+	returnmode
+	ENDM
+
+
+;-----------------------------------------------------------------------
+start_timer	MACRO	[timer]
+	savemode
+	check_timer	{timer}
+
+	phx
+	i16
+	ldx	#{timer}_timer
+	jsl	dostart_timer
+	plx
+
+	returnmode
+	ENDM
+
+
+;-----------------------------------------------------------------------
+stop_timer	MACRO	[timer]
+	savemode
+	check_timer	{timer}
+
+	phx
+	i16
+	ldx	#{timer}_timer
+	jsl	dostop_timer
+	plx
+
+	returnmode
+	ENDM
+
+;-----------------------------------------------------------------------
+read_timer	MACRO	[timer]
+	savemode
+	check_timer	{timer}
+
+	lda.l	timers+{timer}_timer
+
+	returnmode
+	ENDM
+
+;-----------------------------------------------------------------------
+
+timer_on	MACRO	[timer]
+	reset_timer	{timer}
+	start_timer	{timer}
+	ENDM
+
+;-----------------------------------------------------------------------
+
+timer_off	MACRO	[timer,string,user]
+	stop_timer	{timer}
+	a16
+	read_timer	{timer}
+	bmi	.nopr\@
+	printd	<{string}>,{user}
+.nopr\@
+	a8
+	ENDM
+
+
+
+;-----------------------------------------------------------------------------
+CHK_NARG	MACRO
+
+	IFEQ	NARG-2
+	IFEQ	MYNARG-\2
+	MEXIT
+	ENDC
+	ENDC
+
+	IFNE	MYNARG-\1
+	defs	2,"%c"
+	error	<(%$2) Wrong no. of params.>
+	ENDC
+		ENDM
+
+;--------------------------------------------------------------
+_MARIO	=	0
+
+MARIO_ON	MACRO
+_MARIO	=	1
+	MARIO	ON
+	ENDM
+
+;--------------------------------------------------------------
+MARIO_OFF	MACRO
+_MARIO	=	0
+	MARIO	OFF
+	ENDM
+
+;--------------------------------------------------------------
+; this macro scales A by the blockmap_resolution
+blockmap_scale_x	MACRO
+	IFNE	blockmap_Resolution-512
+	error	<blockmap_scale macro must be changed>
+	ENDC
+
+	IFEQ	LONGA
+	error	<blockmap_scale_x must be LONGA>
+	ENDC
+
+	xba
+	lsr	a
+	and	#$7f
+
+		ENDM
+; this macro scales A by the blockmap_resolution
+blockmap_scale_z	MACRO
+	IFNE	blockmap_Resolution-512
+	error	<blockmap_scale macro must be changed>
+	ENDC
+
+
+	IFEQ	LONGA
+	error	<blockmap_scale_z must be LONGA>
+	ENDC
+
+	and	#%1111111000000000
+	xba
+	asl	a
+	asl	a
+	asl	a
+
+		ENDM
+; this macro returns a mask in A for the bit in the blockmap
+blockmap_scale_mask	MACRO
+
+	IFNE	LONGA
+
+	phx
+	and	#7
+	asl	a
+	tax
+	lda.l	bitmasks,x
+	plx
+
+	ELSEIF
+
+	a16
+	phx
+	and	#7
+	asl	a
+	tax
+	lda.l	bitmasks,x
+	plx
+	a8
+
+	ENDC
+
+		ENDM
+;***************************************************************************
 

@@ -1,10 +1,12 @@
 	defal	stratptr,3		; ptr to strategy routine
 	defal	immuneptr,2		; ptr. to immunity object
 	defal	collobjptr,2		; ptr to collision object
-	defal	sflags,1		; strategy flags.
+	defal	sflags,0		; strategy flags.
+	defal	sflags1,1
 	defal	sflags2,1		; strategy flags.
 	defal	sflags3,1		; strategy flags.
 	defal	sflags4,1		; strategy flags.
+	defal	sflags5,1		; strategy flags.
 	defal	skidy,1
 	defal	sbyte1,1
 	defal	sbyte2,1
@@ -21,4 +23,4 @@
 	defal	vy,2
 	defal	vz,2
 	defal	hitflags,1
-
+

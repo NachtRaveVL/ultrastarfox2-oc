@@ -1,99 +1,78 @@
 
-	INCPUBLICS	maps\maplist.ext
+	INCPUB	maplist
 
 incmap	MACRO
 	incfile	maps\\\1.asm
 	ENDM
 
+incmmap	MACRO
+	incfile	maps\\mis\\\1.asm
+	ENDM
+
+incbmap	MACRO
+	incfile	maps\\bat\\\1.asm
+	ENDM
+ 
 	mapdef	mapp	; player's map address
 
-courses
-	coursedef	course2
-	coursedef	course1
-	coursedef	course3
+	INCMAP	MAPP
 
-course3
-	mapdef	level3_1
-	mapdef	level3_2
-	mapdef	level3_3
-	mapdef	level3_4
-	mapdef	level3_5
-	mapdef	level3_6
-	mapdef	level3_7
-course2
-	mapdef	level2_1
-	mapdef	level2_2
-	mapdef	level2_3
-	mapdef	level2_4
-	mapdef	level2_5
-	mapdef	level2_6
+titlemap	incmap	titlemap
+exp1map	incmmap	exp1
+pldownmap	incmmap	pldown
 
-course1	mapdef	level1_1
-	mapdef	level1_2
-	mapdef	level1_3
-	mapdef	level1_4
-	mapdef	level1_5
-	mapdef	level1_6
+stg1map	incmmap	stg1
+stg2map	incmmap	stg2
+stg3map	incmmap	stg3
+stg4map	incmmap	stg4
+stg5map	incmmap	stg5
+stg6map	incmmap	stg6
+ext1map	incmmap	ext1
+ext2map	incmmap	ext2
+ext3map	incmmap	ext3
+ext4map	incmmap	ext4
+sos1map	incmmap	sos1
+sos2map	incmmap	sos2
+sos3map	incmmap	sos3
 
+titledemomap		incmmap	demo0
+startenemydemomap	incmmap	demo1
+dummy0demomap	incmmap	demo2
+startarwingdemomap	incmmap	demo3
+corneriafelldemomap	incmmap	demo4
+dummy1demomap	incmmap	demo5
+endingdemomap	incmmap	demo6
+specialenemydemomap	incmmap	demo7
+dummy2demomap	incmmap	demo8
+cannondemomap	incmmap	demo9
 
+tra1map	incmmap	tra1
 
-	INCMAP	map2_3a
-	INCMAP	map2_3b
-	INCMAP	map2_3c
-	INCMAP	map2_4
-	INCMAP	map2_5
-	INCMAP	map2_6a
-	INCMAP	map2_6b
-	INCMAP	map2_6c
-	INCMAP	map2_6d
-
-
-armsstart
-	INCMAP	armsmap
-	printroulen	armsstart,<armsmap>
-
-
-	INCMAP	map3_1a
-	INCMAP	map3_3a
-	INCMAP	map3_3b
-	INCMAP	map3_4a
-	INCMAP	map3_4b
-	INCMAP	map3_4c
-	INCMAP	map3_5
-	INCMAP	map3_6
-	INCMAP	map3_7b
-	INCMAP	map3_7c
-
-	INCMAP	map3_7a
-	INCMAP	MOTHERS
-
-	INCMAP	cl_warp
-	INCMAP	cl_ship
-	INCMAP	cl_earth
-	INCMAP	cl_chase
-	INCMAP	cl_under
-	INCMAP	cl_dive
-
-
-	INCMAP	map1_5
-
-
-	IFEQ	cesdemo-1
-	INCMAP	cmap3_1b
-	INCMAP	cmap3_2
-	fileslog	maps\map3_1b.asm
-	fileslog	maps\map3_2.asm
-	ELSEIF
-	INCMAP	map3_1b
-	INCMAP	map3_2
-	fileslog	maps\cmap3_1b.asm
-	fileslog	maps\cmap3_2.asm
-	ENDC
-
-
+;rdstg1map	incmmap	rdstg1
+;bat1map	incbmap	bat1
+;bat2map	incbmap	bat2
+;bat3map	incbmap	bat3
+;testmap	incmmap	test
+;bat4map	incbmap	bat4
+;bat5map	incbmap	bat5
+;kmap	incmap	kmap
+;tmap	incmap	tmap
+;dmap	incmap	dmap
+;emap	incmap	emap
+;ymap	incmap	ymap
+;typemap	incmmap	type
+;groundmap	incmap	ground
+;marinemap	incmap	marine
+;spacemap	incmap	space
+;desertmap	incmap	desert
+;tunnelmap	incmap	tunnel
+;megane3Dmap	incmap	megane3D
+;titlemap	incmap	title		;Now Not Use
+;gameovermap	incmap	gameover	;Now Not Use
+;intromap	incmap	intro		;Now Not Use
+;mapscr_map	incmap	mapscr		;Now Not Use
 
 maps	=	*-mapbase
 	?maps
 
-
 

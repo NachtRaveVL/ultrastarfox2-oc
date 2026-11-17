@@ -1,6 +1,140 @@
 	shorta
 	longi
 
+; this routine finds an existing hitlist block for the alien block in x
+; with the alien block in y
+; if it cannot find an existing one it creates a new one.. if possible
+; it returns a pointer to the block in x1 (x and y are preserved)
+gethitlistptr
+	stx	x2
+	sty	y2
+	a16
+	tya
+	ldy.w	al_hitlist,x
+	beq	.createnewone
+	tyx
+.search
+	cmp.w	hl_alptr,x
+	beq	.foundone
+	ldy.w	_next,x
+	tyx
+	bne	.search
+
+.createnewone
+	ldx	x2
+	lda	al_hitlist,x
+	sta	y1	; store hitlist ptr
+
+	tax
+	l_add.w	y1,hitlistfree,.nocando
+
+	ldy	x2	; restore hitlist ptr
+	lda	y1
+	sta.w	al_hitlist,y
+
+; now to initialise the new hitlist area
+	stz.w	hl_alptr,x
+	stz.w	hl_hlptr,x
+	a8
+	lda	#hf_firstframe
+	sta.w	hl_flags,x
+	stz.w	hl_hitflags,x
+	stz.w	hl_count,x
+.foundone
+	a8
+	lda.w	hl_flags,x
+	ora	#hf_stillcolliding
+	sta.w	hl_flags,x	; set flags to show that it is still active
+
+	inc.w	hl_count,x	; frame count
+
+	stx	x1
+	ldx	x2
+	ldy	y2
+	rts
+.nocando	blink
+
+;컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴�
+; Call the resource end_hit
+; x is current alien
+; y is current alien's current hitlist entry
+	LONGI
+	LONGA
+call_end_hit
+	php
+	phy
+
+	sty	hit_hlptr
+
+	lda.w	hl_alptr,y	; get offending alien's pointer
+	tay
+	a8
+
+	phy
+	s_get_resource	L,x,tjmp,end_hit,.noend
+	ply
+	phy
+
+	storenasty
+
+	lda	#.noend2>>16
+	pha
+	pea	(.noend2-1)&WM
+
+	romnastyoff
+	jmp.l	[tjmp]
+.noend2
+	restorenasty
+.noend
+	ply
+
+	ply
+	plp
+	rts
+
+;컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴
+	LONGI
+	LONGA
+removehl_l
+; remove the hitlist entry that is linked to this one first
+	phx
+	phy
+
+	jsr	call_end_hit
+
+	ldx.w	hl_alptr,y
+	lda.w	hl_hlptr,y
+	tay
+
+	jsr	call_end_hit
+
+	lda	al_hitlist,x
+	sta	y1
+	phx
+	tyx
+	l_rem.w	y1,hitlistfree
+	plx
+	lda	y1
+	sta	al_hitlist,x
+
+	ply
+	plx
+
+; now actually delete this hitlist entry
+	lda	al_hitlist,x
+	sta	y1
+	phx
+	tyx
+	l_rem.w	y1,hitlistfree
+	plx
+	lda	y1
+	sta	al_hitlist,x
+	rtl
+
+
+	shorta
+	longi
+
 
 ; this macro does a collision detection check
 ; xcol,ycol,zcol = sh_maxx-z of shape #1
@@ -14,7 +148,7 @@ coldet	MACRO	; notcollidedroutine,collidedroutine,offset value for x y and z
 ;offsetforz	=	\5	;sh_zmax
 
 
-	lda.w	\5,x
+	lda.\0	\5,x
 	clc
 	adc	zcol
 	sta	rangexz
@@ -30,7 +164,7 @@ coldet	MACRO	; notcollidedroutine,collidedroutine,offset value for x y and z
 	bmi	.chkcoll6\@
 	jmp	\1
 .chkcoll6\@
-	lda.w	\3,x
+	lda.\0	\3,x
 	clc
 	adc	xcol
 	sta	rangexz
@@ -47,7 +181,7 @@ coldet	MACRO	; notcollidedroutine,collidedroutine,offset value for x y and z
 	jmp	\1
 .chkcoll3\@
 
-	lda.w	\4,x
+	lda.\0	\4,x
 	clc
 	adc	ycol
 	sta	rangexz
@@ -63,6 +197,7 @@ coldet	MACRO	; notcollidedroutine,collidedroutine,offset value for x y and z
 	bmi	\2
 	jmp	\1
 	ENDM
+
 
 
 scale_a	MACRO
@@ -167,30 +302,72 @@ init_strats_ram_l
 	php
 
 	a8i16
-
-	IFEQ	0
-	ldx	allst
-.ccf	s_jmp_alsflag	x,collide,.ncci
-;	lda	al_sflags,x
-;;	bit	#asf_colldisable
-;;	bne	.nclc
-;	bit	#asf_collide
-;	bne	.ncci
-	s_set_alvar		B,x,al_collcount,#1
-	bra	.nclc
-.ncci	s_set_alsflag		x,Lcollide
-.nclc	s_clr_alsflag		x,collide
-	s_set_alvar		W,x,al_collobjptr,#0
-.nc	txy
-	ldx	_next,y
-	bne	.ccf
-
-	ENDC
-
-	a8
 	lda	#$7e
 	pha
 	plb		; set data bank register
+
+	ldx	allst
+.ccf	s_jmp_NOTalsflag x,removeme,.dontremove
+	a16
+	lda	_next,x
+	pha
+	a8
+	s_remove_obj	x,really
+	ply
+	tyx
+	jmp	.okgo	
+.dontremove
+; set the real invincibility flag here...
+; if it is set in the strategies problems arise.
+
+	s_jmp_alsflag	x,nohitaffect,.setit
+	s_clr_alsflag	x,nohitaffect_really
+	bra		.okclr
+.setit	s_set_alsflag	x,nohitaffect_really
+.okclr
+
+	s_jmp_alsflag	x,collide,.ncci
+	s_clr_alsflag	x,Lcollide
+; obsolete	s_set_alvar	B,x,al_collcount,#1
+	bra		.nclc
+.ncci	s_set_alsflag	x,Lcollide
+.nclc	s_clr_alsflag	x,collide
+
+; obsolete	s_set_alvar	W,x,al_collobjptr,#0
+
+; now to scan the hitlist for irrelevants (banana bouqet)
+
+	ldy	al_hitlist,x
+	beq	.nc	; nothing in there
+	a16
+.nxthl
+	lda.w	_next,y
+	pha
+
+	lda.w	hl_flags,y
+	bit	#hf_stillcolliding
+	bne	.clrit
+; it is no longer colliding so remove it
+	jsl	removehl_l
+	bra	.nxt1
+.clrit
+; clear the stillcolliding flag
+	a8
+	and	#~hf_stillcolliding
+	sta.w	hl_flags,y
+	a16
+.nxt1
+	ply
+	bne	.nxthl
+
+	a8
+
+.nc	txy
+	ldx	_next,y
+.okgo
+	bne	.ccf
+
+
 
 ;----------------------------------------------------
 	lda	collistcnt
@@ -229,8 +406,8 @@ chkcoll
 	tyx
 	stx	tmpx
 
-	test_alsflag	x,collide
-	lbne	.finish
+;	test_alsflag	x,collide
+;	lbne	.finish
 
 	ldy	al_shape,x
 	sty	currshape
@@ -242,7 +419,10 @@ chkcoll
 	a16
 
 .usexyz	lda.w	cl_colbox&WM,y
-	lbeq	.normcol		; normal collision detection?
+	lbeq	.normcol	; normal collision detection?
+
+	km_db7f			; databank 7f
+
 .andagain	tay			; y is now box list pointer
 	a8
 	stz	temphitflag
@@ -275,7 +455,7 @@ chkcoll
 .noanim
 	lda.w	cb_rotz,y
 	sta	scale
-	bit	#cbf_rotz!cbf_roty!cbf_rotx
+	bit	#cbf_rotz!cbf_roty!cbf_rotx!cbf_rotxyz
 	lbeq	.normrot
 	bit	#cbf_rotz
 	lbne	.rotz
@@ -294,9 +474,9 @@ chkcoll
 	sta	y1
 	sta	y2
 
-	lda	al_rotz,x
+	lda.l	al_rotz,x
 	beq	.missrotz2
-	jsr	rotate_8yx_ram
+	jsl	rotate_8yx_ram_l
 .missrotz2
 ; next, x rotation...
 	lda	y2
@@ -306,20 +486,20 @@ chkcoll
 	sta	z1
 	sta	z2
 
-	lda	al_rotx,x
+	lda.l	al_rotx,x
 	beq	.missrotx2
-	jsr	rotate_8yz_ram
+	jsl	rotate_8yz_ram_l
 .missrotx2
 ; next y rotation...
 	lda	x2
 	sta	x1	; values from previous rotates
 
-	lda	y2
-	sta	y1
+	lda	z2
+	sta	z1
 
-	lda	al_roty,x
+	lda.l	al_roty,x
 	beq	.missroty2
-	jsr	rotate_8xz_ram
+	jsl	rotate_8xz_ram_l
 .missroty2
 ; now to scale and add to offsets...
 	a16
@@ -327,21 +507,21 @@ chkcoll
 	sexa
 	SCALE_A
 	clc
-	adc	al_worldx,x
+	adc.l	al_worldx,x
 	sta	xp		; x scaled and stored
 
 	lda	z2
 	sexa
 	SCALE_A
 	clc
-	adc	al_worldz,x
+	adc.l	al_worldz,x
 	sta	zp		; z scaled and stored
 
 	lda	y2
 	sexa
 	SCALE_A
 	clc
-	adc	al_worldy,x
+	adc.l	al_worldy,x
 	sta	ys
 ; finished (phew!)
 	jmp	.normnon
@@ -356,25 +536,25 @@ chkcoll
 	sta	z1
 	sta	z2
 
-	lda	al_rotx,x
+	lda.l	al_rotx,x
 	beq	.missrotx
-	jsr	rotate_8yz_ram	; rotate it
+	jsl	rotate_8yz_ram_l	; rotate it
 .missrotx	a16
 	lda	y2		; get result y
 	sexa
 	SCALE_A			; scale it
 	clc
-	adc	al_worldy,x
+	adc.l	al_worldy,x
 	sta	ys		; store the y position
 	lda	z2
 	sexa
 	SCALE_A			; scale it
 	clc
-	adc	al_worldz,x
+	adc.l	al_worldz,x
 	sta	zp		; store the z position
 	lda.w	cb_xoff,y		; add the collision box offsets
 	clc
-	adc	al_worldx,x
+	adc.l	al_worldx,x
 	sta	xp
 	jmp	.normnon
 
@@ -387,25 +567,25 @@ chkcoll
 	sta	z1
 	sta	z2
 
-	lda	al_roty,x
+	lda.l	al_roty,x
 	beq	.missroty
-	jsr	rotate_8xz_ram	; rotate it
+	jsl	rotate_8xz_ram_l	; rotate it
 .missroty	a16
 	lda	x2		; get result x
 	sexa
 	SCALE_A
 	clc
-	adc	al_worldx,x
+	adc.l	al_worldx,x
 	sta	xp		; store the x position
 	lda	z2
 	sexa
 	SCALE_A
 	clc
-	adc	al_worldz,x
+	adc.l	al_worldz,x
 	sta	zp		; store the z position
 	lda.w	cb_yoff,y
 	clc
-	adc	al_worldy,x
+	adc.l	al_worldy,x
 	sta	ys
 	jmp	.normnon
 
@@ -417,25 +597,25 @@ chkcoll
 	sta	y1
 	sta	y2
 
-	lda	al_rotz,x
+	lda.l	al_rotz,x
 	beq	.missrotz
-	jsr	rotate_8yx_ram	; rotate it
+	jsl	rotate_8yx_ram_l	; rotate it
 .missrotz	a16
 	lda	x2		; get result x
 	sexa
 	SCALE_A
 	clc
-	adc	al_worldx,x
+	adc.l	al_worldx,x
 	sta	xp		; store the x position
 	lda	y2
 	sexa
 	SCALE_A
 	clc
-	adc	al_worldy,x
+	adc.l	al_worldy,x
 	sta	ys		; store the y position
 	lda.w	cb_zoff,y
 	clc
-	adc	al_worldz,x
+	adc.l	al_worldz,x
 	sta	zp
 	bra	.normnon
 
@@ -444,15 +624,15 @@ chkcoll
 	a16
 	lda.w	cb_xoff,y		; add the collision box offsets
 	clc
-	adc	al_worldx,x
+	adc.l	al_worldx,x
 	sta	xp
 	lda.w	cb_yoff,y
 	clc
-	adc	al_worldy,x
+	adc.l	al_worldy,x
 	sta	ys
 	lda.w	cb_zoff,y
 	clc
-	adc	al_worldz,x
+	adc.l	al_worldz,x
 	sta	zp
 .normnon
 
@@ -467,8 +647,11 @@ chkcoll
 	a8
 	lda.w	cb_flagset,y
 	sta	flagset
+	km_db7e
 	a16
 	jsr	.forcein
+	a16
+	km_db7f
 	ply
 	plx
 ;	lda	temphitflag
@@ -478,6 +661,7 @@ chkcoll
 	lbne	.andagain
 
 .finish	a8
+	km_db7e
 	rts
 
 	longa	
@@ -512,8 +696,8 @@ chkcoll0
 
 	ldy	tmpx	; x = alien1, y = alien2
 
-	test_alsflag	y,collide
-	lbne	chkcollnxt
+;	test_alsflag	y,collide
+;	lbne	chkcollnxt
 
 	lda.w	al_collflags,y
 	and	al_collflags,x
@@ -564,7 +748,7 @@ chkcoll0
 	sta	objy
 	lda	tpz
 	sta	objz		; copy alien #2's x,y centre
-	COLDET	.chkcollnxt,.nxtbox,cl_xmax&WM,cl_ymax&WM,cl_zmax&WM
+	COLDET.w	.chkcollnxt,.nxtbox,cl_xmax&WM,cl_ymax&WM,cl_zmax&WM
 .chkcollnxt	pla
 	jmp	chkcollnxt
 .nxtbox	pla
@@ -572,7 +756,8 @@ chkcoll0
 
 nxtbox
 	a8
-	lda.w	cb_frame,x
+
+	lda.l	cbx_frame,x
 	beq	.noanim		; check for animated box
 	dec	a
 	sta	x1
@@ -602,9 +787,9 @@ nxtbox
 	
 .firstframe
 .noanim
-	lda.w	cb_rotz,x
+	lda.l	cbx_rotz,x
 	sta	scale
-	and	#cbf_rotz!cbf_rotx!cbf_roty
+	and	#cbf_rotz!cbf_rotx!cbf_roty!cbf_rotxyz
 	lbeq	.normrot		; rotated box?
 	bit	#cbf_rotz
 	lbne	.rotz
@@ -616,40 +801,40 @@ nxtbox
 .rotxyz
 ; full rotation... zxy
 ; first, z rotation...
-	lda.w	cb_xoff,x
+	lda.l	cbx_xoff,x
 	sta	x1
 	sta	x2
 
-	lda.w	cb_yoff,x
+	lda.l	cbx_yoff,x
 	sta	y1
 	sta	y2
 
 	lda.w	al_rotz,y
 	beq	.missrotz2
-	jsr	rotate_8yx_ram
+	jsl	rotate_8yx_ram_l
 .missrotz2
 ; next, x rotation
 	lda	y2
 	sta	y1	; get previous rotated value
 
-	lda.w	cb_zoff,x
+	lda.l	cbx_zoff,x
 	sta	z1
 	sta	z2
 
 	lda.w	al_rotx,y
 	beq	.missrotx2
-	jsr	rotate_8yz_ram
+	jsl	rotate_8yz_ram_l
 .missrotx2
 ; next, y rotation...
 	lda	x2
 	sta	x1
 
-	lda	y2
-	sta	y1	; values from previous rotate
+	lda	z2
+	sta	z1	; values from previous rotate
 
 	lda.w	al_roty,y
 	beq	.missroty2
-	jsr	rotate_8xz_ram
+	jsl	rotate_8xz_ram_l
 .missroty2
 ; now to scale and add to offsets
 	a16
@@ -680,16 +865,16 @@ nxtbox
 
 	shorta
 .rotx
-	lda.w	cb_yoff,x
+	lda.l	cbx_yoff,x
 	sta	y1
 	sta	y2
-	lda.w	cb_zoff,x
+	lda.l	cbx_zoff,x
 	sta	z1
 	sta	z2
 
 	lda.w	al_rotx,y
 	beq	.missrotx
-	jsr	rotate_8yz_ram
+	jsl	rotate_8yz_ram_l
 .missrotx	a16
 	lda	y2
 	sexa
@@ -705,22 +890,22 @@ nxtbox
 	sta	tpz
 	lda	objx
 	clc
-	adc.w	cb_xoff,x
+	adc.l	cbx_xoff,x
 	sta	tpx
 	jmp	.normnon
 
 	shorta
 .roty
-	lda.w	cb_xoff,x
+	lda.l	cbx_xoff,x
 	sta	x1
 	sta	x2
-	lda.w	cb_zoff,x
+	lda.l	cbx_zoff,x
 	sta	z1
 	sta	z2
 
 	lda.w	al_roty,y
 	beq	.missroty
-	jsr	rotate_8xz_ram
+	jsl	rotate_8xz_ram_l
 .missroty	a16
 	lda	x2
 	sexa
@@ -736,22 +921,22 @@ nxtbox
 	sta	tpz
 	lda	objy
 	clc
-	adc.w	cb_yoff,x
+	adc.l	cbx_yoff,x
 	sta	tpy
 	brl	.normnon
 
 	shorta
 .rotz
-	lda.w	cb_xoff,x
+	lda.l	cbx_xoff,x
 	sta	x1
 	sta	x2
-	lda.w	cb_yoff,x
+	lda.l	cbx_yoff,x
 	sta	y1
 	sta	y2
 
 	lda.w	al_rotz,y
 	beq	.missrotz
-	jsr	rotate_8yx_ram
+	jsl	rotate_8yx_ram_l
 .missrotz	a16
 	lda	x2
 	sexa
@@ -767,36 +952,36 @@ nxtbox
 	sta	tpy
 	lda	objz
 	clc
-	adc.w	cb_zoff,x
+	adc.l	cbx_zoff,x
 	sta	tpz
 	bra	.normnon
 
 .normrot	a16
 	lda	objx
 	clc
-	adc.w	cb_xoff,x
+	adc.l	cbx_xoff,x
 	sta	tpx
 	lda	objy
 	clc
-	adc.w	cb_yoff,x
+	adc.l	cbx_yoff,x
 	sta	tpy
 	lda	objz
 	clc
-	adc.w	cb_zoff,x
+	adc.l	cbx_zoff,x
 	sta	tpz
 .normnon
 
-	COLDET	chknxtbox,boxhit,cb_xmax,cb_ymax,cb_zmax
+	COLDET.l	chknxtbox,boxhit,cbx_xmax,cbx_ymax,cbx_zmax
 
 boxhit	a8
 
-	lda.w	cb_flagset,x
+	lda.l	cbx_flagset,x
 	ora	temphitflag2
 	sta	temphitflag2	; set flags for object checking against
 
 	a16
 
-chknxtbox	lda.w	cb_next,x
+chknxtbox	lda.l	cbx_next,x
 	tax
 	lbne	nxtbox
 
@@ -804,46 +989,110 @@ chknxtbox	lda.w	cb_next,x
 	lda	temphitflag2
 	beq	.nohit
 	phx
-	ldx	tmpx
-	s_set_alsflag	x,collide
-	s_set_alvartobeobj	x,al_collobjptr,y
-	s_set_alsflag	y,collide
-	s_set_alvartobeobj	y,al_collobjptr,x
 
+	ldx	tmpx		; x<->y
+	jsr	gethitlistptr	; get pointer to hit list structure for x
+	ldx	x1
+	stx	z1		; temporarily preserve result
+	tyx
+	ldy	tmpx		; y<->x
+	jsr	gethitlistptr	; get pointer to hit list structure for y
+
+	s_set_alsflag	x,collide
+	s_set_alsflag	y,collide
+
+; obsolete	s_set_alvartobeobj	x,al_collobjptr,y
+; obsolete	s_set_alvartobeobj	y,al_collobjptr,x
+
+	a16
+	phx
+	txa
+	ldx	z1
+	sta.w	hl_alptr,x
+
+	ldy	x1		; pointers to hitlist structure
+	lda	tmpx
+	sta.w	hl_alptr,y
+
+	txa
+	sta.w	hl_hlptr,y
+	tya
+	sta.w	hl_hlptr,x
+
+	a8
+
+	lda	temphitflag2
+	sta.w	hl_hitflags,y	; set the hitflag mask y
+	lda	flagset
+	sta.w	hl_hitflags,x	; set the hitflag mask x
+
+	ply
 	lda.w	al_hitflags,y
 	ora	temphitflag2
 	sta.w	al_hitflags,y
+	ldx	tmpx
 	lda	al_hitflags,x
 	ora	flagset
 	sta	al_hitflags,x
-
 	plx
-	jmp	endccoll
+	jmp	chkcollnxt	;endccoll
 .nohit
 	jmp	chkcollnxt
 
 	longa
 normalcol
-	COLDET	chkcollnxt,chkcoll61,cl_xmax&WM,cl_ymax&WM,cl_zmax&WM
+	COLDET.w	chkcollnxt,chkcoll61,cl_xmax&WM,cl_ymax&WM,cl_zmax&WM
 
 chkcoll61
 	phx
 
-	ldx	tmpx
+	a8
+	ldx	tmpx		; x<->y
+	jsr	gethitlistptr	; get pointer to hit list structure for x
+	ldx	x1
+	stx	z1		; temporarily preserve result
+	tyx
+	ldy	tmpx		; y<->x
+	jsr	gethitlistptr	; get pointer to hit list structure for y
+
+
+	s_set_alsflag	x,collide
+	s_set_alsflag	y,collide
+
+; obsolete	s_set_alvartobeobj	x,al_collobjptr,y
+; obsolete	s_set_alvartobeobj	y,al_collobjptr,x
+
+
+
+	a16
+	txa
+	ldx	z1
+	sta.w	hl_alptr,x
+
+	ldy	x1		; pointers to hitlist structure
+	lda	tmpx
+	sta.w	hl_alptr,y
+
+	txa
+	sta.w	hl_hlptr,y
+	tya
+	sta.w	hl_hlptr,x
 
 	a8
 
-	s_set_alsflag	x,collide
-	s_set_alvartobeobj	x,al_collobjptr,y
-	s_set_alsflag	y,collide
-	s_set_alvartobeobj	y,al_collobjptr,x
+	lda	flagset
+	sta.w	hl_hitflags,x	; set the hitflag mask x
 
+	ldx	tmpx
 	lda	al_hitflags,x
 	ora	flagset
 	sta	al_hitflags,x
-.out
+
+
 	plx
-	jmp	endccoll
+
+
+;;;	jmp	endccoll
 chkcollnxt
 	a16
 	lda	tmpcl
@@ -861,510 +1110,10 @@ endccoll
 
 
 
-;*****************************************************************************
-;* rotate_8xz
-;*
-;*
-;* entry:		a8i16
-;*	A  : Y angle
-;*	x1 : x vector 8bit
-;*	z1 : z vector 8bit
-;*
-;*
-;* exit:		a8i16
-;*
-;*	x2 : rotated x vector 16bit
-;*	z2 : rotated z vector 16bit
-;*
-;*
-	
-	SHORTA
-	LONGI
-rotate_8xz_ram
-	phy
-	phx
-	php
-
-	i8
-
-	nega
-	tax
-	lda.l	ramcostab,x
-	sta	cy
-	lda.l	ramsintab,x
-	sta	sy
-
-	mulslogmacram x1,cy
-	stx	x2
-	mulslogmacram z1,sy
-	txa
-	clc
-	adc	x2
-	sta	x2
-	sexam	x2+1
-
-	mulslogmacram x1,sy
-	txa
-	nega
-	sta	z2
-	mulslogmacram z1,cy
-	txa
-	clc
-	adc	z2
-	sta	z2
-	sexam	z2+1
-
-	plp
-	plx
-	ply
-
-
-	rts
-
-;*****************************************************************************
-;* rotate_8yz
-;*
-;*
-;* entry:		a8i16
-;*	A  : X angle
-;*	y1 : y vector 8bit
-;*	z1 : z vector 8bit
-;*
-;*
-;* exit:		a8i16
-;*
-;*	y2 : rotated y vector 16bit
-;*	z2 : rotated z vector 16bit
-;*
-;*
-	
-	SHORTA
-	LONGI
-rotate_8yz_ram
-	phx
-	phy
-	php
-
-	i8
-
-	tax
-	lda.l	ramcostab,x
-	sta	cy
-	lda.l	ramsintab,x
-	sta	sy
-
-	mulslogmacram y1,cy
-	stx	y2
-	mulslogmacram z1,sy
-	txa
-	clc
-	adc	y2
-	sta	y2
-	sexam	y2+1
-
-	mulslogmacram y1,sy
-	txa
-	nega
-	sta	z2
-	mulslogmacram z1,cy
-	txa
-	clc
-	adc	z2
-	sta	z2
-	sexam	z2+1
-
-	plp
-	ply
-	plx
-
-
-	rts
-
-
-;*****************************************************************************
-;* rotate_8yx
-;*
-;*
-;* entry:		a8i16
-;*	A  : Y angle
-;*	x1 : x vector 8bit
-;*	z1 : z vector 8bit
-;*
-;*
-;* exit:		a8i16
-;*
-;*	x2 : rotated x vector 16bit
-;*	z2 : rotated z vector 16bit
-;*
-;*
-	
-	SHORTA
-	LONGI
-rotate_8yx_ram
-	phy
-	phx
-	php
-
-	i8
-
-	tax
-	lda.l	ramcostab,x
-	sta	cy
-	lda.l	ramsintab,x
-	sta	sy
-
-	mulslogmacram x1,cy
-	stx	x2
-	mulslogmacram y1,sy
-	txa
-	clc
-	adc	x2
-	sta	x2
-	sexam	x2+1
-
-	mulslogmacram x1,sy
-	txa
-	nega
-	sta	y2
-	mulslogmacram y1,cy
-	txa
-	clc
-	adc	y2
-	sta	y2
-	sexam	y2+1
-
-	plp
-	plx
-	ply
-
-
-	rts
 
 
 
 
-ramsintab
-	DB	0
-	DB	3
-	DB	6
-	DB	9
-	DB	12
-	DB	15
-	DB	18
-	DB	21
-	DB	24
-	DB	27
-	DB	30
-	DB	33
-	DB	36
-	DB	39
-	DB	42
-	DB	45
-	DB	48
-	DB	51
-	DB	54
-	DB	57
-	DB	59
-	DB	62
-	DB	65
-	DB	67
-	DB	70
-	DB	73
-	DB	75
-	DB	78
-	DB	80
-	DB	82
-	DB	85
-	DB	87
-	DB	89
-	DB	91
-	DB	94
-	DB	96
-	DB	98
-	DB	100
-	DB	102
-	DB	103
-	DB	105
-	DB	107
-	DB	108
-	DB	110
-	DB	112
-	DB	113
-	DB	114
-	DB	116
-	DB	117
-	DB	118
-	DB	119
-	DB	120
-	DB	121
-	DB	122
-	DB	123
-	DB	123
-	DB	124
-	DB	125
-	DB	125
-	DB	126
-	DB	126
-	DB	126
-	DB	126
-	DB	126
-
-ramcostab
-	DB	127
-	DB	126
-	DB	126
-	DB	126
-	DB	126
-	DB	126
-	DB	125
-	DB	125
-	DB	124
-	DB	123
-	DB	123
-	DB	122
-	DB	121
-	DB	120
-	DB	119
-	DB	118
-	DB	117
-	DB	116
-	DB	114
-	DB	113
-	DB	112
-	DB	110
-	DB	108
-	DB	107
-	DB	105
-	DB	103
-	DB	102
-	DB	100
-	DB	98
-	DB	96
-	DB	94
-	DB	91
-	DB	89
-	DB	87
-	DB	85
-	DB	82
-	DB	80
-	DB	78
-	DB	75
-	DB	73
-	DB	70
-	DB	67
-	DB	65
-	DB	62
-	DB	59
-	DB	57
-	DB	54
-	DB	51
-	DB	48
-	DB	45
-	DB	42
-	DB	39
-	DB	36
-	DB	33
-	DB	30
-	DB	27
-	DB	24
-	DB	21
-	DB	18
-	DB	15
-	DB	12
-	DB	9
-	DB	6
-	DB	3
-	DB	0
-	DB	-3
-	DB	-6
-	DB	-9
-	DB	-12
-	DB	-15
-	DB	-18
-	DB	-21
-	DB	-24
-	DB	-27
-	DB	-30
-	DB	-33
-	DB	-36
-	DB	-39
-	DB	-42
-	DB	-45
-	DB	-48
-	DB	-51
-	DB	-54
-	DB	-57
-	DB	-59
-	DB	-62
-	DB	-65
-	DB	-67
-	DB	-70
-	DB	-73
-	DB	-75
-	DB	-78
-	DB	-80
-	DB	-82
-	DB	-85
-	DB	-87
-	DB	-89
-	DB	-91
-	DB	-94
-	DB	-96
-	DB	-98
-	DB	-100
-	DB	-102
-	DB	-103
-	DB	-105
-	DB	-107
-	DB	-108
-	DB	-110
-	DB	-112
-	DB	-113
-	DB	-114
-	DB	-116
-	DB	-117
-	DB	-118
-	DB	-119
-	DB	-120
-	DB	-121
-	DB	-122
-	DB	-123
-	DB	-123
-	DB	-124
-	DB	-125
-	DB	-125
-	DB	-126
-	DB	-126
-	DB	-126
-	DB	-126
-	DB	-126
-	DB	-127
-	DB	-126
-	DB	-126
-	DB	-126
-	DB	-126
-	DB	-126
-	DB	-125
-	DB	-125
-	DB	-124
-	DB	-123
-	DB	-123
-	DB	-122
-	DB	-121
-	DB	-120
-	DB	-119
-	DB	-118
-	DB	-117
-	DB	-116
-	DB	-114
-	DB	-113
-	DB	-112
-	DB	-110
-	DB	-108
-	DB	-107
-	DB	-105
-	DB	-103
-	DB	-102
-	DB	-100
-	DB	-98
-	DB	-96
-	DB	-94
-	DB	-91
-	DB	-89
-	DB	-87
-	DB	-85
-	DB	-82
-	DB	-80
-	DB	-78
-	DB	-75
-	DB	-73
-	DB	-70
-	DB	-67
-	DB	-65
-	DB	-62
-	DB	-59
-	DB	-57
-	DB	-54
-	DB	-51
-	DB	-48
-	DB	-45
-	DB	-42
-	DB	-39
-	DB	-36
-	DB	-33
-	DB	-30
-	DB	-27
-	DB	-24
-	DB	-21
-	DB	-18
-	DB	-15
-	DB	-12
-	DB	-9
-	DB	-6
-	DB	-3
-	DB	0
-	DB	3
-	DB	6
-	DB	9
-	DB	12
-	DB	15
-	DB	18
-	DB	21
-	DB	24
-	DB	27
-	DB	30
-	DB	33
-	DB	36
-	DB	39
-	DB	42
-	DB	45
-	DB	48
-	DB	51
-	DB	54
-	DB	57
-	DB	59
-	DB	62
-	DB	65
-	DB	67
-	DB	70
-	DB	73
-	DB	75
-	DB	78
-	DB	80
-	DB	82
-	DB	85
-	DB	87
-	DB	89
-	DB	91
-	DB	94
-	DB	96
-	DB	98
-	DB	100
-	DB	102
-	DB	103
-	DB	105
-	DB	107
-	DB	108
-	DB	110
-	DB	112
-	DB	113
-	DB	114
-	DB	116
-	DB	117
-	DB	118
-	DB	119
-	DB	120
-	DB	121
-	DB	122
-	DB	123
-	DB	123
-	DB	124
-	DB	125
-	DB	125
-	DB	126
-	DB	126
-	DB	126
-	DB	126
-	DB	126
-
+;**********************************************************************************
 	incfile	colboxes.asm
+

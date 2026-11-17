@@ -22,6 +22,8 @@
 ;*                                                                         *
 ;***************************************************************************
 
+	incpub	debug
+
 	IFNE	debuginfo
 
 altype_shapeptr	=	1
@@ -50,16 +52,16 @@ aldebugend	MACRO
 
 aliendebugtable
 ;	aldebug	shape,shapeptr,0,4
-	aldebug	worldx,norm,0,5
-	aldebug	worldy,norm,0,6
-	aldebug	worldz,zrel,0,7
-	aldebug	rotx,norm!SIGNED,0,8
-	aldebug	roty,norm!SIGNED,0,9
-	aldebug	rotz,norm!SIGNED,0,10
+	aldebug	worldx,norm,0,18
+	aldebug	worldy,norm,0,19
+	aldebug	worldz,zrel,0,20
+	aldebug	rotx,norm!SIGNED,0,21
+	aldebug	roty,norm!SIGNED,0,22
+	aldebug	rotz,norm!SIGNED,0,23
 ;	aldebug	vel,norm!SIGNED,0,11
 ;	aldebug	animframe,norm,0,12
 ;	aldebug	colframe,norm,0,13
-	aldebug	tx,norm,0,14
+;	aldebug	tx,norm,0,14
 
 
 	aldebugend
@@ -217,11 +219,11 @@ stratdebug_l
 
 
 .zrel	longa
-	ldx	playpt
+	ldx	playpt1
 	lda	x1
 	sec
 	sbc	al_worldz,x
-	printw
+	printh
 	jmp	.back
 
 
@@ -230,7 +232,7 @@ stratdebug_l
 	bit	#128
 	beq	.byte
 	lda	x1
-	printw
+	printh
 	jmp	.back
 .byte
 	bit	#SIGNED
@@ -319,11 +321,13 @@ stratdebug_l
 	a8
 .norotdown
 
-	jsl		calcbgscroll_l
+;'94/01/17 :kawaguchi ga comment (krister routine del)
+;;;	jsl		calcbgscroll_l
 
 	jmp		.notposback
 .xzmove
 
+	IFEQ		1
 	TESTKEYDOWN	X
 	lbeq		.nozoomin
 	a16
@@ -342,46 +346,69 @@ stratdebug_l
 	sta		outdist
 	a8
 .nozoomout
+	ENDC
+
+	TESTKEYDOWN	Y
+	lbne		.ykeyspecial
 
 	TESTKEYDOWN	LEFT
 	lbeq		.notposleft
 	a16
-	lda		pviewposx
+	lda		outvy
 	sec
-	sbc		#25
-	sta		pviewposx
+	sbc		#2*256
+	sta		outvy
 	a8
 .notposleft
 	TESTKEYDOWN	RIGHT
 	lbeq		.notposright
 	a16
-	lda		pviewposx
+	lda		outvy
 	clc
-	adc		#25
-	sta		pviewposx
+	adc		#2*256
+	sta		outvy
 	a8
 .notposright
 
 	TESTKEYDOWN	UP
 	lbeq		.notposfor
-	a16
-	lda		pviewposz
-	clc
-	adc		#25
-	sta		pviewposz
-	a8
+	lda	#0
+	jsr	addviewvec
+
 .notposfor
 
 	TESTKEYDOWN	DOWN
 	lbeq		.notposback
+	lda	#deg180
+	jsr	addviewvec
+.notposback
+	jmp		.noykey
+
+; special functions if push the Y key:
+.ykeyspecial
+	TESTKEYDOWN	DOWN
+	lbeq		.noposdown
 	a16
-	lda		pviewposz
+	lda		pviewposy
+	clc
+	adc		#25
+	sta		pviewposy
+	a8
+.noposdown
+
+	TESTKEYDOWN	UP
+	lbeq		.noposup
+	a16
+	lda		pviewposy
 	sec
 	sbc		#25
-	sta		pviewposz
+	sta		pviewposy
 	a8
-.notposback
+.noposup
 
+
+
+.noykey
 	TESTKEYDOWN2	DOWN
 	lbeq		.notdown
 
@@ -510,25 +537,59 @@ stratdebug_l
 
 
 ;-----------------------------------------------------------------
+
+addviewvec
+	php
+	a8i16
+
+	clc
+	adc	outvy+1
+	pha
+
+	a16
+	stz	x1
+	lda	#25
+	sta	z1
+	a8
+
+	pla
+	eor	#255
+	inc	a
+	jsl	rotate_16xz_l
+	ai16
+	ldx	#viewblk1
+	lda	x2
+	clc
+	adc	al_worldx,x
+	sta	al_worldx,x
+	lda	z2
+	clc
+	adc	al_worldz,x
+	sta	al_worldz,x
+
+	plp
+	rts
+
+;-----------------------------------------------------------------
 find_shape
 	php
 	ai16
 
-	ldx	#0
-.search
-	lda.l	shapes,x
-	beq	.notfound
-	cmp	x1
-	beq	.found
-	inx
-	inx
-	bra	.search
-
-
-.found
-	plp
-	sec
-	rts
+;;	ldx	#0
+;;.search
+;;	lda.l	shapes,x
+;;	beq	.notfound
+;;	cmp	x1
+;;	beq	.found
+;;	inx
+;;	inx
+;;	bra	.search
+;;
+;;
+;;.found
+;;	plp
+;;	sec
+;;	rts
 .notfound
 	plp
 	clc
@@ -641,15 +702,95 @@ altervar
 	bmi	.out
 	tax
 
-	lda.l	shapes,x
-	beq	.out
-	sta.w	0,y
+;	lda.l	shapes,x
+;	beq	.out
+;	sta.w	0,y
 .out
 	plp
 	rts
 
 	ENDC
 
+
+
+;***********************************************************************
+
+read_vtime	MACRO	
+	a16
+	sei
+	lda.l	framec
+	xba
+	and	#$ff00
+	sta.l	timers
+	a8
+	lda.l	slhvr
+	cli
+	lda.l	opvctr
+	xba
+	lda.l	opvctr
+	xba
+	a16
+	and	#%111111111
+	cmp	#256
+	bmi	.ok1\@
+	lda	#255
+.ok1\@
+	cmp	#17
+	bpl	.ok\@
+	clc
+	adc	#256
+.ok\@
+	clc
+	adc.l	timers
+	ENDM
+
+
+;-----------------------------------------------------------------------
+dostart_timer
+;;	read_vtime
+;;	sta.l	timers+2,x
+;;	rtl
+
+;-----------------------------------------------------------------------
+dostop_timer	
+;;
+;;	read_vtime
+;;	
+;;	sta.l	timers
+;;	lda.l	timers+2,x
+;;	and	#$ff
+;;	cmp	#209
+;;	bpl	.norm
+;;
+;;	lda.l	timers+2,x
+;;	and	#$ff00
+;;	sta.l	timers+2
+;;	
+;;	lda.l	timers
+;;	and	#$ff00
+;;	sec
+;;	sbc	timers+2
+;;	
+;;	xba
+;;	rept	6
+;;	asl	a
+;;	endr
+;;	nega
+;;	clc
+;;	adc.l	timers
+;;	sta.l	timers
+;;.norm
+;;	lda.l	timers
+;;
+;;
+;;	sec
+;;	sbc.l	timers+2,x
+;;
+;;	clc
+;;	adc.l	timers,x
+;;	sta.l	timers,x
+;;
+;;	rtl
 
 
 

@@ -1,26 +1,19 @@
 	include	header.inc
-	include	strathdr.inc
-	include	gstrats.ext
-	include	pstrats.ext
-	include	paths.ext
-	include	d2strats.ext
-	include	d3strats.ext
-	include	coltabs.ext
-	include	expstrat.ext
-	include	windows.ext
-	include	bootnmi.ext
+	include	stratmac.inc
+	include	stratlib.inc
+	include	shmacs.inc
+	include	marioi.inc
 
 	bank	9
-	incfile	dstrats.asm
-	incfile	ga3strats.asm
 
-	public	bgm11
-	public	bgm11len
-bgm11	incbinfile	snd\sgbgm11.bin
-bgm11len	equ	*-bgm11
+	incfile	coltabs.asm 
+	incfile	slopes.asm
+	incfile	mapcode.asm
+	incfile	weapons.asm
+	incfile	chart.asm
 
 	bankend	9
 
 	include	tail.inc
-
-
+
+

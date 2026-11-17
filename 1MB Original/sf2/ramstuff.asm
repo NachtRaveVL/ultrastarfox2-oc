@@ -1,9 +1,152 @@
 
-	incpublics	ramstuff.ext
+	incpub	ramstuff
 
-	incfile	irq.asm
 
-	incfile	hdmatabs.asm
+;-------------------------------------------------------
+; Locate ramstuff into ram
+
+xrstart =	*
+	org	xroutines,$8000*(xrstart>>16)+(xrstart&$7fff)
+;---------------------------------------------------------
+
+	dw	0	; debugger data (write to .l xroutines)
+	dw	0
+	dw	0
+	dw	0	; 8 bytes
+	incfile hdmatabs.asm
+
+	incfile irq.asm
+
+	incfile showview.asm
+
+;;;;	incfile hdmatabs.asm
+
+	incfile mem.asm
+
+	incfile ramsrou.asm
+
+	incfile coldet.asm
+
+	incfile ramspr.asm
+
+	incfile mmtbl.asm
+
+	incfile kramcalc.asm
+
+	incfile ramsound.asm
+
+	incfile yjradar.asm
+
+	incfile raster.asm
+
+	incfile rammes.asm
+;-------------------------------------
+; POLL MARIO ROUTINE ------------------
+;-------------------------------------
+	shorta
+	longi
+pollmario_l
+	phb
+	lda	#0
+	pha
+	plb
+
+	lda	pollstack
+	bne	.exit
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; mario chip running?
+
+	lda	mflags
+	and	#$20
+	beq	.nopoll
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; tell the chip to stop when it gets the chance
+
+	ramnastyoff
+	lda	#1
+	sta.l	m_mariopoll
+
+	nastyon
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; wait for chip to stop
+
+;	a16
+;	lda.l	xroutines
+;	inc	a
+;	sta.l	xroutines
+;	a8
+
+.stillgoing
+	IFNE	polllaginfo
+	a16
+	lda.l	xroutines
+	clc
+	adc	#5+5+5+5+2+3+3+2+2+3+3+3
+	sta.l	xroutines
+	lda.l	xroutines+2
+	adc	#0
+	sta.l	xroutines+2
+	ENDC
+	a8
+	lda	mflags
+	and	#$20
+	bne	.stillgoing	; wait for chip to stop
+
+	lda.l	m_mariopoll
+	eor	#1
+	sta.l	m_mariopoll
+
+.exit
+	inc	pollstack
+.nopoll
+	nastyoff
+	plb
+	rtl
+
+;-------------------------------------
+; UNPOLL MARIO ROUTINE ----------------
+;-------------------------------------
+	shorta
+	longi
+unpollmario_l
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; we've called our program so now to set mdrawlist running again
+	phx
+	phb
+	lda	#0
+	pha
+	plb
+
+	dec	pollstack
+	bne	.alreadyfinished
+
+	lda.l	m_mariopoll		; if zero then mario program
+	beq	.alreadyfinished	; actually finished rather than was interrupted
+
+	lda	#0
+	sta.l	m_mariopoll		; clear the poll'ed flag
+
+	lda.l	m_pollcon+2
+;	lda	#mdrawloop_con>>16
+	sta	mcodebank
+	stz	mflags	; = 3030h Append By D.Cuthbert 1994.11.18
+	a16
+	lda.l	m_pollcon
+	tax
+	a8
+;	ldx	#mdrawloop_con&WM
+	stx	mr15
+
+.alreadyfinished
+
+	plb
+	plx
+	
+	rtl
+	
 
 ;-------------------------------------
 ; RUN MARIO ROUTINE ------------------
@@ -11,29 +154,519 @@
 	shorta
 	longi
 runmario_l
-	sta.l	mcodebank	;code bank
+	sta	mariocodebank	; code bank
 
 	phb
 	lda	#0
 	pha
 	plb
 
-	lda	mario_draw_mode
-	ora	#%00011000	;nasty
-	sta	mio_mode
+	lda	mflags
+	and	#$20
+	beq	.nopoll
 
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; if the mario chip is already running (mdrawloop)
+; then poll it to stop, execute the wanted routine, and then continue.
+
+	storenasty
+
+	ramnastyoff
+	lda	#1
+	sta.l	m_mariopoll
+	nastyon
+.stillgoing
+	lda	mflags
+	and	#$20
+	bne	.stillgoing	; wait for chip to stop
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; ok, the chip is ready for our evil deed
+
+	lda	mariocodebank
+	sta	mcodebank
+
+	stz	mflags	; = 3030h Append By H.Yajima 1994.10.12
+	stx	mr15	; GO!
+.stillgoing2
+	lda	mflags
+	and	#$20
+	bne	.stillgoing2	; wait for our program to stop
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; we've called our program so now to set mdrawlist running again
+
+	lda.l	m_mariopoll		; if not zero then mario program
+	bne	.alreadyfinished	; actually finished rather than was interrupted
+
+	lda.l	m_pollcon+2
+;	lda	#mdrawloop_con>>16
+	sta	mcodebank
+	stz	mflags	; = 3030h Append By D.Cuthbert 1994.11.18
+	a16
+	lda.l	m_pollcon
+	tax
+	a8
+;	ldx	#mdrawloop_con&WM
+	stx	mr15
+	bra	.running
+
+.alreadyfinished
+	lda	#0
+	sta.l	m_mariopoll		; clear the poll'ed flag
+.running
+	restorenasty
+
+	plb
+	rtl
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; normal call_mario case (not parallel)
+
+.nopoll
+	lda	mariocodebank
+	sta	mcodebank
+
+	storenasty
+	nastyon
+
+	stz	mflags	; = 3030h Append By D.Cuthbert 1994.11.18
 	stx	mr15
 .dowait	lda	mflags
 	and	#$20
 	bne	.dowait
 
-	lda	mario_draw_mode
-	sta	mio_mode
+	restorenasty
 	plb
 	rtl
 
 
 cop	blink
+
+
+
+
+do_3d_display1_l
+;;	ai16
+;;	lda	defaultID
+;;	sta.l	m_defaultID
+;;	a8
+;;	jsl	getview1_l
+;;
+;;	lda	drawmap+1
+;;	lsr	a
+;;	lsr	a
+;;	sta	mscrbase
+;;
+;;	a16
+;;	lda	drawmap
+;;	sta.l	m_drawmap
+;;
+;;	lda	#m_dustpnts1&WM
+;;	sta.l	m_dustptr
+;;
+;;	lda	#0
+;;	sta.l	m_mariopoll
+;;	a8
+;;
+;;	lda	gamemode
+;;	sta.l	m_pfm
+;;			
+;;	jsl	mshowgrid_l
+;;
+;;	a8i16
+;;
+;;	lda	#mdo_3d_display>>16
+;;	ldx	#mdo_3d_display&WM
+;;	sta	mcodebank
+;;	nastyon
+;;	stz	mflags	; = 3030h Append By D.Cuthbert 1994.11.18
+;;	stx	mr15
+;;	jsr	parallel_stuff_1
+;;
+;;	a8
+;;.dowait
+;;	lda	mflags
+;;	and	#$20
+;;	bne	.dowait
+;;	nastyoff
+;;
+;;	rtl
+
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; This sets the 3d display drawing process going.
+; If your code is in ram and doesn't access rom
+; then do a nastyoff and it will run in parallel.
+; If it is in ram and accesses rom occasionally
+; then do a romnastyoff->on around the rom accesses.
+; This is two player mode's scren #1
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+begin_3d_display1_l
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; first generate the view
+	ai16
+	lda	defaultID
+	sta.l	m_defaultID
+	a8
+	jsl	getview1_l
+
+	lda	drawmap+1
+	lsr	a
+	lsr	a
+	sta	mscrbase
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; set up various mario variables needed for the 3d
+	a16
+	lda	drawmap
+	sta.l	m_drawmap
+
+	lda	#m_dustpnts1&WM
+	sta.l	m_dustptr
+
+	lda	#0
+	sta.l	m_mariopoll
+	a8
+
+	lda	gamemode
+	sta.l	m_pfm
+			
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; draw the ground dots or stars
+	jsl	mshowgrid_l
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; start the 3d going
+
+	a8i16
+	lda	#mbegin_3d_display>>16
+	ldx	#mbegin_3d_display&WM
+	sta	mcodebank
+	nastyon
+	stz	mflags	; = 3030h Append By D.Cuthbert 1994.11.18
+	stx	mr15
+	jsr	parallel_stuff_1
+
+	a8
+	nastyoff
+	stz	pollstack
+
+	rtl
+
+do_3d_display2_l
+;;	a8
+;;	lda	screenmode
+;;	bit	#sm_3dglasses
+;;	bne	.continue
+;;	bit	#sm_twoscreen
+;;	bne	.continue
+;;	jsr	parallel_stuff_2
+;;	rtl
+;;.continue
+;;	ai16
+;;	lda	defaultID
+;;	sta.l	m_defaultID
+;;	a8
+;;
+;;	jsl	getview2_l
+;;
+;;	lda	#bitmap2>>10
+;;	sta	mscrbase
+;;	a16
+;;	lda	#m_dustpnts2&WM
+;;	sta.l	m_dustptr
+;;	lda	#0
+;;	sta.l	m_mariopoll
+;;	a8
+;;	lda	gamemode
+;;	sta.l	m_pfm
+;;
+;;	jsl	mshowgrid_l
+;;
+;;	a8i16
+;;	lda	#mdo_3d_display>>16
+;;	ldx	#mdo_3d_display&WM
+;;	sta	mcodebank
+;;	nastyon
+;;	stz	mflags	; = 3030h Append By D.Cuthbert 1994.11.18
+;;	stx	mr15
+;;	jsr	parallel_stuff_2
+;;
+;;	a8
+;;.dowait	lda	mflags
+;;	and	#$20
+;;	bne	.dowait
+;;	nastyoff
+;;
+;;	rtl
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; This sets the 3d display drawing process going.
+; If your code is in ram and doesn't access rom
+; then do a nastyoff and it will run in parallel.
+; If it is in ram and accesses rom occasionally
+; then do a romnastyoff->on around the rom accesses.
+; This is two player mode's scren #2
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+begin_3d_display2_l
+	a8
+	lda	screenmode
+	bit	#sm_3dglasses
+	bne	.continue
+	bit	#sm_twoscreen
+	bne	.continue
+	jsr	parallel_stuff_2
+	rtl
+.continue
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; first generate the view
+
+	ai16
+	lda	defaultID
+	sta.l	m_defaultID
+	a8
+
+	jsl	getview2_l
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; set up various mario variables needed for the 3d
+
+	lda	#bitmap2>>10
+	sta	mscrbase
+	a16
+	lda	#bitmap2&WM
+	sta.l	m_drawmap
+
+	lda	#m_dustpnts2&WM
+	sta.l	m_dustptr
+	lda	#0
+	sta.l	m_mariopoll
+	a8
+	lda	gamemode
+	sta.l	m_pfm
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; draw the ground dots or stars
+
+	jsl	mshowgrid_l
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; start the 3d going
+
+	a8i16
+	lda	#mbegin_3d_display>>16
+	ldx	#mbegin_3d_display&WM
+	sta	mcodebank
+	nastyon
+	stz	mflags	; = 3030h Append By D.Cuthbert 1994.11.18
+	stx	mr15
+	jsr	parallel_stuff_2
+
+	a8
+	nastyoff
+	stz	pollstack
+
+	rtl
+
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; this waits for the 3d display to finish - if
+; it hasn't already
+
+finish_3d_display1_l
+finish_3d_display2_l
+	php
+	a8i16
+	lda	#0
+	pha
+	plb	; set dbr 0
+
+	nastyon		; all nasty modes on
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; wait for the mario chip to finish
+
+.dowait
+	lda	mflags
+	and	#$20
+	bne	.dowait
+	nastyoff
+
+	plp
+	rtl
+
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; This sets the 3d display drawing process going.
+; If your code is in ram and doesn't access rom
+; then do a nastyoff and it will run in parallel.
+; If it is in ram and accesses rom occasionally
+; then do a romnastyoff->on around the rom accesses.
+
+begin_3d_display_l
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; first generate the view
+
+	ai16
+	lda	defaultID
+	sta.l	m_defaultID
+	a8
+	jsl	getview1_l
+
+	lda	drawmap+1
+	lsr	a
+	lsr	a
+	sta	mscrbase
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; set up various mario variables needed for the 3d
+	lda	#0
+	sta.l	m_bossmeter_off
+
+	lda.l	MessageCount
+	beq	.con565
+
+	lda.l	message_lastpos
+	bne	.con565
+
+	lda	#1
+	sta.l	m_bossmeter_off
+.con565
+
+	a16
+	lda	drawmap
+	sta.l	m_drawmap
+
+	lda	#m_dustpnts1&WM
+	sta.l	m_dustptr
+
+	lda	#0
+	sta.l	m_mariopoll
+	sta.l	m_debugcount
+
+	a8
+	lda	gamemode
+	sta.l	m_pfm
+
+;ÄÄÄ Set the boss meter up properly ÄÄÄ
+
+	lda.l	bossmaxHP
+	asl	a
+	cmp.l	m_bossmaxHP
+	beq	.nochange
+	bcc	.noinc
+
+	lda.l	m_bossmaxHP
+	inc	a
+	inc	a
+	sta.l	m_bossmaxHP
+	bra	.nochange
+.noinc
+	lda.l	m_bossmaxHP
+	dec	a
+	dec	a
+	sta.l	m_bossmaxHP
+.nochange
+	lda.l	bossHP
+	bit	#128
+	beq	.nohpreset
+	lda	#0
+	sta.l	bossHP
+.nohpreset	asl	a
+	and	#255
+	cmp.l	m_bossmaxHP
+	bcc	.noclamp
+	lda.l	m_bossmaxHP
+.noclamp	sta.l	m_bossHP
+;ÄÄÄ
+	a16
+
+	lda.l	bossname
+	sta.l	m_bossname
+	lda.l	bossname+2
+	sta.l	m_bossname+2
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; draw the ground dots or stars
+
+	lda.l	player1_vx
+	nega
+;	asl	a
+	sta.l	m_p1_vx
+	lda.l	player1_vy
+	nega
+;	asl	a
+	sta.l	m_p1_vy
+	lda.l	player1_vz
+	nega
+;	asl	a
+	sta.l	m_p1_vz
+
+
+	jsl	mshowgrid_l
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; start the 3d going
+
+	a8i16
+
+	lda	#mbegin_3d_display>>16
+	ldx	#mbegin_3d_display&WM
+	sta	mcodebank
+	nastyon
+	stz	mflags	; = 3030h Append By D.Cuthbert 1994.11.18
+	stx	mr15
+	jsr	parallel_stuff_3
+
+	a8
+	nastyoff
+	stz	pollstack
+
+	rtl
+
+
+finishit_l
+	php
+	a8i16
+	nastyon
+.waitfin	lda.l	mflags
+	and	#$20
+	bne	.waitfin
+	plp
+	rtl
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; this waits for the 3d display to finish - if
+; it hasn't already
+
+finish_3d_display_l
+	php
+	a8i16
+	lda	#0
+	pha
+	plb	; set dbr 0
+
+	nastyon		; all nasty modes on
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; wait for the mario chip to finish
+
+.dowait
+	lda	mflags
+	and	#$20
+	bne	.dowait
+	nastyoff
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; switch over to the other buffer
+
+	swapdrawmap
+	a16
+	lda	drawmap
+	sta.l	m_drawmap
+	plp
+	rtl
 
 
 
@@ -47,9 +680,8 @@ do_3d_display_l
 	lda	#mdo_3d_display>>16
 	ldx	#mdo_3d_display&WM
 	sta	mcodebank	;code bank
-	lda	mario_draw_mode
-	ora	#%00011000	;nasty
-	sta	mio_mode
+	nastyon
+	stz	mflags	; = 3030h Append By D.Cuthbert 1994.11.18
 	stx	mr15
 
 	jsr	parallel_stuff
@@ -58,158 +690,127 @@ do_3d_display_l
 .dowait	lda	mflags
 	and	#$20
 	bne	.dowait
-	lda	mario_draw_mode
-	sta	mio_mode
+	nastyoff
 
 	jsl	alienflags_l
 
 	rtl
 
 
+;---------------------------------------------------
+
+
+KG_3d_display_l
+
+;	ai16
+;	lda	defaultID
+;	sta.l	m_defaultID
+;	a8
+;	jsl	getview1_l
+;
+;	lda	#bitmap1>>10
+;	sta	mscrbase
+;	a16
+;	lda	#m_dustpnts1&WM
+;	sta.l	m_dustptr
+;	a8
+;	lda	gamemode
+;	sta.l	m_pfm
+;			
+;
+;	jsl	mshowgrid_l
+;
+;	a8i16
+;	lda	#mdo_3d_display>>16
+;	ldx	#mdo_3d_display&WM
+;	sta	mcodebank
+;	lda	mario_draw_mode
+;	ora	#%00011000
+;	sta	mio_mode
+;	stz	mflags	; = 3030h Append By D.Cuthbert 1994.11.18
+;	stx	mr15
+;	jsr	parallel_stuff
+;
+;	a8
+;.dowait	lda	mflags
+;	and	#$20
+;	bne	.dowait
+;	lda	mario_draw_mode
+;	sta	mio_mode
+
+	rtl
+
+
+
+parallel_stuff_1
+; in parallel with IRQ #3 and IRQ #4
+
+;	swapdrawmap
+
+	rts
+
+	SHORTA
+	LONGI
+parallel_stuff_3
+	jsl	init_strats_ram_l
+	rts
+
+parallel_stuff_2
+; in parallel with IRQ #1 and IRQ #2
+
+	jsl	init_strats_ram_l	; collision detection
+	jsl	showview1_l
+	rts
+
 parallel_stuff
 	jsl	init_strats_ram_l
 	rts
 
-	incfile	coldet.asm
 
 
-gamepalbuff	dw	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+random_l
+	jsr	random
+	rtl
+random
 
-	IFEQ	1
+;	lda	rand
+;	rol	a
+;	eor	rand+1
+;	sta	rand+1
+;	adc	#4
+;	sta	rand
+	
+	lda rand
+	clc
+	sbc rand+1
+	sta rand+1
+	sbc rand+2
+	sta rand+2
+	sbc rand+3
+	sta rand+3
+	sbc rand
+	sta rand
+	rts
 
-tunnelgreen	dw	$25ab,$3620,$31e0,$2de0,$29a0,$25a0,$2160,$1d60,$1d40,$1520,$1500,$0ce0,$0cc0,$04a0,$0480,$0020
-	dw	$25ab,$31e0,$3620,$29a0,$2de0,$2160,$25a0,$1d40,$1d60,$1500,$1520,$0cc0,$0ce0,$0480,$04a0,$0040
-tunnelblue	dw	$25ab,$4dcf,$4def,$3d4b,$3d6b,$2cc7,$2ce7,$1c43,$1c63,$1000,$1020,$0000,$0020,$0000,$0020,$0402
-	dw	$25ab,$4def,$458d,$3d6b,$3509,$2ce7,$2485,$1c63,$1401,$1020,$0800,$0020,$0000,$0020,$0803,$0402
-tunnelpurple dw	$25ab,$354e,$354f,$2d0c,$2d0d,$24ca,$24cb,$1c88,$1c89,$1446,$1447,$0c04,$0c05,$0402,$0403,$0402
-	dw	$25ab,$354f,$312d,$2d0d,$28eb,$24cb,$20a9,$1c89,$1867,$1447,$1025,$0c05,$0803,$0403,$0803,$0402
-tunnelred	dw	$25ab,$017c,$019c,$00f8,$0118,$0074,$0094,$0010,$0030,$000c,$002c,$0008,$0028,$0004,$0024,$0000
-	dw	$25ab,$019c,$013a,$0118,$00b6,$0094,$0032,$0030,$000e,$002c,$000a,$0028,$0006,$0024,$0002,$0000
-tunnelcolony dw	$0000,$3dd2,$3dd4,$3590,$3592,$2d4e,$2d50,$250c,$250e,$1cca,$1ccc,$1488,$148a,$0c46,$0c48,$0404
-	dw	$0000,$3dd4,$39b1,$3592,$316f,$2d50,$292d,$250e,$20eb,$1ccc,$18a9,$148a,$1067,$0c46,$0825,$0404
-	ENDC
-;	list	on macros
 
 
-;---------------------------------------------------
-cbeginz	=	3192
 
-cstartz	=	cbeginz
 
-cstep	=	128
-
-citerations	=	cstartz/cstep
-
-canimstep	=	4
-
-cscr1	=	16+8
-cscr2	=	256+16+8
-cscrc	=	112
-
-tmp	=	0
-
-	REPT	cstep/canimstep
-
-	run	"chequered_tab",tmp
 
 
 ;---------------------------------------------------
-; inner loop of ceiling
 
-cyval	=	10
-ctoggle	=	1
-czpos	=	-(cbeginz-cstartz)+cstep*2
-cypos	=	-60
+;-------------------------------------------------------
+; Relocate back into rom
 
-	REPT	citerations
+xrend	equ	xrstart+(*-xroutines)
+	org	xrend,$8000*(xrend>>16)+(xrend&$7fff)
 
-tmp2	=	czpos
+	ifgt	xrend-xrstart-xlen
+	error	<Extended code more than xlen>
+	endc
 
-	IFLE	czpos
-czpos	=	1
-	ENDC
-
-clastyval	=	cyval
-cyval	=	(cypos*256)/(czpos)+cscrc
-	IFLE	cyval-15
-cyval	=	15
-	ENDC
-ctoggle	=	ctoggle+1
-cdiff	=	cyval-clastyval
-	IFNE	cdiff
-	IFLT	cdiff-127
-	db	cdiff!((ctoggle&1)<<7)
-	ENDC	
-	ENDC
-
-	IFEQ	ctoggle&1
-czpos	=	tmp2+cstep+(cstep/8)*4
-	ELSEIF
-czpos	=	tmp2+cstep-(cstep/8)*4
-	ENDC
-	ENDR
-
-
-;---------------------------------------------------
-; inner loop of floor
-
-ctoggle	=	1
-czpos	=	cstartz-cstep*2
-cypos	=	60
-
-	REPT	citerations
-
-	IFLE	czpos
-czpos	=	1
-	ENDC
-
-clastyval	=	cyval
-cyval	=	(cypos*256)/(czpos)+cscrc
-ctoggle	=	ctoggle+1
-cdiff	=	cyval-clastyval
-	IFNE	cdiff
-	IFLT	cdiff-127
-	db	cdiff!((ctoggle&1)<<7)
-	ENDC	
-	ENDC
-
-czpos	=	czpos-cstep
-	ENDR
-;---------------------------------------------------
-	db	0,0,0
-cstartz	=	cstartz-canimstep*2
-tmp	=	tmp+1
-	ENDR
-
-tmp	=	0
-chequered_tables
-	REPT	cstep/canimstep
-	run	"%tdw%tchequered_tab",tmp,"&WM"
-tmp	=	tmp+1
-	ENDR
-
-
-
-;--------------------------------------------------------------------------
-redtunnel	dw	0000h,00d1h,00b0h,008fh,006eh,004dh,002ch,000bh
-	dw	000ah,0009h,0008h,0007h,0006h,0005h,0004h,7fffh
-	dw	0000h,00d1h,00b0h,008fh,006eh,004dh,002ch,000bh
-	dw	000ah,0009h,0008h,0007h,0006h,0005h,0004h,0000h
-
-
-;# = gamma  $ = beta  % = alpha
-etesttrans	db	0,01ch,0,02ch,02bh,02ah,0,0,0,0
-	db	029h,0,0,027h,028h,0,01dh,01eh,01fh,020h
-	db	021h,022h,023h,024h,025h,026h,0,0,0,0
-	db	0,0,0,2,3,4,5,6,7,8
-	db	9,10,11,12,13,14,15,16,17,18
-	db	19,20,21,22,23,24,25,26,27,28
-
-
-thundercol	dw $0000,$7fff,$36fe,$32bd,$2e7b,$2e79,$2677,$1e35
-	dw $15f3,$0db1,$016e,$77ee,$00c7,$00a6,$0085,$0043
-
-
-
+;;	printf	xrend-xrstart," - ",xlen,"%n"
+;----------------------------------------------------------------
 
 

@@ -1,36 +1,4 @@
-	zmalc	m_smat11,0	
-	zmalc	m_sex,2		
-	zmalc	m_sey,2
-	zmalc	m_sez,2
-	zmalc	m_spx,2		
-	zmalc	m_spy,2
-	zmalc	m_spz,2
-	zmalc	m_spex,2	
-	zmalc	m_spey,2
-	zmalc	m_spez,2
-	zmalc	m_lx,2		
-	zmalc	m_ly,2
-	zmalc	m_lz,2
-	zmalc	m_lxpos,2 	
-	zmalc	m_lypos,2
-	zmalc	m_lzpos,2
-	zmalc	m_xspx,2	
-	zmalc	m_xsex,2
-	zmalc	m_xspex,2
-	zmalc	m_xlx,2
-	zmalc	m_yspy,2	
-	zmalc	m_ysey,2
-	zmalc	m_yspey,2
-	zmalc	m_yly,2
-	zmalc	m_xlen2,2
-	zmalc	m_r11tmp1,2
-	zmalc	m_r11tmp2,2
-	zmalc	m_radius,2
-	zmalc	m_radius2,2
-	zmalc	m_rr,2
-	zmalc	m_xc,2
-	zmalc	m_yc,2
-	zmalc	m_yp,2
+
 mspr_x		equ	m_xc
 mspr_y		equ	m_yc
 rsqr	equr	3
@@ -44,8 +12,30 @@ rradius	equr	8
 rxc		equr	9	
 ryc		equr	10	
 ry2		equr	3
+
+
+
+mdrawsphere_l
+	mcall	mdrawsphere_mc
+	nop
+	lm	r8,[m_rtl+2]	; << return long bank	 >>
+	lm	r0,[m_rtl+0]	; << return long address >>
+	ljmp	r8
+	nop
+
 mdrawsphere
 mdrawtsphere
+	mcall	mdrawsphere_mc
+	nop
+	stop
+	nop
+
+mdrawsphere_mc
+
+	sms	[m_sprb],r11
+
+	IFEQ	1
+
 	sub	r0
 	ramb
 	romb
@@ -72,7 +62,7 @@ mdrawtsphere
 	sex
 	sms	[m_rotlightz],r0
 	ifne	1
-	ibt	r0,#default_c>>16
+	ibt	r0,#id_0_c>>16
 	romb
 	lms	r0,[msprite]
 	umult	#3
@@ -126,7 +116,7 @@ mdrawtsphere
 	to	r14
 	add	rradius
 	mgetw	r0	
-	sms	[m_rr],r0    	
+	sm	[m_rr],r0    	
 	move	r6,r0
 	miwt	r1,m_mat11	
 	miwt	r2,m_smat11
@@ -151,27 +141,27 @@ mdrawtsphere
 	swap
 	fmult
 	rol
-	sms	[m_lx],r0
+	sm	[m_lx],r0
 	lms	r0,[m_rotlighty]
 	swap
 	fmult
 	rol
-	sms	[m_ly],r0
+	sm	[m_ly],r0
 	lms	r0,[m_rotlightz]
 	swap
 	fmult
 	rol
-	sms	[m_lz],r0	
-	lms	r0,[m_spx]	
+	sm	[m_lz],r0	
+	lm	r0,[m_spx]	
 	add	r0
 	sbk
-	lms	r0,[m_sex]
+	lm	r0,[m_sex]
 	add	r0
 	sbk
-	lms	r0,[m_spex]
+	lm	r0,[m_spex]
 	add	r0
 	sbk
-	lms	r0,[m_lx]
+	lm	r0,[m_lx]
 	add	r0
 	sbk
 	sub	r0
@@ -181,7 +171,7 @@ mdrawtsphere
 	sms	[m_yly],r0
 	ibt	ryp,#0
 .1
-	sms	[m_yp],ryp
+	sm	[m_yp],ryp
 	from	ryp
 	to	ry2
 	umult	ryp
@@ -194,8 +184,8 @@ mdrawtsphere
 	sms	[m_xlen],r6
 	mcall	mgenzlist
 	nop
-	lms	ryp,[m_yp]
-	lms	r0,[m_yc]
+	lm	ryp,[m_yp]
+	lm	r0,[m_yc]
 	to	ry
 	sub	ryp
 	lms	r0,[m_ytop]
@@ -207,8 +197,8 @@ mdrawtsphere
 	mcall	mtsphereline
 	nop
 .skipytop
-	lms	ryp,[m_yp]
-	lms	r0,[m_yc]
+	lm	ryp,[m_yp]
+	lm	r0,[m_yc]
 	to	ry
 	add	ryp
 	lms	r0,[m_ybot]
@@ -221,23 +211,23 @@ mdrawtsphere
 	mcall	mtsphereline
 	nop
 .skipybot
-	lms	r4,[m_spy]
+	lm	r4,[m_spy]
 	lms	r0,[m_yspy]
 	add	r4
 	sbk
-	lms	r4,[m_sey]
+	lm	r4,[m_sey]
 	lms	r0,[m_ysey]
 	add	r4
 	sbk
-	lms	r4,[m_spey]
+	lm	r4,[m_spey]
 	lms	r0,[m_yspey]
 	add	r4
 	sbk
-	lms	r4,[m_ly]
+	lm	r4,[m_ly]
 	lms	r0,[m_yly]
 	add	r4
 	sbk
-	lms	ryp,[m_yp]
+	lm	ryp,[m_yp]
 	lms	rradius,[m_radius]
 	inc	ryp
 	from	ryp
@@ -249,8 +239,10 @@ msphere_exit
 	ibt	r2,#0
 	mrpix
 	nop
-	stop
+
+	lms	r15,[m_sprb]
 	nop
+
 rsqr	equr	3
 rsqrt	equr	6
 rt	equr	4
@@ -301,7 +293,7 @@ mgenzlist
 	lsr	
 	inc	rxlen
 	sms	[m_xlen2],rxlen
-	lms	r0,[m_yp]
+	lm	r0,[m_yp]
 	to	r4
 	umult	r0
 	lms	r0,[m_radius]
@@ -310,10 +302,10 @@ mgenzlist
 	sub	r4
 	ibt	rx,#0
 	miwt	rzlist,m_zlist	
-	lms	rspz,[m_spz]
-	lms	rsez,[m_sez]
-	lms	rspez,[m_spez]
-	lms	rlz,[m_lz]
+	lm	rspz,[m_spz]
+	lm	rsez,[m_sez]
+	lm	rspez,[m_spez]
+	lm	rlz,[m_lz]
 mdrawtspherestart
 .1
 	ifeq	1
@@ -434,10 +426,10 @@ mgenuvlist1
 	sms	[m_xsex],rxsex
 	sms	[m_xspex],rxspex
 	sms	[m_xlx],rxlx
-	lms	rspx,[m_spx]
-	lms	rsex,[m_sex]
-	lms	rspex,[m_spex]
-	lms	rlx,[m_lx]
+	lm	rspx,[m_spx]
+	lm	rsex,[m_sex]
+	lm	rspex,[m_spex]
+	lm	rlx,[m_lx]
 	sms	[m_r11tmp1],r11
 	miwt	ruvlist,m_uvlist
 	mcall	mgenuvlistx
@@ -573,7 +565,7 @@ mdrawuvlist
 	nop
 mdrawuvlistx
 	sms	[m_r11tmp2],r11
-	lms	rx,[m_xc]
+	lm	rx,[m_xc]
 	lms	ry,[m_y1]
 	with	rx
 	add	r0
@@ -2766,3 +2758,6 @@ m_uvtab
 	DW	8193
 
 
+	ENDC
+
+

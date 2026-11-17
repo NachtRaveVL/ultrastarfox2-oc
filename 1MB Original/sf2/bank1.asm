@@ -1,35 +1,42 @@
+	
 
 	include	header.inc
-	include	coltabs.ext
-	include	mdata.ext
-	include	sgdata.ext
 	include	marioi.inc
-	include	shmacs.inc
+  	include	shmacs.inc
 	include	gridvars.inc
 
 	include	stratequ.inc
 
-	extern	arctantab
 
-	include	incbins.ext
 
-	incpublics	mario.ext
-
+	incpub	mario
 
 ;------------------------------------------------------------------
 	bank	1
-rztab
-mariobegin
-yyy	mario	on
-	incfile	mvars.mc
+
+	mario_on
      	incfile	mmacs.mc
 	incfile	mshtab.mc	; must be at start of bank
+	mario_off
+
+	incfile	coltabs.asm
+
+rztab
+mariobegin
+yyy	mario_on
+
+; Mario register defs ------------------------
+rsp	equr	10
+rlink	equr	11
+;---------------------------------------------
+
 	incfile	mmaths.mc
 	incfile	mwrot.mc
 	incfile	mwcrot.mc
 	incfile	mobj.mc
 	incfile	mclip.mc
-	incfile	mdrawc.mc
+	incfile	mtxtclp.mc
+;	incfile	mdrawc.mc
 	incfile	mdrawp.mc
 	incfile	msprite.mc
 	incfile	mgdots.mc
@@ -43,7 +50,12 @@ yyy	mario	on
 	incfile	mpart.mc
 	incfile	mbumwipe.mc
 	incfile	mhud.mc
-	mario	off
+	incfile	mhofs.mc
+	incfile	mdebug.mc
+	incfile	mplanclp.mc
+	incfile	mboxes.mc
+	incfile	mslopes.mc
+	mario_off
 
 
 	incfile	fontdata.asm
@@ -59,4 +71,4 @@ oopspic	;incbin	data\oops.pic
 
 	include	tail.inc
 
-
+

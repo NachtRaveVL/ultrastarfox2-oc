@@ -1,5 +1,3 @@
-m_circlebuf	equ	m_drawlist		;m_scuptab
-m_circlebuf2	equ	m_drawlist+224*2	;m_scuptab+224*2
 
 madd2buf	macro
   	iwt	r0,#240
@@ -215,4 +213,4 @@ rright	equr	6
 	stop
 	nop
 
-
+

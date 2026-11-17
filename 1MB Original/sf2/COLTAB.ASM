@@ -3,22 +3,22 @@ night1
 	dbh	99,9a,aa,ab,bb,bc,cc,cd
 	dbh	dd,de,ee,11,12,22,23,33
 	dbh	34,44,55,56,66,67,77,78
-	dbh	88,16,26,36,46,af,ff,df
+	dbh	88,0e,0d,36,46,af,ff,df
 night2
 	dbh	99,99,9a,9a,aa,ab,bb,bc
 	dbh	cc,cd,dd,99,19,11,12,22
 	dbh	23,33,99,59,55,56,66,67
-	dbh	77,99,15,16,26,9f,af,ff
+	dbh	77,0d,0c,16,26,9f,af,ff
 night3
 	dbh	99,99,99,99,9a,9a,aa,ab
 	dbh	bb,bc,cc,99,99,19,19,11
 	dbh	12,22,99,99,59,59,55,56
-	dbh	66,99,99,15,16,99,15,9f
+	dbh	66,0c,0b,15,16,99,15,9f
 night4
 	dbh	99,99,99,99,99,99,9a,9a
 	dbh	aa,ab,bb,99,99,99,19,19
 	dbh	19,11,99,99,99,59,59,59
-	dbh	55,99,99,15,15,99,15,15
+	dbh	55,0b,0a,15,15,99,15,15
 
 mist
 mist1

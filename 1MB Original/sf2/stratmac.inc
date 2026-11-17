@@ -1,19 +1,4 @@
 ;***************************************************************************
-;* REMEMBERS...
-	progress_off
-;	printf	"REMEMBER : extra parm in S_GOTO_WP.%n"
-;	printf	"REMEMBER : S_NEXT_STATE change.%n"
-	progress_on
-	
-;***************************************************************************
-ERROR	MACRO
-	progress_off
-	printf	"[0;5;31;1mError: \1 [0m%n"
-	progress_on
-	ENDM
-
-
-;***************************************************************************
 ;*                                                                         *
 ;*                              StartGlider                                *
 ;*                              -----------                                *
@@ -132,7 +117,8 @@ total_stratmac_len		=	0
 ;	s_set_vartobeobj	var,obj
 ;	s_set_objtobealvar	obj2,obj1,obj1 alvar
 ;	s_set_objtobevar	obj2,var
-;	s_set_objtobeplayer	obj1
+;	s_set_objtobeplayer1	obj1
+;	s_set_objtobeplayer2	obj1
 
 ;	s_copy_sflags		obj2,obj1		
 ;	s_copy_obj		obj2,obj1		
@@ -199,6 +185,7 @@ total_stratmac_len		=	0
 ;	s_test_var		size,var,#value
 ;	s_or_var		size,var,#value
 ;	s_not_var		size,var,#value
+;	s_eor_var		size,var,#value
 ;	s_and_var		size,var,#value
 ;	s_or_alvar		size,obj1,var,#value
 ;	s_and_alvar		size,obj1,var,#value
@@ -459,16 +446,16 @@ total_stratmac_len		=	0
 ;-----------------------------------------------------------------------------
 strats_start	MACRO
 total_stratfile_addr	=	*
-	databank $7e
 	shorta
 	longi
+	SETDBR	$7e
 		ENDM	
 
 
 ;-----------------------------------------------------------------------------
 strats_end	MACRO
 total_stratfile_len	=	total_stratfile_len+(*-total_stratfile_addr)
-	databank 0
+	SETDBR	0
 		ENDM	
 
 ;-----------------------------------------------------------------------------
@@ -556,6 +543,56 @@ s_lda	MACRO
 
 	ENDM
 
+
+;----------------------------------------------------------------
+
+s_sbc	MACRO
+	
+	IFC	"\2","x"
+	sbc	\1,x
+	MEXIT
+	ENDC
+	IFC	"\2","X"
+	sbc	\1,x
+	MEXIT
+	ENDC
+
+	IFC	"\2","y"
+	sbc.w	\1,y
+	MEXIT
+	ENDC
+	IFC	"\2","Y"
+	sbc.w	\1,y
+	MEXIT
+	ENDC
+
+	ENDM
+
+;----------------------------------------------------------------
+
+s_adc	MACRO
+	
+	IFC	"\2","x"
+	adc	\1,x
+	MEXIT
+	ENDC
+	IFC	"\2","X"
+	adc	\1,x
+	MEXIT
+	ENDC
+
+	IFC	"\2","y"
+	adc.w	\1,y
+	MEXIT
+	ENDC
+	IFC	"\2","Y"
+	adc.w	\1,y
+	MEXIT
+	ENDC
+
+	ENDM
+
+
 ;-----------------------------------------------------------------------------
 s_sta	MACRO
 	
@@ -618,6 +655,8 @@ big_circle_exp	MACRO
 	a8
 	ENDM
 ;-----------------------------------------------------------------------------
+	IFEQ	contest
+
 s_test_special	MACRO
 	lda_sflags	\1,special
 	bit		#asf_special
@@ -630,51 +669,49 @@ s_test_special	MACRO
 	ENDM
 
 
+	ELSEIF
+
+s_test_special	MACRO
+	lda_sflags	\1,special
+	bit		#asf_special
+	beq		.ns2\@
+	a16
+	lda		#50
+	bra		.iss\@
+.ns2\@	shorta
+	lda_sflags	\1,Cspecial
+	bit		#asf_Cspecial
+	beq		.ns\@
+	a16
+	lda	#25
+.iss\@
+	longa
+	clc
+	adc.l	playerscore
+	sta.l	playerscore
+	a8
+	inc	specials_dead
+.ns\@
+	ENDM
+
+	ENDC
+
 ;-----------------------------------------------------------------------------
 set_sound2		MACRO	obj,sound number
 	s_set_alvar.l	B,\1,alx_snd2,\2
 		ENDM
 
 ;-----------------------------------------------------------------------------
-lda_sflags	MACRO
+lda_sflags	MACRO	[obj,sflag]
 
-	IFD	wsf1_\2
-	s_lda.w	al_sflags,\1
-	ENDC
-
-	IFD	wsf2_\2
-	s_lda.w	al_sflags2,\1
-	ENDC
-
-	IFD	wsf3_\2
-	s_lda.w	al_sflags3,\1
-	ENDC
-
-	IFD	wsf4_\2
-	s_lda.w	al_sflags4,\1
-	ENDC
+	run	"	s_lda.w	al_sflags",(wsf_{sflag}),",{obj}"
 
 	ENDM
 
 ;-----------------------------------------------------------------------------
-sta_sflags	MACRO
+sta_sflags	MACRO	[obj,sflag]
 
-
-	IFD	wsf1_\2
-	s_sta.w	al_sflags,\1
-	ENDC
-
-	IFD	wsf2_\2
-	s_sta.w	al_sflags2,\1
-	ENDC
-
-	IFD	wsf3_\2
-	s_sta.w	al_sflags3,\1
-	ENDC
-
-	IFD	wsf4_\2
-	s_sta.w	al_sflags4,\1
-	ENDC
+	run	"	s_sta.w	al_sflags",(wsf_{sflag}),",{obj}"
 
 	ENDM
 
@@ -686,7 +723,7 @@ MYNARG	=	NARG
 	CHK_OBJ	\2
 	lda.\0	\3,\2
 	sta	tpa
-	jsl	printa\1\4_l	
+	s_jsl	printa\1\4_l	
 	CHG_MODEBACK	\1
   	ENDM
 ;-----------------------------------------------------------------------------
@@ -696,7 +733,7 @@ MYNARG	=	NARG
 	CHG_MODE	\1
 	lda.\0	\2
 	sta	tpa
-	jsl	printa\1\3_l	
+	s_jsl	printa\1\3_l	
 	CHG_MODEBACK	\1
   	ENDM
 
@@ -735,19 +772,6 @@ CHK_YONLYOBJ		MACRO
 
 
 
-;-----------------------------------------------------------------------------
-CHK_NARG	MACRO
-
-	IFEQ	NARG-2
-	IFEQ	MYNARG-\2
-	MEXIT
-	ENDC
-	ENDC
-
-	IFNE	MYNARG-\1
-	error	<Strategy parameter error! - wrong amount of parms.>
-	ENDC
-		ENDM
 
 ;-----------------------------------------------------------------------------
 CHK_SIZE	MACRO
@@ -942,16 +966,22 @@ MYNARG	=	NARG
 
 
 ;-----------------------------------------------------------------------------
-Fchase_A 	MACRO	chase rate
+Fchase_A 	MACRO	[cmp_val,chase_rate]
 MYNARG	=	NARG
-	CHK_NARG	1
+	CHK_NARG	2
 	beq	.dfc\@
 	bmi	.fci\@
 	sec
-	sbc	\1
+	sbc	{chase_rate}
+	cmp	{cmp_val}
+	bpl	.dfc\@
+	lda	{cmp_val}
 	bra	.dfc\@
 .fci\@	clc	
-	adc	\1
+	adc	{chase_rate}
+	cmp	{cmp_val}
+	bmi	.dfc\@
+	lda	{cmp_val}
 .dfc\@	
 		ENDM
 
@@ -1358,6 +1388,18 @@ MYNARG	=	NARG
 	stratmac_end
 	ENDM
 ;-----------------------------------------------------------------------------
+s_EOR_var	MACRO	; size,var,value
+	stratmac_start
+MYNARG	=	NARG
+	CHK_NARG	3
+	CHG_MODE	\1
+	lda	\2
+	eor	\3
+	sta	\2
+	CHG_MODEback	\1
+	stratmac_end
+	ENDM
+;-----------------------------------------------------------------------------
 s_OR_var	MACRO	; size,var,value
 	stratmac_start
 MYNARG	=	NARG
@@ -1626,6 +1668,11 @@ s_jsl		MACRO	; label
 	stratmac_start
 MYNARG	=	NARG
 	CHK_NARG	1
+
+;	IFGE	(*>>16)-$7e
+;	printf	"Calling '\1' from %f:(%l)%n"
+;	ENDC
+
 	jsl	\1
 	stratmac_end
 	ENDM
@@ -1646,7 +1693,7 @@ MYNARG	=	NARG
 	CHK_NARG	3
 	CHG_MODE	\1
 	lda	\2
-	jsl	\3
+	s_jsl	\3
 	CHG_MODEBACK	\1
 	stratmac_end
 	ENDM
@@ -1802,25 +1849,29 @@ randome	=	50
 	IFEQ	NARG-2
 randome	=	\2
 	ENDC
-	jsl	random_l
+	s_jsl	random_l
 	cmp	#((randome)*255)/100
 	rlbcc	\1
 	stratmac_end
 	ENDM
 		
 ;-----------------------------------------------------------------------------
-s_jmp_objplayer	MACRO	; obj1,label
+s_jmp_objplayer1	MACRO	; obj1,label
 	stratmac_start
 MYNARG	=	NARG
 	CHK_NARG	2
 	CHK_OBJ	\1
-;	cp\1	playpt
-;	rlbeq	\2
-	cp\1	pcboxobj_B
+	cp\1	playpt1
 	rlbeq	\2
-	cp\1	pcboxobj_LW
-	rlbeq	\2
-	cp\1	pcboxobj_RW
+	stratmac_end
+	ENDM
+;-----------------------------------------------------------------------------
+s_jmp_objplayer2	MACRO	; obj1,label
+	stratmac_start
+MYNARG	=	NARG
+	CHK_NARG	2
+	CHK_OBJ	\1
+	cp\1	playpt2
 	rlbeq	\2
 	stratmac_end
 	ENDM
@@ -1914,7 +1965,8 @@ MYNARG	=	NARG
 	CHK_OBJ	\1
 	s_lda.w	al_collflags,\1
 	and	#(colltype_\2)
-	rlbne	\3
+	cmp	#(colltype_\2)
+	rlbeq	\3
 	stratmac_end
 	ENDM
 ;-----------------------------------------------------------------------------
@@ -1925,7 +1977,8 @@ MYNARG	=	NARG
 	CHK_OBJ	\1
 	s_lda.w	al_collflags,\1
 	and	#(colltype_\2)
-	rlbeq	\3
+	cmp	#(colltype_\2)
+	rlbne	\3
 	stratmac_end
 	ENDM
 
@@ -1972,20 +2025,23 @@ MYNARG	=	NARG
 code_hitflash_Istrat	=	0
 code_explode_Istrat	=	0
 
-	IFD	code_\3
-code_\3	=	1
-	ENDC
-
-	IFD	code_\4
-code_\4	=	1
-	ENDC
+code_hit_istrat	=	1
+code_explode_istrat	=	2
 
 
-;	s_set_strat		\1,\2
+	s_set_strat		\1,\2
 ;	s_set_collstrat		\1,\3
 ;	s_set_expstrat		\1,\4
 
-	IFEQ	0
+	IFND	code_\3
+	error	<not using hit_istrat!>
+	ENDC
+
+	IFND	code_\4
+	error	<not using explode_istrat!>
+	ENDC
+
+	IFEQ	1
 
 	a16
 	lda	#\2&WM
@@ -1995,12 +2051,12 @@ code_\4	=	1
 	s_sta.w	al_stratptr+2,\1
 
 	IFC	"0+0","\3+\4"
-	jsl	set_0collptrs\1_l
+	s_jsl	set_0collptrs\1_l
 
 	ELSEIF
 
 	IFEQ    (code_hitflash_Istrat+code_explode_Istrat)-2
-	jsl	set_normcollptrs\1_l
+	s_jsl	set_normcollptrs\1_l
 
 
 	ELSEIF
@@ -2067,7 +2123,7 @@ MYNARG	=	NARG
 	sta	z1
 	a8
 	s_lda.w	al_roty,\2
-	jsl	rotate_16xz_l
+	s_jsl	rotate_16xz_l
 
 	a16
 
@@ -2109,7 +2165,7 @@ MYNARG	=	NARG
 ;	
 ;	sta.w	al_vel,\1  
 
-	jsl	sr_zero_vecs\1
+	s_jsl	sr_zero_vecs\1
 
 	stratmac_end
 	ENDM	
@@ -2261,6 +2317,15 @@ s_set_collstrat		MACRO		obj1,#ptr to collision strategy
 MYNARG	=	NARG
 	CHK_NARG	2
 	CHK_OBJ	\1
+
+code_hit_istrat	=	1
+
+	IFND	code_\2
+	error	<hit_istrat not being used!>
+	ENDC
+
+	IFEQ	1
+
 	EXG_IFY	\1
 	a16
 	lda	#\2&WM
@@ -2269,6 +2334,7 @@ MYNARG	=	NARG
 	lda	#\2>>16
 	sta.l	alx_collstratptr+2,x
 	EXG_IFY	\1
+	ENDC
 	stratmac_end
 	ENDM
 ;-----------------------------------------------------------------------------
@@ -2295,15 +2361,18 @@ MYNARG	=	NARG
 	CHK_OBJ	\1
 
 code_explode_Istrat	=	0
-	IFD	code_\2
-code_\2	=	1
+
+	IFND	code_\2
+	error	<Not using explode_istrat!>
 	ENDC
+
+	IFEQ	1
 
 	IFNE	code_explode_Istrat
 	IFEQ	objxy
-	jsl	sr_set_expstrat_expx
+	s_jsl	sr_set_expstrat_expx
 	ELSEIF
-	jsl	sr_set_expstrat_expy
+	s_jsl	sr_set_expstrat_expy
 	ENDC
 	
 	ELSEIF
@@ -2316,6 +2385,8 @@ code_\2	=	1
 	lda	#\2>>16
 	sta.l	alx_expstratptr+2,x
 	EXG_IFY	\1
+
+	ENDC
 
 	ENDC
 
@@ -2387,7 +2458,7 @@ MYNARG	=	NARG
 	lda	\1
 	sta	tpa
 	a8
-	jsl	sr_make_obj
+	s_jsl	sr_make_obj
 	rlbcc	\2
 
 	stratmac_end
@@ -2554,7 +2625,7 @@ MYNARG	=	NARG
 	sta	z2
 	a8
 ;	exg_xy
-	jsl	Yanglexabs_l  
+	s_jsl	Yanglexabs_l  
 ;	nega
 	sta	svar_weapRy
 	stz	svar_weapRx
@@ -2581,7 +2652,7 @@ merr	=	1
 	lda	#WEAPON_\2
 	ENDC
 
-	jsl	fire_weapon_l
+	s_jsl	fire_weapon_l
 	EXG_IFY	\1
 
 	cpy	#0
@@ -2616,7 +2687,7 @@ merr	=	1
 	lda	#WEAPON_\2
 	ENDC
 
-	jsl	fire_yweapon_l
+	s_jsl	fire_yweapon_l
 
 	EXG_IFY	\1
 		stratmac_end
@@ -2635,7 +2706,7 @@ MYNARG	=	NARG
 	s_sub_alvar	B,\1,\3,\4
 
 
-	jsl	anglexy_l
+	s_jsl	anglexy_l
 	a8
 	xba
 	nega
@@ -2661,7 +2732,7 @@ MYNARG	=	NARG
 	CHK_OBJ	\1
 	CHK_OBJ	\2
 
-	jsl	anglexy_l
+	s_jsl	anglexy_l
 	a8
 	xba
 	nega
@@ -2692,7 +2763,7 @@ MYNARG	=	NARG
 	stz	smvar_byte1
 
 ;-------------------------------------------------
-	jsl	Xanglexy_l
+	s_jsl	Xanglexy_l
 	a8
 	xba
 
@@ -2707,7 +2778,7 @@ MYNARG	=	NARG
 
 
 ;-------------------------------------------------
-	jsl	Yanglexy_l
+	s_jsl	Yanglexy_l
 	a8
 	xba
 	nega
@@ -2748,7 +2819,7 @@ MYNARG	=	NARG
 	stz	smvar_byte1
 
 ;-------------------------------------------------
-	jsl	Xanglexy_l
+	s_jsl	Xanglexy_l
 	a8
 	xba
 
@@ -2763,7 +2834,7 @@ MYNARG	=	NARG
 
 
 ;-------------------------------------------------
-	jsl	Yanglexy_l
+	s_jsl	Yanglexy_l
 	a8
 	xba
 	nega
@@ -2810,7 +2881,7 @@ MYNARG	=	NARG
 	lda.l	alx_sWPz\3,x
 	sta	z2
 	a8
-	jsl	anglexy_abs_l
+	s_jsl	anglexy_abs_l
 	nega
 
 	IFEQ	NARG-7
@@ -2833,7 +2904,7 @@ MYNARG	=	NARG
 	lda.l	alx_sWPz\3,x
 	sta	z2
 	a8
-	jsl	Xanglexabs_l
+	s_jsl	Xanglexabs_l
 
 	IFEQ	NARG-7
 	Achase_alvar2a	\1,\5,\6,.dj2\@
@@ -3068,16 +3139,24 @@ MYNARG	=	NARG
 	ENDM
 
 ;-----------------------------------------------------------------------------
-s_remove_obj		MACRO	obj
+s_remove_obj		MACRO	[obj,REALLY]
 	stratmac_start
 MYNARG	=	NARG
-	CHK_NARG	1
+	CHK_NARG	1,2
 	CHK_OBJ	\1
 
-	IFEQ	objxy
-	jsl	sr_remove_objx
+sro_really	=	1
+
+
+	IFND	sro_{REALLY}
+	s_set_alsflag	{obj},removeme
 	ELSEIF
-	jsl	sr_remove_objy
+
+	IFEQ	objxy
+	s_jsl	sr_remove_objx
+	ELSEIF
+	s_jsl	sr_remove_objy
+	ENDC
 	ENDC
 
 	stratmac_end
@@ -3118,7 +3197,7 @@ MYNARG	=	NARG
 	a8
 	s_clr_alflag		x,onfire
 	exg_xy
-	jsl	removedeadal_l
+	s_jsl	removedeadal_l
 	exg_xy
 .bf\@
 	a8
@@ -3144,7 +3223,7 @@ MYNARG	=	NARG
 .nar\@
 
 	EXG_IFY	\1
-	jsl	removedeadal_l
+	s_jsl	removedeadal_l
 	EXG_IFY	\1
 
 .er\@
@@ -3307,7 +3386,7 @@ MYNARG	=	NARG
 	lda	\2
 	sta	tpa
 	lda	#\3
-	jsl	sr_speedto
+	s_jsl	sr_speedto
 
 	IFEQ	NARG-4
 	rlbcs	\4
@@ -3591,7 +3670,7 @@ MYNARG	=	NARG
 ;	a16
 ;	lda	svar_dist
 ;	bne	.got_distm\@
-	jsl	xydiffs_l
+	s_jsl	xydiffs_l
 	a16
 	lda	rangexy
 ;	sta	svar_dist
@@ -3613,7 +3692,7 @@ MYNARG	=	NARG
 ;	a16
 ;	lda	svar_dist
 ;	bne	.got_distl\@
-	jsl	xydiffs_l
+	s_jsl	xydiffs_l
 	a16
 	lda	rangexy
 ;	sta	svar_dist
@@ -3632,7 +3711,7 @@ MYNARG	=	NARG
 	CHK_OBJ	\1
 	CHK_OBJ	\2
 	a16
-	jsl	xydiffs_l
+	s_jsl	xydiffs_l
 	a16
 	lda	rangexy
 
@@ -3655,7 +3734,7 @@ MYNARG	=	NARG
 	CHK_OBJ	\1
 	CHK_OBJ	\2
 	a16
-	jsl	xydiffs_l
+	s_jsl	xydiffs_l
 	a16
 	lda	rangexy
 
@@ -3683,7 +3762,7 @@ MYNARG	=	NARG
 	a16
 ;	lda	svar_dist
 ;	bne	.\@
-	jsl	xzdiffs_l
+	s_jsl	xzdiffs_l
 	a16
 	lda	rangexz
 ;	sta	svar_dist
@@ -3703,7 +3782,7 @@ MYNARG	=	NARG
 	a16
 ;	lda	svar_dist
 ;	bne	.\@
-	jsl	xzdiffs_l
+	s_jsl	xzdiffs_l
 	a16
 	lda	rangexz
 ;	sta	svar_dist
@@ -3878,7 +3957,7 @@ MYNARG	=	NARG
 	sta	z2
 	EXG_IFY	\2
 
-	jsl	xzdiffs_abs_l
+	s_jsl	xzdiffs_abs_l
 	a16		   
 	lda	rangexz
 	cmp	\4
@@ -3902,7 +3981,7 @@ MYNARG	=	NARG
 	sta	z2
 	EXG_IFY	\2
 
-	jsl	xzdiffs_abs_l
+	s_jsl	xzdiffs_abs_l
 	a16
 	lda	rangexz
 ;	sta	svar_dist
@@ -4045,7 +4124,7 @@ MYNARG	=	NARG
 	lda.\0	\3,\1
 	sta	tmpz
 	lda.\0	\2,\1
-	jsl	nvecs_l	; generate x,z vels from Y rot and speed.
+	s_jsl	nvecs_l	; generate x,z vels from Y rot and speed.
 	a16
 	lda	x1
 	IFEQ	NARG-4
@@ -4053,6 +4132,7 @@ MYNARG	=	NARG
 	asl	a
 	ENDR
 	ENDC
+	globalscale_a
 	sta.\0	al_vx,\1
 	lda	z1
 	IFEQ	NARG-4
@@ -4060,6 +4140,7 @@ MYNARG	=	NARG
 	asl	a
 	ENDR
 	ENDC
+	globalscale_a
 	sta.\0	al_vz,\1
 	a8
 	stratmac_end
@@ -4074,7 +4155,7 @@ MYNARG	=	NARG
 	lda.\0	\3,\1
 	sta	tmpz
 	lda.\0	\2,\1
-	jsl	nvecs_l	; generate x,y vels from rot and speed.
+	s_jsl	nvecs_l	; generate x,y vels from rot and speed.
 	a16
 	lda	x1
 	IFEQ	NARG-4
@@ -4104,7 +4185,7 @@ MYNARG	=	NARG
 	lda	\3,\1
 	sta	tmpz
 	lda	\2,\1
-	jsl	nvecs_l	; generate x,z vels from Y rot and speed.
+	s_jsl	nvecs_l	; generate x,z vels from Y rot and speed.
 	a16
 
 	lda	x1
@@ -4146,7 +4227,7 @@ MYNARG	=	NARG
 	sta	troty
 	lda	\3,\1
 	sta	trotx
-	jsl	n3Dvecs_l		; generate x,y,z vels from x,y rot and speed.
+	s_jsl	n3Dvecs_l		; generate x,y,z vels from x,y rot and speed.
 	a16
 
 	lda	x1
@@ -4184,70 +4265,6 @@ MYNARG	=	NARG
 	stratmac_end
 	ENDM
 
-	ifeq	0
-;-----------------------------------------------------------------------------
-fuzzthecunt	macro
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	stratmac_end
-	ENDM
-	endc
 
 
 ;-----------------------------------------------------------------------------
@@ -4270,9 +4287,9 @@ MYNARG	=	NARG
 	sta	trotx
 	
 	IFNE	NARG-5
-	jsl	sr_gen_3dvecs
+	s_jsl	sr_gen_3dvecs
 	ELSEIF
-	jsl	sr_gen_3dvecs\5
+	s_jsl	sr_gen_3dvecs\5
 	ENDC
 
 	stratmac_end
@@ -4413,7 +4430,7 @@ MYNARG	=	NARG
 	CHK_OBJ	\2
 
 	EXG_IFY	\1
-	jsl	add_objvecs_l
+	s_jsl	add_objvecs_l
 	EXG_IFY	\1
    
 	stratmac_end
@@ -4427,7 +4444,7 @@ MYNARG	=	NARG
 	CHK_OBJ	\1
 
 	EXG_IFY	\1
-	jsl	addalvecs_l
+	s_jsl	addalvecs_l
 	EXG_IFY	\1
 
 	
@@ -4522,10 +4539,10 @@ MYNARG	=	NARG
 	sta	z2
 	sexam	z2+1
 
-
 	IFNE	\A
+
 	s_lda.w	al_rotz,\4
-	jsl	rotate_8yx_l
+	s_jsl	rotate_8yx_l
 	lda	x2
 	sta	x1
 	lda	y2
@@ -4536,7 +4553,7 @@ MYNARG	=	NARG
 
 	IFNE	\8
 	s_lda.w	al_rotx,\4
-	jsl	rotate_8yz_l
+	s_jsl	rotate_8yz_l
 	lda	x2
 	sta	x1
 	lda	y2
@@ -4547,7 +4564,7 @@ MYNARG	=	NARG
 
 	IFNE	\9
 	s_lda.w	al_roty,\4
-	jsl	rotate_8xz_l
+	s_jsl	rotate_8xz_l
 	ENDC      
 
 
@@ -4583,17 +4600,22 @@ MYNARG	=	NARG
 
 	ENDC
 
-	s_lda.w	al_worldx,\3
+	lda	x2
+	globalscale_a
 	clc
-	adc	x2
+	adc.w	al_worldx,\3
 	s_sta.w	al_worldx,\2
-	s_lda.w	al_worldz,\3
+
+	lda	z2
+	globalscale_a
 	clc
-	adc	z2
+	adc.w	al_worldz,\3
 	s_sta.w	al_worldz,\2
-	s_lda.w	al_worldy,\3
+
+	lda	y2
+	globalscale_a
 	clc
-	adc	y2
+	adc.w	al_worldy,\3
 	s_sta.w	al_worldy,\2
 	a8
 
@@ -4618,7 +4640,7 @@ MYNARG	=	NARG
 	CHK_NARG	1
 	CHK_OBJ	\1
 
-	jsl	sr_keeprelto_player\1
+	s_jsl	sr_keeprelto_player\1
 
 	stratmac_end
 	ENDM
@@ -4629,7 +4651,7 @@ s_add_playerZ	MACRO
 MYNARG	=	NARG
 	CHK_NARG	1
 	CHK_OBJ	\1
-	jsl	sr_addplayerZ\1
+	s_jsl	sr_addplayerZ\1
 
 	stratmac_end
 	ENDM
@@ -4655,7 +4677,7 @@ MYNARG	=	NARG
 	CHK_NARG	2
 	CHK_OBJ	\1
 	CHK_OBJ	\2
-	jsl	sr_copypos\1\2
+	s_jsl	sr_copypos\1\2
 		stratmac_end
 	ENDM
 
@@ -4708,7 +4730,7 @@ MYNARG	=	NARG
 	CHK_OBJ	\1
 	CHK_OBJ	\2
 
-	jsl	sr_copyrots\1\2
+	s_jsl	sr_copyrots\1\2
 		stratmac_end
 	ENDM
 
@@ -4808,7 +4830,7 @@ s_set_alvar2rnd		MACRO	obj1,alvar,[AND value] - BYTE ONLY
 MYNARG	=	NARG
 	CHK_NARG	2,3
 	CHK_OBJ	\1
-	jsl	random_l
+	s_jsl	random_l
 
 	IFEQ	NARG-3
 	and	\3
@@ -4832,7 +4854,7 @@ s_add_rnd2alvar		MACRO	obj1,alvar,[AND value] - BYTE ONLY
 MYNARG	=	NARG
 	CHK_NARG	2,3
 	CHK_OBJ	\1
-	jsl	random_l
+	s_jsl	random_l
 
 	IFEQ	NARG-3
 	and	\3
@@ -4854,7 +4876,7 @@ s_add_rnd2var		MACRO	var,[AND value] - BYTE ONLY
 	stratmac_start
 MYNARG	=	NARG
 	CHK_NARG	1,2
-	jsl	random_l
+	s_jsl	random_l
 
 	IFEQ	NARG-2
 	and	\2
@@ -5132,7 +5154,7 @@ s_make_smoke	MACRO	[delay,label]
 	IFEQ	NARG-2
 	s_jmp_notdelay		\1,\2,al1pt
 	ENDC
-	jsl			makesmoke_srou_l
+	s_jsl			makesmoke_srou_l
 	ENDM
 
 
@@ -5144,9 +5166,9 @@ MYNARG	=	NARG
 	EXG_IFY	\1
 	
 	IFEQ	NARG-2
-	jsl	make\2splash_srou_l
+	s_jsl	make\2splash_srou_l
 	ELSEIF
-	jsl	makesplash_srou_l
+	s_jsl	makesplash_srou_l
 	ENDC
 
 	s_chk_objptr	y,.badobj\@
@@ -5285,6 +5307,10 @@ s_copy_sflags		MACRO	obj2,obj1
 	s_sta.w	al_sflags3,\1
 	s_lda.w	al_sflags4,\2
 	s_sta.w	al_sflags4,\1
+	s_lda.w	al_sflags5,\2
+	s_sta.w	al_sflags5,\1
+	s_lda.w	al_sflags6,\2
+	s_sta.w	al_sflags6,\1
 		ENDM
 ;-----------------------------------------------------------------------------
 s_copy_obj		MACRO	obj2,obj1
@@ -5507,7 +5533,7 @@ MYNARG	=	NARG
 	rlbeq	\5
 	CHG_MODE	\1
 	ENDC
-	Fchase_A	#\4
+	Fchase_A	\3,#\4
 
 	sta.\0	\2
 
@@ -5529,7 +5555,7 @@ MYNARG	=	NARG
 	rlbeq	\6
 	CHG_MODE	\1
 	ENDC
-	Fchase_A	#\5
+	Fchase_A	\4,#\5
 
 	sta	\3,\2
 
@@ -5550,7 +5576,7 @@ MYNARG	=	NARG
 	rlbeq	\6
 	CHG_MODE	\1
 	ENDC
-	Fchase_A	#\5
+	Fchase_A	\4,#\5
 
 	sta.l	\3,\2
 
@@ -5572,7 +5598,7 @@ MYNARG	=	NARG
 	rlbeq	\7
 	CHG_MODE	\1
 	ENDC
-	Fchase_A	#\6
+	Fchase_A	<\5,\4>,#\6
 
 	sta	\3,\2
 
@@ -5594,7 +5620,7 @@ MYNARG	=	NARG
 	rlbeq	\6
 	CHG_MODE	\1
 	ENDC
-	Fchase_A	#\5
+	Fchase_A	<\4,\2>,#\5
 
 	sta	\3
 
@@ -5606,11 +5632,14 @@ MYNARG	=	NARG
 s_copy_alvar2var	MACRO	size,obj1,var,alvar
 	stratmac_start
 MYNARG	=	NARG
-	CHK_NARG	4
+	CHK_NARG	4,5
 	CHK_OBJ	\2
 
 	CHG_MODE	\1
 	s_lda	\4,\2
+	IFEQ	NARG-5
+	run	"	\5"
+	ENDC
 	sta.\0	\3
 	CHG_MODEBACK	\1
 	stratmac_end
@@ -5690,7 +5719,7 @@ MYNARG	=	NARG
 	sta	tpx
 
 	lda	\3
-	jsl	find_nearobject_l
+	s_jsl	find_nearobject_l
 	EXG_IFY	\2
 
 	cpy	#0
@@ -5714,7 +5743,7 @@ MYNARG	=	NARG
 	sta	tpx
 
 	lda	\3
-	jsl	find_radiusobject_l
+	s_jsl	find_radiusobject_l
 	EXG_IFY	\2
 
 	cpy	#0
@@ -5733,7 +5762,7 @@ MYNARG	=	NARG
 
 	EXG_IFY	\2
 	lda	\3
-	jsl	find_object_l
+	s_jsl	find_object_l
 	EXG_IFY	\2
 
 	cpy	#0
@@ -5755,7 +5784,7 @@ MYNARG	=	NARG
 	sta	x1
 	a16
 	lda	\3
-	jsl	find_Mobject_l
+	s_jsl	find_Mobject_l
 	EXG_IFY	\2
 
 	cpy	#0
@@ -5892,7 +5921,7 @@ s_set_var2rnd		MACRO	alvar,[AND value] - BYTE ONLY
 	stratmac_start
 MYNARG	=	NARG
 	CHK_NARG	1,2
-	jsl	random_l
+	s_jsl	random_l
 	IFEQ	NARG-2
 	and	\2
 	ENDC
@@ -6420,12 +6449,23 @@ MYNARG	=	NARG
 		stratmac_end
 	ENDM
 ;-----------------------------------------------------------------------------
-s_set_objtobeplayer	MACRO	obj1
+s_set_objtobeplayer1	MACRO	obj1
 	stratmac_start
 MYNARG	=	NARG
 	CHK_NARG	1
 	CHK_OBJ	\1
-	ld\1	playpt
+	ld\1	playpt1
+		stratmac_end
+	ENDM
+
+
+;-----------------------------------------------------------------------------
+s_set_objtobeplayer2	MACRO	obj1
+	stratmac_start
+MYNARG	=	NARG
+	CHK_NARG	1
+	CHK_OBJ	\1
+	ld\1	playpt2
 		stratmac_end
 	ENDM
 
@@ -6480,7 +6520,7 @@ MYNARG	=	NARG
 	lda	\2
 	sta	tpa
 
-      	jsl	do_coll_l
+      	s_jsl	do_coll_l
 .\@
 	ply
 	EXG_IFY	\1
@@ -6503,7 +6543,7 @@ MYNARG	=	NARG
 	lda	\2
 	sta	tpa
 
-	jsl	do_coll_l
+	s_jsl	do_coll_l
 	EXG_IFY	\1
 	stratmac_end
 	ENDM
@@ -7455,7 +7495,7 @@ MYNARG	=	NARG
 	CHK_OBJ	\2
 
 	lda	\3
-	jsl	setobjtobechild\1\2_srou
+	s_jsl	setobjtobechild\1\2_srou
 
 ;	ph\2
 ;
@@ -7497,7 +7537,7 @@ MYNARG	=	NARG
 	CHK_NARG    	1
 
 	lda	\1
-	jsl	sr_make_child
+	s_jsl	sr_make_child
 
 
 	stratmac_end
@@ -7512,6 +7552,7 @@ MYNARG	=	NARG
 	CHK_OBJ	\2
 
 	s_clr_alsflag	\1,childobj
+	s_clr_alsflag	\1,removewithmother
 
 	a16
 	st\1	tpy
@@ -7527,6 +7568,12 @@ asz	=	*
 .fc\@
 	s_lda.w	al_sword1,\1
 	s_sta.w	al_sword1,\2
+
+	lda	#0
+	s_sta.w	al_ptr,\1
+	s_sta.w	al_sword1,\1
+	a8
+	s_sta.w	al_sbyte1,\1
 .bc\@
 	pl\2
 
@@ -7695,7 +7742,7 @@ MYNARG	=	NARG
 	sta	x1
 	lda	\3
 	sta	z1
-	jsl	sr_make_xyvec	
+	s_jsl	sr_make_xyvec	
 
 	EXG_IFY	\1
 
@@ -8162,7 +8209,7 @@ s_boss_dying	MACRO
 
 ;*****************************************************************************
 s_banktoplayer	MACRO
-	jsl	sr_banktoplayer
+	s_jsl	sr_banktoplayer
 	ENDM
 
 
@@ -8172,7 +8219,7 @@ s_dooropen_snd	MACRO	[#anim frame num]
 	s_cmp_anim	x,#\1
 	s_bne		.nsnd\@
 	ENDC
-	jsl		dooropensound_l
+	s_jsl		dooropensound_l
 .nsnd\@
 		ENDM
 ;*****************************************************************************
@@ -8181,7 +8228,7 @@ s_doorclose_snd	MACRO	[#anim frame num]
 	s_cmp_anim	x,#\1
 	s_bne		.nsnd\@
 	ENDC
-	jsl		doorclosesound_l
+	s_jsl		doorclosesound_l
 .nsnd\@
 		ENDM
 
@@ -8227,11 +8274,11 @@ MYNARG	=	NARG
 
 
 
-
-
-
-
-
-
-
-
+
+
+
+
+
+
+
+

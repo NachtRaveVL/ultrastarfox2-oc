@@ -15,766 +15,935 @@
 ;*_________________________________________________________________________*
 ;*                                                                         *
 ;* Author:                                                                 *
-;*	 Krister Wombell, Dylan Cuthbert                            *
+;*	 Krister Wombell, Dylan Cuthbert ,Yasuhiro Kawaguchi          *
 ;*                                                                         *
 ;***************************************************************************
 
-	INCPUBLICS	bgs.ext
+	INCPUB	bgs
 
-******************************************************
-**
-** Screen set up code
-**
+;*****************************************************************************
+;*									*
+;*			Screen Set					*
+;*									*
+;*****************************************************************************
+;=====================================================================
+;*			Title Screen				*
+;=====================================================================
+	shorta
+	longi
+bg_title_1
+;* game (3d) palette *
+	km_gamepal	night
+;* bg mode *
+	jsr	mode1h16
+;* cgx & scr & colour *
+	bg2chr	b16		;bg2 character data
+	bg2scr	b16		;bg2 screen data
+
+	km_setscreenflag	noset_col	;dma crash boushi!!
+	km_decrunchpal		;colour data decompress to MARIO RAM
+	set_bg			;(irq start) bg data trans
+
+	km_palette	b16,16,0	;BG Base Colour
+	set_palette			;col data transfer
+	brl	depthmode_space_night
+
+;=====================================================================
+;*			Demo Screen				*
+;=====================================================================
+bg_titledemo_1
+	shorta
+	longi
+;* game 3d  palette *
+	km_gamepal	night
+;* bg mode *
+	jsr	mode2v16
+
+	bg2chr	a8
+	bg2scr	a8
+
+	km_decrunchpal
+	km_palette	col_2
+	set_bg
+
+	km_bitcheckmistotalflag	gameend
+	beq	.easy
+
+	lda.l	kdifficulty
+	beq	.easy
+	dec	a
+	beq	.normal
+.hard
+	km_palette	a19,3,4
+	jmp	depthmode_space
+.normal
+	km_palette	a20,3,4
+	jmp	depthmode_space
+.easy
+	km_palette	a8,3,4
+	jmp	depthmode_space
+
+;---------------------------------------------------------------------------
+bg_startenemydemo_1
+	shorta
+	longi
+;* game 3d  palette *
+	km_gamepal	night
+;* bg mode *
+	jsr	mode2v16
+
+	bg2chr	a8
+	bg2scr	a8
+
+	km_decrunchpal
+	km_palette	col_2
+	set_bg
+	km_palette	a8,3,4
+	jmp	depthmode_space
+
+;---------------------------------------------------------------------------
+bg_startarwingdemo_1
+	shorta
+	longi
+;* game 3d  palette *
+	km_gamepal	night
+;* bg mode *
+	jsr	mode2v16
+
+	bg2chr	a8
+	bg2scr	a18
+
+	km_decrunchpal
+	km_palette	col_2
+	set_bg
+	km_palette	a8,3,4
+	jmp	depthmode_space
+
+;---------------------------------------------------------------------------
+bg_entermshipdemo_1
+	shorta
+	longi
+;* game 3d  palette *
+	km_gamepal	night
+;* bg mode *
+	jsr	mode2v16
+
+	bg2chr	a8
+	bg2scr	a8
+
+	km_decrunchpal
+	km_palette	col_2
+	set_bg
+	km_palette	a8,3,4
+	jmp	depthmode_space
+;---------------------------------------------------------------------------
+;* Game Over BG (for Planet)*
+bg_attackcorneriademo_1
+	shorta
+	longi
+;* game 3d  palette *
+	km_gamepal	night
+;* bg mode *
+	jsr	mode2v16
+
+	bg2chr	a8
+	bg2scr	a18
+
+	km_decrunchpal
+	km_palette	col_2
+	set_bg
+	km_palette	a8,3,4
+	jmp	depthmode_space
+
+;---------------------------------------------------------------------------
+;* Game Over BG (for Ground)*
+bg_explodecorneriademo_1
+	shorta
+	longi
+;* game 3d  palette *
+	km_gamepal	night
+;* bg mode *
+	jsr	mode2h16
+
+	bg2chr	a13
+	bg2scr	a13
+
+	km_decrunchpal
+	km_palette	col_2
+	set_bg
+	km_palette	a13,3,4
+	jmp	depthmode_space
+
+;---------------------------------------------------------------------------
+;* Enter Meteor Base BG *
+	shorta
+	longi
+bg_entermeteordemo_1
+	IFEQ	1
+;* game 3d  palette *
+	km_gamepal	night
+;* bg mode *
+	jsr	mode2v16
+
+	bg2chr	a11
+	bg2scr	a16
+
+	km_decrunchpal
+	km_palette	col_2
+	set_bg
+	km_palette	a12,3,4
+	jmp	depthmode_space
+	ENDC
+;---------------------------------------------------------------------------
+bg_sun_1
+	shorta
+	longi
+;* game 3d  palette *
+	km_gamepal	sun
+;* bg mode *
+	jsr	mode2v16
+
+	bg2chr	a11
+	bg2scr	a10
+
+	km_decrunchpal
+	km_palette	col_2
+	set_bg
+	km_palette	a11,3,4
+	jmp	depthmode_space
 
 
-if_vofson	equ	1
-if_hofson	equ	2
-if_zroton	equ	4
-if_ground	equ	8
-if_space	equ	16
-if_snow	equ	32
-if_pollen	equ	64
+;---------------------------------------------------------------------------
+bg_corneria_1
+	shorta
+	longi
+;* game 3d  palette *
+	km_gamepal	night
+;* bg mode *
+	jsr	mode2h16
 
+	bg2chr	a5
+	bg2scr	a5
+
+	km_decrunchpal
+	km_palette	col_2
+	set_bg
+	km_palette	a5,3,4
+	jmp	depthmode_space
+
+;=====================================================================
+;*		MISSION BG Screen				*
+;=====================================================================
+bg_missionexplain_1
 	shorta
 	longi
 
-;---------------------------------------------------------------
+;* tm *
+	lda	#1+2+4+16
+	sta	kw_tmptm
+;* BG3 size ( mode1h8 no maeni oku !!!)
+	km_setbg3size				;4chr mode
+	km_setval	bg3screensize,3		;4 screen
+;* game 3d  palette *
+	km_gamepal	MARINE
+;* bg mode *
+	jsr	mode1h8
 
-bg_hole_1	init_bg	mode2
-	bg2chr	bhole
-	bg2scr	bhole
-	palette	2d
+;* cgx & scr & colour *
+	bg2chr	b14,2*k,0
+	bg2scr	b14,0,2*k
+
+	km_setscreenflag	noset_col	;dma crash boushi!!
+	km_decrunchpal
 	set_bg
-	info	hon,voff,zon,space
-	pstrat	playerspaceflyin,a,abc
-	bg2Yscroll	0
-	hofmode	bhole
-	a16
-	lda	#0
-	sta.l	testk2
-	lda	#bholelimit
-	sta.l	testk3
-	lda	#1
-	sta.l	testk4
-	a8
-	bgm	bhole
-	space	night
 
-bg_1_1i_1	init_bg	mode2
-	bg2chr	b
-	bg2scr	b
-	palette	2b
+	km_palette	b0,16,0
+	set_palette			;col data transfer
+
+	bg3chr	b15,4*k,0
+	bg3scr	b15,0,4*k
+	set_bg3
+
+	set_zdepthtable	explain
+	brl	depthmode_planet_night
+
+;-------------------------------------------------------------------------
+bg_missiongameover_1
+	shorta
+	longi
+;* tm *
+	lda	#1+2+16
+	sta	kw_tmptm
+
+;* BG3 size ( mode1h8 no maeni oku !!!)
+;	km_setbg3size				;4chr mode
+;	km_setval	bg3screensize,3		;4 screen
+
+;* game 3d  palette *
+	km_gamepal	NIGHT
+;* bg mode *
+	jsr	mode1h16
+
+	km_clrflag16	screenmode,sm_nosprites
+
+;* cgx & scr & colour *
+	bg2chr	a15	;,4*k,0
+	bg2scr	a15	;,0,2*k
+	km_decrunchpal
+	km_palette	a15,3,4
 	set_bg
-	info	hon,voff,zoff,nodots
-	pstrat	playeropening,a,ab
-	hofmode	tunnel3
-	set_zdepthtable	tunnel
-	bgm	10
-	lda	#0
-	sta.l	m_meters
-	shadowheight 0
-	tunnel	night
 
-bg_1_1a_1	blink
-;	init_bg	mode1
-;	bg2chr	tst
-;	bg2scr	tst
-;	palette	tm3
-;	set_bg
-;	info	hon,voff,zoff,nodots
-;;	pstrat	playertakeoff,a,ab			   
-;	hofmode	tunnel3
-;	set_zdepthtable	tunnel
-;	bgm	10
-;	flashtunnel
-;	shadowheight 0
-;	tunnel	night
+;	bg3chr	b15,4*k,0
+;	bg3scr	b15,0,4*k
+;	set_bg3
 
-bg_1_1b_1	
-	blink
-;	init_bg	mode2		;what I see from the tunnel
-;	bg2chr	stp
-;	bg2scr	stp
-;	palette	2d
-;	gamepal	blue
-;	set_zdepthtable	stage1
-;	set_bg
+	km_palette	b15,8,8	;file,length,start
+	set_palette		;planet col data transfer
+
+	set_zdepthtable	explain
+	jmp	depthmode_planet_night
+;-------------------------------------------------------------------------
+bg_missioncontinue_1
+	shorta
+	longi
+;* tm *
+	lda	#16+1
+	sta	kw_tmptm
+;* BG3 size ( mode1h8 no maeni oku !!!)
+	km_setbg3size				;4chr mode
+	km_setval	bg3screensize,3		;4 screen
+
+;* game 3d  palette *
+	km_gamepal	NIGHT
+;* bg mode *
+	jsr	mode1h8
+
+;* cgx & scr & colour *
+	bg2chr	b14,2*k,0
+	bg2scr	b14,0,2*k
+	km_decrunchpal
+	km_palette	yaji_0,4,8	;file,length,start
+	set_bg
+
+	km_palette	b0,7,0
+	set_palette		;planet col data transfer
+
+	set_zdepthtable	explain
+	jmp	depthmode_planet_night
+;---------------------------------------------------------------------------
+bg_missionstage1_1
+	shorta
+	longi
+
+;* game 3d  palette *
+	km_gamepal	mist
+
+;* bg mode *
+	jsr	mode2h16
+
+	lda	currentlevel
+	cmp	#itemplanetskill
+	km_beq	.itemplanet
+
+.Normal
+;* cgx & scr & colour *
+	bg2chr	a0
+	bg2scr	a0
+
+	km_decrunchpal
+	km_palette	col_2
+	set_bg
+	km_palette	a0,3,4
+	set_palette		;col data transfer
+	km_palette	w0,8,8	;file,length,start
+	set_palette		;col data transfer
+
+	set_zdepthtable	mist	;depth mode (coltabs.asm)
 ;	info	hon,von,zon,nodots
-;	bg2Yscroll	140
-;	shadowheight 39<<mybase_scale
-;	hofmode	rotate
-;	planet	night
+	hofmode	nograd
+	bg2Yscroll	0 	;232
+	planet	mist		;(night,mist,desert,marine)
 
-bg_1_1c_1	init_bg	mode2		;what I see from the tunnel
-	bg2chr	stp
-	bg2scr	stp
-	palette	2d
-	gamepal	blue
-	set_bg
-	set_zdepthtable	stage1
-	info	hon,von,zon,ground	;what I see from the ground
-	hofmode	rotate
-	shadowheight 0
-	bg2Yscroll	232
-	bgm	11
-	lda	#1
-	sta.l	m_meters
-	planet	night
+.Itemplanet
+;* cgx & scr & colour *
+	bg2chr	a3
+	bg2scr	a12
 
-bg_3_1c_1	init_bg	mode2		;what I see from the tunnel
-	bg2chr	stp
-	bg2scr	stp
-	palette	2g
-	gamepal	red
+	km_decrunchpal
+	km_palette	col_2
 	set_bg
-	set_zdepthtable	stage1
-	info	hon,von,zon,ground	;what I see from the ground
-	hofmode	rotate
-	shadowheight 0
-	bg2Yscroll	232
-	bgm	11
-	lda	#1
-	sta.l	m_meters
-	planet	red
+	km_palette	a12,3,4
+	brl	depthmode_planet
 
-bg_training_1	init_bg	mode2
-	bg2chr	stp
-	bg2scr	stp
-	palette	2d
-	gamepal	blue
-	set_bg
-	pstrat	playeronplanet,a,ab
-	set_zdepthtable	stage1
-	info	hon,von,zon,ground	;what I see from the ground
-	hofmode	rotate
-	shadowheight 0
-	bg2Yscroll	232
-	bgm	training
-	planet	night
+;---------------------------------------------------------------------------
+bg_missionstage2_1
+	shorta
+	longi
 
-bg_1_2_1	init_bg	mode2
-	bg2chr	stars
-	bg2scr	stars
-	palette	stars
-	set_bg
-	info	von,hon,zon,space
-	pstrat	playerinsidespaceflyin,b,abc
-	bgm	12
-	hofmode	rotate
-	bg2Yscroll	232
-	space	night
+;* game 3d  palette *
+	km_gamepal	night
+;* bg mode *
+	jsr	mode2h16
+;* cgx & scr & colour *
+	bg2chr	a1
+	bg2scr	a1
 
-bg_special_1	init_bg	mode2
-	bg2chr	m
-	bg2scr	m
-	palette	space
+	km_decrunchpal
+	km_blocktrans	(c0_pac),kx_palette2,256
+	km_palette	col_2
 	set_bg
-	info	von,hon,zon,space
-	pstrat	playerinsidespaceflyin,b,abc
-	bgm	special
-	hofmode	bhole
+	km_palette	a1,3,4
+	jmp	depthmode_planet
+
+;---------------------------------------------------------------------------
+bg_missionstage3_1
+	shorta
+	longi
+
+;* game 3d  palette *
+	km_gamepal	magma
+;* bg mode *
+	jsr	mode2h16
+
+;* cgx & scr & colour *
+	bg2chr	a2
+	bg2scr	a2
+	km_decrunchpal
+ 	km_palette	col_2
+	set_bg
+	km_palette	a2,3,4
+
+	shadowheight	-16
+	jmp	depthmode_planet
+;---------------------------------------------------------------------------
+bg_missionstage4_1
+	shorta
+	longi
+;* game 3d  palette *
+	km_gamepal	mist
+;* bg mode *
+	jsr	mode2h16
+
+;* cgx & scr & colour *
+	bg2chr	a3
+	bg2scr	a3
+	km_decrunchpal
+	km_blocktrans	(c1_pac+8*16*2),kx_palette2,256
+ 	km_palette	col_2
+	set_bg
+	km_palette	a3,3,4
+	set_palette		;col data transfer
+
+;=============================================
+;*	Yajima's Screen Buffer Tenkai	*
+;=============================================
+	ifeq	1
+;* heap memory get *
+	phb
+	db7e
 	a16
-	lda	#0
-	sta.l	testk2
-	lda	#bholelimit
-	sta.l	testk3
-	lda	#1
-	sta.l	testk4
+	lda	#2048
+	jsl	alloc_l
+	sta	heaven_bgpointer
+
+	lda	#2048
+	jsl	alloc_l
+	sta	hell_bgpointer
 	a8
-	bg2Yscroll	-64
-	space	night
-
-
-bg_1_3i_1	init_bg	mode2
-	bg2chr	34
-	bg2scr	34
-	palette	space
-	set_bg
-	info	von,hon,zon,space
-	pstrat	playerwarpout,a,ab
-	hofmode	rotate
-	bg2Yscroll	232
-	bgm	13
-	space	night
-
-bg_1_3a_1	init_bg	mode2
-	bg2chr	34
-	bg2scr	34
-	palette	space
-	set_bg
-	info	von,hon,zon,space
-	pstrat	playerinspace,a,abc
-	hofmode	rotate
-	bg2Yscroll	232
-	bgmrestart	13b
-	space	night
-
-bg_1_3b_1	init_bg	mode1
-	bg2chr	tsp
-	bg2scr	tsp
-	palette	tm3
-	set_bg
-	info	hon,voff,zoff,nodots
-	pstrat	playerinmtunnel,a,ab
-	hofmode	tunnel3
-	shadowheight 0
-	bgmrestart	13b
-	tunnel	night
-
-bg_1_3c_1	init_bg	mode2
-	bg2chr	34
-	bg2scr	34
-	palette	space
-	set_bg
-	info	von,hon,zon,space
-	pstrat	playerinspace,a,abc
-	bgmrestart	13b
-	hofmode	rotate
-	bg2Yscroll	232
-	space	night
-	
-bg_1_3d_1	init_bg	mode2
-	bg2chr	13b
-	bg2scr	13b,vsc_base2+2*k,4*k
-	palette	2b
-	set_bg
-	info	voff,hon,zoff,nodots
-	pstrat	playerinnucleus
-	hofmode	nograd
-	bg2Yscroll	264
-	shadowheight nucleusheight
-	nucleus	night
-
-bg_1_3da_1	init_bg	mode2
-	bg2chr	13b
-	bg2scr	13b,vsc_base2+2*k,4*k
-	palette	2b
-	set_bg
-	info	von,hon,zon,nodots
-	pstrat	playerwashent
-	hofmode	nograd
-	bg2Yscroll	248		264
-	shadowheight nucleusheight
-	nucleus	night
-
-bg_1_3e_1	init_bg	mode2
-	bg2chr	space
-	bg2scr	13
-	palette	space
-	set_bg
-	info	von,hon,zon,space
-	pstrat	playerclearship2
-	hofmode	rotate
-	bg2Yscroll	232
-	space	night
-
-bg_1_4_1	init_bg	mode2
-	bg2chr	14
-	bg2scr	14
-	palette	light
-	set_bg
-	info	von,hon,zon,ground
-	pstrat	playerplanetflyin,b,ab
-	hofmode	rotate
-	bg2Yscroll	232
-	shadowheight 0
-	bgm	14
-	set_zdepthtable	mist
-	planet	night
-
-bg_1_4b_1	set_zdepthtable	normal
-	gamepal	red
-	shadowheight 0
-	setdepth red
-	rtl
-
-
-bg_1_5_1	init_bg	mode2
-	bg2chr	lsb
-	bg2scr	lsb
-	palette	2c
-	set_bg
-	info	hon,von,zon,space
-	pstrat	playerinsidespaceflyin,b,abc
-	hofmode	rotate
-	scrollbg	164
-	bgm	15
-	space	night
-
-bg_1_6a_1	init_bg	mode2
-	bg2chr	f1
-	bg2scr	f1
-	palette	2a
-	gamepal	red
-	set_bg
-	info	hon,von,zon,ground
-	pstrat	playerdivegnd,a,ab
-	hofmode	rotate
-	bg2Yscroll	232
-	bgm	16
-	shadowheight 0
-	flashbg
-	planet	night
-
-
-bg_1_6b_1	jsl	bg16b26c
-	startbgm	$12
-	pstrat	playernull,a,ab
-	tunnel	red
-
-bg16b26c	init_bg	mode1
-	bg2chr	tst
-	bg2scr	tst
-	palette	tm3
-	gamepal	red
-	set_bg
-	info	hon,voff,zoff,nodots
-	shadowheight 0
-	hofmode	tunnel3
-	rtl
-
-bg_1_6c_1	init_bg	mode2
-	bg2chr	bhole
-	bg2scr	last
-	palette	2f
-	gamepal	red
-	set_bg
-	info	hon,voff,zon,nodots
-	pstrat	playerinLTexit,a,ab
-	hofmode	bhole
-	bg2Yscroll	0
-	a16
-	lda	#0
-	sta.l	testk2
-	lda	#bholelimit
-	sta.l	testk3
-	lda	#1
-	sta.l	testk4
-	a8
-	final	night
-
-
-bg_1_7a_1	init_bg	mode1
-	bg2chr	tst
-	bg2scr	tst
-	palette	tm3
-	gamepal	red
-	set_bg
-	info	hon,voff,zoff,nodots
-	pstrat	playerOutofLB1,a,ab
-	hofmode	tunnel3
-	shadowheight 0
-	set_zdepthtable	normal
-	tunnel	marine
-
-bg_1_7b_1	init_bg	mode2
-	bg2chr	f1
-	bg2scr	f1
-	palette	2a
-	gamepal	red
-	set_bg
-	info	hon,von,zon,ground
-	pstrat	playerOutofLB2,a,ab
-	hofmode	rotate
-	shadowheight 0
-	bg2Yscroll	224		232-32
-	planet	night
-
-bg_1_7c_1	init_bg	mode2
-	bg2chr	lsb
-	bg2scr	lsb
-	palette	2c
-	set_bg
-	info	hon,von,zon,space
-	pstrat	playerOutofLB3,a,ab
-	hofmode	rotate
-	shadowheight 0
-	bg2Yscroll	232-60
-	bgm	endseq
-	space	night
-
-
-bg_2_2_1	init_bg	mode2
-	bg2chr	22
-	bg2scr	22
-	palette	space
-	set_bg
-	info	von,hon,zon,space
-	pstrat	playerinsidespaceflyin,b,abc
-	hofmode	rotate
-	bg2Yscroll	232
-	bgm	22
-	space	night
-
-bg_2_3a_1	init_bg	mode2
-	bg2chr	23
-	bg2scr	23
-	palette	2a
-	set_bg
-	gamepal	blue
-	info	von,hon,zon,snow
-	pstrat	playeronplanet,a,ab
-	bgm	23
-	bg2Yscroll	232
-	set_zdepthtable	mist
-	shadowheight 0
-	hofmode	rotate
-	planet	mist
-
-bg_2_3a_2	set_zdepthtable	normal
-	shadowheight 0
-	setdepth	night
-	rtl
-
-	
-bg_2_3b_1	init_bg	mode1
-	bg3chr	23b,24*k,2*k
-	bg3scr	23h,25*k,2*k
-	set_bg3
-	waittrans
-
-	bg2chr	bm,vchr_logback,$40*32
-	bg2scr	23b
-	palette	bm
-	set_bg
-
-	lda	#(25*k)>>8
-	sta	bg3sc
-	lda	#(24*k)>>12
-	sta	bg34nba
-
-	setbg3vofs	24
-	info	hon,voff,zoff,nodots
-	pstrat	playeronbridge,a,ab
-	hofmode	water
-	shadowheight 0
-	water	marine
-
-bg_2_3c_1	init_bg	mode2
-	bg2chr	tsp
-	bg2scr	tfs
-	palette	tm3
-	set_bg
-	info	hon,voff,zoff,nodots
-	pstrat	playerinstunnel,a,ab
-	hofmode	tunnel2
-	shadowheight 0
-	tunnel	night
-
-
-bg_2_4_1	init_bg	mode2
-	bg2chr	24
-	bg2scr	24
-	palette	2f
-	set_bg
-	info	von,zon,hon,space
-	pstrat	playerspaceflyin,a,abc
-	bgm	24
-	hofmode	rotate
-	bg2Yscroll	232
-	space	night
-	
-bg_2_5_1	init_bg	mode2
-	bg2chr	lsb
-	bg2scr	lsb
-	palette	2c
-	set_bg
-	pstrat	playerspaceflyin,a,abc
-	info	hon,von,zoff,space
-	hofmode	nograd
-	scrollbg	164
-	bgm	25
-	space	night
-	
-bg_2_6a_1
-	init_bg	mode1
-	bg2chr	cm
-	bg2scr	tss
-	palette	tm2
-	set_bg
-	waittrans
-
-	lda	#(25*k)>>8
-	sta	bg3sc
-	lda	#(24*k)>>12
-	sta	bg34nba
-
-	bg3chr	fsbg3,24*k,2*k
-	bg3scr	fsni,25*k,2*k
-	set_bg3
-
-	hofmode	tunnel2
-	shadowheight 0
-	info	hon,voff,zoff,nodots
-	pstrat	playercolonyflyin,a,ab
-	bgm	26
-	water	night,colony,3
-
-bg_2_6b_1	
-;	jsl	bg16b26c
-;	pstrat	playerclearcolony,a,ab
-;	tunnel	red
-
-	init_bg	mode1
-	bg2chr	tst
-	bg2scr	tst
-	palette	tm3
-	set_bg
-	gamepal	red
-	info	hon,voff,zon,nodots
-	pstrat	playerclearcolony,a,ab
-	hofmode	tunnel3
-	shadowheight 0
-	tunnel	night
-	
-bg_2_6c_1	
-	init_bg	mode1
-	bg2chr	tst
-	bg2scr	tst
-	palette	tm3
-	set_bg
-	gamepal	red
-	info	hon,voff,zoff,nodots
-	pstrat	playerinLtunnel,a,ab
-	hofmode	tunnel3
-	shadowheight 0
-	tunnel	red
-
-;bg_2_6b_1			;HAVEN'T GOT YET
-bg_2_6b_2
-bg_2_6b_3
-bg_2_6b_4
-	planet	night
-
-
-bg_3_2_1	init_bg	mode2
-	bg2chr	32
-	bg2scr	32
-	palette	2b
-	set_bg
-	info	von,hon,zon,space
-	pstrat	playerinsidespaceflyin,b,abc
-	hofmode	rotate
-	bg2Yscroll	24
-	bgm	32
-	space	night
-
-bg_3_3a_1	init_bg	mode2
-	bg2chr	33
-	bg2scr	33
-	palette	2c
-	set_bg
-	gamepal	blue
-	info	von,hon,zon,pollen
-	pstrat	playeronplanet,b,ab	; NO FLY-IN BECAUSE STRANGE RESTART 
-	shadowheight 0
-	hofmode	rotate
-	bg2Yscroll	232
-	bgm	33
-	planet	mist
-
-bg_3_4a_1	blink
-
-bg_3_4b_1	init_bg	mode2
-	bg2chr	34
-	bg2scr	34
-	palette	space
-	set_bg
-	info	von,hon,zon,space
-	pstrat	playerinsidespaceflyin,b,abc
-	hofmode	rotate
-	bg2Yscroll	232
-	bgm	34
-	space	night
-
-bg_3_4c_1	init_bg	mode2
-	bg2chr	tsp
-	bg2scr	tsp
-	palette	tm3
-	set_bg
-	info	hon,voff,zoff,nodots
-	pstrat	playerinLtunnel,a,ab
-	shadowheight 0
-	hofmode	tunnel3
-	tunnel	night,blue,5
-
-bg_3_4d_1	init_bg	mode2
-	bg2chr	34
-	bg2scr	34
-	palette	space
-	set_bg
-	info	von,hon,zon,space
-	pstrat	playerclearship2
-	hofmode	rotate
-	bg2Yscroll	0		
-	space	night
-
-bg_3_5_1	init_bg	mode2
-	bg2chr	holea
-	bg2scr	holea,vsc_base2+2*k,4*k
-	palette	hole
-	gamepal	red
-	set_bg
-	bg2Yscroll	256+16
-	pstrat	playerundergnd,b,ab		playerundergnd
-	info	hon,von,zon,ground
-	shadowheight 0
-	hofmode	rotate
-	lda	#1
-	sta	noxrot
-	bgm	35
-	undergnd	red
-
-bg_3_6_1	init_bg	mode2
-	bg2chr	lsb
-	bg2scr	lsb
-	palette	2c
-	set_bg
-	info	hon,von,zon,space
-	pstrat	playerinsidespaceflyin,b,abc
-	hofmode	rotate
-	scrollbg	164
-	bgm	36
-	space	night
-
-bg_3_7a_1	init_bg	mode2
-	bg2chr	f1
-	bg2scr	f1
-	palette	2a
-	gamepal	red
-	set_bg
-	info	hon,von,zon,ground
-	pstrat	playerdivegnd,a,ab
-	hofmode	rotate
-	shadowheight 0
-	bg2Yscroll	232
-	flashbg
-	bgm	37
-	planet	night
-
-
-bg_cred_1	init_bg	mode2
-	bg2chr	24
-	bg2scr	24
-	palette	2f
-	set_bg
-	info	von,zon,hon,space
-	pstrat	playercred,b,abc
-	hofmode	rotate
-	bg2Yscroll	232
-	space	night
-
-bg_cont_1	init_bg	mode1
-	bg2chr	cont
-	bg2scr	cont
-	palette	cont
-	set_bg
-	info	voff,zoff,hoff,space
-	pstrat	playeroncont,b,ab
-	hofmode	nograd
-	bg2Yscroll	0
-	space	night
-
-bg_intro_1	init_bg	mode2
-	bg2chr	demo
-	bg2scr	demo
-	palette	2b
-	set_bg
-	info	von,zon,hon,space
-	pstrat	playercred,b,abc
-	hofmode	rotate
-	bg2Yscroll	24
-	space	night
-
-	IFNE	CONTEST
-bg_timeover_1	init_bg	mode2
-	bg2chr	sc
-	bg2scr	sc
-	palette	contest
-	set_bg
-	info	von,zon,hon,space
-	pstrat	playercred,b,abc
-	hofmode	rotate
-	bg2Yscroll	0
-	space	night
-
-bg_timeup_1	init_bg	mode2
-	bg2chr	ti
-	bg2scr	ti
-	palette	contest
-	set_bg
-	info	von,zon,hon,nodots
-	pstrat	playercred,b,abc
-	hofmode	rotate
-	bg2Yscroll	0
-	space	night
-
-	ENDC
-
-bg_gameover_1	init_bg	mode1
-	bg2chr	and
-	bg2scr	and
-	palette	2e
-	set_bg
-	info	von,zon,hon,space
-	pstrat	playercred,b,abc
-	hofmode	nograd
-	bg2Xscroll	-128
-	bg2Yscroll	0
-	space	night
-
-bg_title_1
-	init_bg	mode1
-	bg3chr	ti3,0e000h/2,4*k
-	bg3scr	ti3,0d000h/2,4*k
-	set_bg3
-	waittrans
-	bg2chr	cp
-	bg2scr	cp,vsc_base2+2*k,4*k
-
-	IFNE	janglish
-	palette	cp
-	elseif
-	IFEQ	contest
-	palette	cpus
-	ELSEIF
-	palette	contest
-	ENDC
+	plb
+;* copy screen data from mario RAM to heap RAM *
+	decram	a3_pcr,0
+	ldy	heaven_bgpointer
+	km_blocktransY	($700000+dec_base),xheap,2048
+	decram	a4_pcr,0
+	ldy	hell_bgpointer
+	km_blocktransY	($700000+dec_base),xheap,2048
 	endc
+	jmp	depthmode_planet_w0obj
+;---------------------------------------------------------------------------
+bg_missionstage5_1
+	shorta
+	longi
+;* game 3d  palette *
+	km_gamepal	night
+;* bg mode *
+	jsr	mode2h16
 
+	bg2chr	a4
+	bg2scr	a4
+
+	km_decrunchpal
+	km_palette	col_2
 	set_bg
-	lda	#(0e000h/2)>>12
-	sta	bg34nba
-	lda	#(0d000h/2)>>8
-	sta	bg3sc
-	stz	pal0palette
-	stz	pal0palette+1
-	setbg3vofs	9
-	info	voff,zoff,hoff,space
-	pstrat	playercred,b,abc
-	hofmode	rotate
-	bg2Yscroll	257
-	bgm	title
-	IFEQ	CONTEST
-	lda	#1+2+4
-	ELSEIF
-	lda	#1+2
-	ENDC
-	sta	tm
-	space	night
+	km_palette	a4,3,4
+	jmp	depthmode_planet
 
+;---------------------------------------------------------------------------
+bg_missionstage6_1
+	shorta
+	longi
+;* game 3d  palette *
+	km_gamepal	mist
+;* bg mode *
+	jsr	mode2v16
+
+;* cgx & scr & colour *
+	bg2chr	a6
+	bg2scr	a6
+	km_decrunchpal
+	km_palette	col_2
+	set_bg
+;;;	km_blocktrans	(c1_pac+8*16*2),kx_palette2,256
+	km_palette	a6,3,4
+	set_palette
+
+	km_palette	w0,8,8	;file,length,start
+	set_palette		;col data transfer
+
+	set_zdepthtable	ground	;depth mode (coltabs.asm)
+;	info	hon,von,zon,nodots
+	hofmode	nograd
+	bg2Yscroll	0 	;232
+	planet	marine	;(night,mist,desert,marine)
+;---------------------------------------------------------------------------
+bg_room_1
+	shorta
+	longi
+
+	km_clrscreenflag	bgcolpal
+;* game 3d  palette *
+	km_gamepal	night
+;* bg mode *
+	jsr	mode2v16
+	km_clrscreenflag	tutumode
+
+;	km_cmpcheckgamestage	stg6
+;	beq	.fortuna
+
+	bg2scr	a11
+	bg2chr	a11
+
+;	bra	.common
+;.fortuna
+;	bg2scr	a28
+;	bg2chr	a6
+.common
+	km_decrunchpal
+	km_palette	col_2
+	set_bg
+
+	a16
+	km_ldaslx	KGameMapPtr
+	lda.l	RoomColourtbl,x
+	sta	vram3addr
+	a8
+	lda	#a16_pac>>16
+	sta	vram3addr+2
+	ldx	#3*32
+	stx	vram3len
+	ldx	#4*16
+	stx	palettestart
+	jmp	depthmode_planet
+
+RoomColourtbl
+	dw	a23_pac&WM	;stage 1
+	dw	a24_pac&WM	;stage 2
+	dw	a25_pac&WM	;stage 3
+	dw	a26_pac&WM	;stage 4
+	dw	a27_pac&WM	;stage 5
+	dw	a28_pac&WM	;stage 6
+	dw	a16_pac&WM	;???
+	dw	a16_pac&WM	;???
+	dw	a16_pac&WM	;senkan
+;---------------------------------------------------------------------------
+	shorta
+	longi
+bg_tutu_1
+	IFEQ	1	;not using
+	km_clrscreenflag	bgcolpal
+;* game 3d  palette *
+	km_gamepal	night
+;* bg mode *
+	jsr	mode2v16
+	km_setscreenflag	tutumode
+	bg2scr	a12
+	bg2chr	a11
+	km_decrunchpal
+	km_palette	col_2
+	set_bg
+	km_palette	a11,3,4
+	jmp	depthmode_planet
+	ENDC
+;---------------------------------------------------------------------------
+bg_missionsos1_1
+bg_missionsos2_1
+bg_missionsos3_1
+	shorta
+	longi
+;* game 3d  palette *
+	km_gamepal	night
+;* bg mode *
+	jsr	mode2v16
+;* cgx & scr & colour *
+	lda.l	kx_NearPlanetNum
+	cmp	#8
+	beq	.NearPlanet
+	cmp	#7
+	bmi	.NearPlanet
+	beq	.Asteroid
+	bra	.SPACE
+
+.NearPlanet
+	bg2chr	a8
+	bg2scr	a18
+	bra	.skip
+.Asteroid
+	bg2chr	a4
+	bg2scr	a9
+	bra	.skip
+.SPACE
+	bg2chr	a8
+	bg2scr	a8
+	bra	.skip
+.skip
+	km_decrunchpal
+	km_palette	col_2
+	set_bg
+
+	a16
+	km_ldaslx.l	kx_NearPlanetNum
+	lda.l	SOScolourTable,x
+	sta	vram3addr
+	a8
+	lda	#a18_pac>>16
+	sta	vram3addr+2
+	ldx	#3*32
+	stx	vram3len
+	ldx	#4*16
+	stx	palettestart
+	jmp	depthmode_space
+
+SOScolourTable
+	dw	a8_pac&WM	;corneria	;0
+	dw	a18_pac&WM	;stage 1	;1
+	dw	a19_pac&WM	;stage 2	;2
+	dw	a20_pac&WM	;stage 3	;3
+	dw	a21_pac&WM	;stage 4	;4
+	dw	a18_pac&WM	;stage 5	;5
+	dw	a8_pac&WM	;stage 6	;6
+	dw	a4_pac&WM	;asteroid	;7
+	dw	a8_pac&WM	;corneria	;8
+	dw	a8_pac&WM	;normal		;9
+	dw	a18_pac&WM	;space1		;10
+	dw	a19_pac&WM	;space2		;11
+	dw	a20_pac&WM	;space3		;12
+	dw	a21_pac&WM	;space4		;13
+	dw	a8_pac&WM	;normal
+	dw	a8_pac&WM	;normal
+	dw	a8_pac&WM	;normal
+;---------------------------------------------------------------------------
+bg_missionextra1_1
+	shorta
+	longi
+;* game 3d  palette *
+	km_gamepal	night
+;* bg mode *
+	jsr	mode2v16
+;* cgx & scr & colour *
+	bg2chr	a7
+	bg2scr	a7
+
+	km_decrunchpal
+	km_blocktrans	(c1_pac),kx_palette2,256
+
+	km_palette	col_2
+	set_bg
+	km_palette	a7,3,4
+
+	km_setscreenflag	bgcolpal
+	jmp	depthmode_space
+
+;---------------------------------------------------------------------------
+bg_missionextra2_1
+	shorta
+	longi
+;* game 3d  palette *
+	km_gamepal	night
+;* bg mode *
+	jsr	mode2v16
+;* cgx & scr & colour *
+
+	bg2chr	a11	;a11
+ 	bg2scr	a11	;a12
+	km_decrunchpal
+
+;;;;	km_blocktrans	(c1_pac),kx_palette2,256
+
+	km_palette	col_2
+	set_bg
+
+	km_palette	a11,3,4	;a12,3,4
+	jmp	depthmode_planet
+
+;---------------------------------------------------------------------------
+bg_missionextra3_1
+	shorta
+	longi
+;* game 3d  palette *
+	km_gamepal	night
+;* bg mode *
+	jsr	mode2v16
+;* cgx & scr & colour *
+	bg2chr	a11	;a10
+	bg2scr	a11	;a10
+	km_decrunchpal
+	km_palette	col_2
+	set_bg
+;;;;	km_blocktrans	(c1_pac),kx_palette2,256
+	km_palette	a11,3,4	;a10,3,4
+	jmp	depthmode_planet
+
+;---------------------------------------------------------------------------
+bg_missionextra4_1
+	shorta
+	longi
+;* game 3d  palette *
+	km_gamepal	night
+;* bg mode *
+	jsr	mode2v16
+;* cgx & scr & colour *
+	bg2chr	a11
+	bg2scr	a11
+	km_decrunchpal
+	km_palette	col_2
+	set_bg
+	km_palette	a11,3,4
+	jmp	depthmode_planet
+
+;=====================================================================
+;*		For Training BG Screen				*
+;=====================================================================
+bg_typeselect_1
+	shorta
+	longi
+	IFEQ	1
+;* bg mode *
+	jsr	mode1h8
+;* cgx & scr & colour *
+	bg2chr	b2
+	bg2scr	b2
+	km_decrunchpal		;colour data decompress to MARIO RAM
+	km_palette	b2	;BG Base Colour
+	set_bg
+	jmp	depthmode_planet_w0obj
+	ENDC
+
+bg_training_1
+	shorta
+	longi
+	IFEQ	1
+;* bg mode *
+	jsr	mode2h16
+
+;* cgx & scr & colour *
+;	bg2chr	a14
+;	bg2scr	a14
+	km_decrunchpal
+	km_palette	col_2
+	set_bg
+	km_palette	a14,3,4
+	jmp	depthmode_planet
+	ENDC
+;=====================================================================
+;*			Battle BG Screen			*
+;=====================================================================
+	shorta
+	longi
+bg_battlestage1_1
+;* game 3d  palette *
+	km_gamepal	night
+;* bg mode *
+	jsr	mode2h16
+
+;* cgx & scr & colour *
+	bg2chr	a0
+	bg2scr	a0
+	km_decrunchpal
+	km_palette	col_1
+	set_bg
+	km_palette	a0,3,4
+	jmp	depthmode_planet
+;----------------------------------------------------------------------
+bg_battlestage2_1
+	shorta
+	longi
+;* game 3d  palette *
+	km_gamepal	night
+;* bg mode *
+	jsr	mode2v16
+;* cgx & scr & colour *
+	bg2chr	a11
+	bg2scr	a11
+	km_decrunchpal
+	km_palette	col_1
+	set_bg
+	km_blocktrans	(c1_pac),kx_palette2,256
+	km_palette	a11,3,4	;a10,3,4
+	jmp	depthmode_space
+;----------------------------------------------------------------------
+bg_battlestage3_1
+	shorta
+	longi
+;* game 3d  palette *
+	km_gamepal	night
+;* bg mode *
+	jsr	mode2v16
+;* cgx & scr & colour *
+	bg2chr	a11	;a10
+	bg2scr	a11	;a10
+	km_decrunchpal
+	km_palette	col_1
+	set_bg
+	km_blocktrans	(c1_pac),kx_palette2,256
+	km_palette	a11,3,4	;a10,3,4
+	jmp	depthmode_planet
+
+;----------------------------------------------------------------------
+	IFEQ	1
+bg_battlestage4_1
+	shorta
+	longi
+;* game 3d  palette *
+	km_gamepal	night
+	jsr	mode2v16
+	bg2chr	a8
+	bg2scr	a8
+	km_decrunchpal
+	km_palette	col_1
+	set_bg
+	km_palette	a8,3,4
+	jmp	depthmode_space
+	ENDC
+;----------------------------------------------------------------------
+	IFEQ	1
+bg_battlestage5_1
+	shorta
+	longi
+;* game 3d  palette *
+	km_gamepal	night
+	jsr	mode2v16
+	bg2chr	a13
+	bg2scr	a13
+	km_decrunchpal
+	km_palette	col_1
+	set_bg
+	km_palette	a13,3,4
+	set_palette
+
+	set_zdepthtable	ground
+	hofmode	nograd
+	bg2Yscroll	0 ;232
+	planet	marine	;(night,mist,desert,marine)
+	ENDC
+;=====================================================================
+;*			3D megane BG screen			*
+;=====================================================================
+bg_3dglasses_1
+	i16
+;	jsr	mode1h8
+;	palette	test3d,8,0
+	jmp	depthmode_planet
+
+;*********************************************************************
+;*								*
+;*			SET DEPTH MODE				*
+;*								*
+;*********************************************************************
+;---------------------------------------------------------------------
+;*			Planet Common Depth Mode		*
+;---------------------------------------------------------------------
+depthmode_planet
+	shorta
+	longi
+	set_palette		;col data transfer
+depthmode_planet_w0obj
+	shorta
+	longi
+	km_palette	w0,8,8	;file,length,start
+	set_palette		;col data transfer
+	set_zdepthtable	ground	;depth mode (coltabs.asm)
+depthmode_planet_night
+;	info	hon,von,zon,nodots
+	hofmode	nograd
+	bg2Yscroll	0 	;232
+
+	km_cmpcheckgamestage	STG3
+	beq	depthmode_red
+	planet	night		;(night,mist,desert,marine,red)
+depthmode_red
+	planet	red		;(night,mist,desert,marine,red)
+;---------------------------------------------------------------------
+;*			Planet Common Depth Mode		*
+;---------------------------------------------------------------------
+depthmode_space
+	shorta
+	longi
+	set_palette		;col data transfer
+
+depthmode_space_w0obj
+	shorta
+	longi
+	km_palette	w0,8,8	;file,length,start
+	set_palette		;col data transfer
+depthmode_space_night
+	shorta
+	longi
+	set_zdepthtable	space
+;	info	hon,von,zon,nodots
+	hofmode	nograd
+	bg2Yscroll	0 	;232
+	space	night		;(night,mist,desert,marine)
+
+
+;*********************************************************************
+;*								*
+;*			SET BG MODE				*
+;*								*
+;*********************************************************************
+mode1h8
+	shorta
+	longi
+	init_bg	mode1,HORZ,8	;bg mode
+	rts
+mode1h16
+	shorta
+	longi
+	init_bg	mode1,HORZ,16	;bg mode
+	rts
+mode2h16
+	shorta
+	longi
+	init_bg	mode2,HORZ,16	;bg mode
+	rts
+mode2v16
+	shorta
+	longi
+	init_bg	mode2,VERT,16	;bg mode
+	rts
+;----------------------------------------------------------
+;----------------------------------------------------------
 ;----------------------------------------------------------
 initmode1
 	a8i16
 	waittrans
-	lda	#36
+	lda	#iv_irqsetmode1
 	sta	trans_flag
 	waittrans
 	rts
 	
 initmode2	a8i16
 	waittrans
-	lda	#38
+	lda	#iv_irqsetmode2
 	sta	trans_flag
 	waittrans
 	rts
@@ -794,7 +963,7 @@ dec_bg_l	php
 	a16
 	lda	#scr_offset
 	sta.l	m_decoffset
-	lda	#dec_base+6144
+	lda	#dec_base+bg2_cgx_len
 	sta.l	m_decaddr
 	a8
 	lda	#mdecrunch>>16
@@ -826,7 +995,7 @@ dec_l	php
 	jsl	runmario_l
 	plp
 	rtl
-
+;--------------------------------------------------------------------------
 bgbase	=	(*&~WM)+1
 
 bg2chr	SHORTA
@@ -851,6 +1020,9 @@ bg2chr	SHORTA
 	sta.l	m_enddata
 
 	lda.l	bgbase+3,x
+	bne	.nodefault
+	lda	vram_bg2_cgx
+.nodefault
 	sta	vram1addr
 	lda.l	bgbase+5,x
 	sta	vram1len
@@ -859,8 +1031,7 @@ bg2chr	SHORTA
 	jsl	dec_chr_l
 
 	rts
-
-
+;--------------------------------------------------------------------------
 bg2scr	SHORTA
 	LONGI
 
@@ -877,6 +1048,9 @@ bg2scr	SHORTA
 	and	#255
 	sta.l	m_enddatabnk
 	lda.l	bgbase+3,x
+	bne	.nodefault
+	lda	vram_bg2_scr
+.nodefault
 	sta	vram2addr
 	lda.l	bgbase+5,x
 	sta	vram2len
@@ -885,27 +1059,100 @@ bg2scr	SHORTA
 	jsl	dec_bg_l
 
 	rts
+;--------------------------------------------------------------------------
 
+;--------------------------------------------------------------------------
+;* kawaguchi *
+	IFEQ	1
+bg2chrtbl	SHORTA
+	LONGI
+	a16
+	lda	#0
+	sta.l	m_decoffset
+
+	lda	kz_tempaddrl+2
+	and	#$ff
+	sta.l	m_enddatabnk
+	lda	kz_tempaddrl
+	sta.l	m_enddata
+
+	lda	kz_tpx
+	bne	.nodefault
+	lda	vram_bg2_cgx
+.nodefault
+	sta	vram1addr
+	lda	kz_tpy
+	sta	vram1len
+	a8
+	jsl	dec_chr_l
+	rts
+	ENDC
+;=====================================================================
+;*		Colour Data no kaitou				*
+;=====================================================================
+kdecrunchpal_l
+	decrunch_palettes
+	rtl
+;----------------------------------------------------------
+;----------------------------------------------------------
 dopalette	SHORTA
 	LONGI
-
 	a16
 	pla
 	tax
 	clc
-	adc	#5
+	adc	#7
 	pha
 
 	lda.l	bgbase,x
 	sta	vram3addr
+	lda.l	bgbase+5,x
+	sta	palettestart
 	a8
 	lda.l	bgbase+2,x
 	sta	vram3addr+2
 	a16
-
 	lda.l	bgbase+3,x
 	sta	vram3len
 
+	decrunch_palettes
+	a8
+	waittrans
+
+
+	IFEQ	1
+;* Colour Palette Buffer ni Copy *
+	a16
+	lda	vram3len
+	lsr	a
+	sta	kcounter
+
+	lda	palettestart
+	asl	a
+	tax
+	ldy	vram3addr
+
+	phb
+	a8
+	lda	vram3addr+2
+	pha
+	plb	; switch bank (70)
+	a16
+.loop
+	lda.w	0,y
+	sta.l	kx_palette,x
+	inx
+	inx
+	iny
+	iny
+	dec	kcounter
+	bne	.loop
+	a8
+	plb
+	ENDC
+
+;----------------------------------------------------------------------
+	IFEQ	1
 	lda	vram3addr
 	clc
 	adc	#7*32-1
@@ -913,13 +1160,16 @@ dopalette	SHORTA
 
 	phy
 
+	decrunch_palettes
+
 	a8
+	waittrans
+
 	phb
 	lda	vram3addr+2
 	pha
 	plb	; switch bank
 
-	
 	ldx	#7*32-1
 .notfinished
 	lda.w	0,y
@@ -930,67 +1180,61 @@ dopalette	SHORTA
 	
 	plb
 	ply
+
+	ENDC
+
 	rts
 
-;----------------------------------------------------------
-
-
+;-------------------------------------------------------------
+;*		BG Set Sequence Table List		*
+;-------------------------------------------------------------
 bglists	dw	0
 	db	0
 
-	defbg	1_1i
-	defbg	1_1a,2_1a,3_1a
-	defbg	1_1b,2_1b
-	defbg	3_1c
-	defbg	1_1c
-	defbg	1_2
-	defbg	1_3i
-	defbg	1_3a
-	defbg	1_3b
-	defbg	1_3c
-	defbg	1_3d
-	defbg	1_3da
-	defbg	1_3e
-	defbg	1_4
-	defbg	1_5,2_5
-	defbg	1_6a
-	defbg	1_6b,3_7b
-	defbg	1_6c,3_7c
-	defbg	1_7a
-	defbg	1_7b
-	defbg	1_7c
-	defbg	cred
-
-	defbg	2_2
-	defbg	2_3a
-	defbg	2_3b
-	defbg	2_3c
-	defbg	2_4
-	defbg	2_6a
-	defbg	2_6b
-	defbg	2_6c
-
-	defbg	3_2
-	defbg	3_3a
-	defbg	3_4a
-	defbg	3_4b
-	defbg	3_4c
-	defbg	3_4d
-	defbg	3_5
-	defbg	3_6
-	defbg	3_7a
-
-	defbg	hole
-	defbg	intro
 	defbg	title
-	defbg	cont
-	defbg	gameover
-	defbg	special
+	defbg	typeselect
 	defbg	training
+	defbg	missionexplain
+	defbg	missiongameover
+	defbg	missioncontinue
 
-	IFNE	CONTEST
-	defbg	timeover
-	defbg	timeup
-	ENDC
+	defbg	missionstage1
+	defbg	missionstage2
+	defbg	missionstage3
+	defbg	missionstage4
+	defbg	missionstage5
+	defbg	missionstage6
+	defbg	room
+	defbg	tutu
+	defbg	sun
+	defbg	corneria
+
+	defbg	missionextra1
+	defbg	missionextra2
+	defbg	missionextra3
+	defbg	missionextra4
+	defbg	missionsos1
+	defbg	missionsos2
+	defbg	missionsos3
+
+	defbg	titledemo
+	defbg	startenemydemo
+	defbg	entermshipdemo
+	defbg	startarwingdemo
+	defbg	entermeteordemo
+	defbg	attackcorneriademo
+	defbg	explodecorneriademo
+
+	defbg	battlestage1
+	defbg	battlestage2
+	defbg	battlestage3
+;	defbg	battlestage4
+;	defbg	battlestage5
+	defbg	3dglasses
+
+;;	defbg	level1
+;;	defbg	level2
+;;;;	defbg	mapscr
+
 	dw	0,0	; terminate list
 

@@ -1,169 +1,191 @@
-
 STDFILES= HEADER.INC MACROS.INC VARS.INC SOUNDEQU.INC STRUCTS.INC ALCS.INC \
- GILESALX.INC GILESALC.INC GILESAL.INC KALCS.INC DALCS.INC
-STRATFILES= STRATMAC.INC STRATLIB.INC STRATEQU.INC SHMACS.INC STRATHDR.INC WEAPONS.INC
-ASM=SASMX
-ASMFLAGS=-efilelist=0
+ GILESALX.INC GILESALC.INC GILESAL.INC KALCS.INC DALCS.INC PALETTES.INC \
+ TALCS.INC YALCS.INC PLAYER.INC KMACS.INC TMACROS.INC KVARS.INC MVARS.INC \
+ SOUND.INC SOUND2.INC MYVARS.INC MTVARS.INC MKVARS.INC
+STRATFILES= STRATMAC.INC STRATLIB.INC STRATEQU.INC SHMACS.INC STRATHDR.INC \
+ WEAPONS.INC SCALEVAR.INC
+ASM=ARGSFXX
+ASMFLAGS=-efilelist=0 -xSYMBOLS.TXT
 include symson.mak
-LINK=SL
-LOPTS=-b30 -h1024 -t7d
+LINK=arglink
+LOPTS=-b30 -h1024
+EXTEND=EXTEND
+CHECK=SFCHECK
+COPTS=-s -f
+ANSI=
 
 ALLFILES= bank0.sob bank1.sob bank2.sob \
  bank4.sob bank5.sob bank6.sob bank7.sob \
- bank8.sob bank9.sob bank10.sob \
- bank11.sob shbanks.sob incbins.sob
+ bank8.sob bank10.sob bank11.sob shbanks.sob incbins.sob incbins2.sob
 
 .asm.sob:
-	@$(ASM) -m30 $(SYMSON) $(ASMFLAGS) $< -v$*.SOB
+	@$(ASM) -m30 $(ANSI) $(SYMSON) $(ASMFLAGS) $< -v$*.SOB
 
-all: sg.rom
+all: finished.sg
 
-
+     
 finished.sg: $(ALLFILES)
 	@$(LINK) $(LOPTS) -d @flist
 
-sg.rom: $(ALLFILES)
-	@$(LINK) $(LOPTS) -osg.rom @flist
+sf.rom: $(ALLFILES)
+	@$(LINK) $(LOPTS) -osf.rom @flist
+    @$(EXTEND) sf.rom
+ 	@$(CHECK) $(COPTS) sf.rom
 
 info: $(ALLFILES)
 	@$(LINK) $(LOPTS) -l1024 @flist
 
+remote: $(ALLFILES)
+	@$(LINK) $(LOPTS) -oromfile @flist
+	@+ftprom.btm
+	
+
 ## Bank 0
 bank0.sob: bank0.asm $(STRATFILES) \
-$(STDFILES) data\etabs.dat sgtabs.asm data\nintendo.pal \
-data\map-obj.cgx sgdata.asm data\arctan.asm istrats.asm \
-ushapes.asm shapes.asm shapes2.asm shapes3.asm \
-pshapes.asm shapes4.asm shapes5.asm kshapes.asm \
-d3strats.asm 
+$(STDFILES) blink.asm data\etabs.dat sgtabs.asm \
+data\nintendo.pal font_1.bin japanese.msg \
+english.msg sgdata.asm istrats.asm \
+ushapes.asm pshapes.asm pshapes2.asm pshapes3.asm shapes.asm \
+shapes2.asm bshapes.asm wshapes.asm eshapes.asm \
+eshapes2.asm mmj.bin mme.bin techdata.asm
 
 ## Bank 1
 bank1.sob: bank1.asm shmacs.inc gamemsgs.inc \
-$(STDFILES) mvars.mc mmacs.mc mshtab.mc \
-mprint.mc mmaths.mc mwrot.mc mwcrot.mc \
-mobj.mc mclip.mc mdrawc.mc mdrawp.mc \
-msprite.mc mgdots.mc mcircle.mc mdrawlis.mc \
-mdecru.mc mtxtprt.mc mplanet.mc mdsprite.mc \
-mhofs.mc mpart.mc mbumwipe.mc mhud.mc \
-data\moji_0.fon data\moji_0.trn gametext.asm fontdata.asm \
+$(STDFILES) mmacs.mc mshtab.mc mmaths.mc mwrot.mc \
+mwcrot.mc mobj.mc mclip.mc mtxtclp.mc \
+mdrawp.mc msprite.mc mgdots.mc mcircle.mc \
+mscreen.mc mcursor.mc mdrawlis.mc mdecru.mc \
+mtxtprt.mc mplanet.mc mdsprite.mc mpart.mc \
+mbumwipe.mc mhud.mc mhofs.mc mdebug.mc \
+mplanclp.mc mboxes.mc \
+data\moji_d.fon data\moji_d.trn gametext.asm fontdata.asm \
+defspr.asm data\p_col.col coltab.asm \
+light.asm coltabs.asm mslopes.mc
+
 
 ## Bank 2, 3
-bank2.sob: bank2.asm bgmacs.inc\
-$(STDFILES) irq.asm colboxes.asm coldet.asm \
-ramstuff.asm nmi.asm trans.asm data\gfx\mist.col \
-data\gfx\bg2-c.col data\gfx\bg2-c.col main.asm windows.asm \
-cont.asm game.asm defspr.asm data\gfx\night.col \
-data\gfx\red.col data\gfx\blue.col coltab.asm light.asm \
-coltabs.asm bgs.asm sound.asm obj.asm \
-data\map-obj.col data\mapanim.chr planets.asm sprites.asm \
-draw.asm continue.asm mother.asm world.asm \
-bootnmi.asm mem.asm debug.asm stratrou.asm \
-blink.asm endseq.asm hdmatabs.asm
+bank2.sob: bank2.asm bgmacs.inc $(STRATFILES) olsmacs.inc mapmacs.inc mapstruc.inc sound.inc sound2.inc gamelist.inc\
+$(STDFILES) irq.asm showview.asm hdmatabs.asm \
+mem.asm ramsrou.asm colboxes.asm coldet.asm \
+ramspr.asm mmtbl.asm soslist.asm kramcalc.asm ramsound.asm \
+yajima.inc yjradar.asm raster.asm rammes.asm \
+ramstuff.asm trans.asm main.asm game.asm \
+obj.asm planets.asm world.asm sysstrat.asm \
+stratrou.asm nmi.asm screen.asm intro.asm \
+bgs.asm windows.asm sndtbl.asm sound.asm draw.asm \
+mapscr.asm debug.asm bootnmi.asm kcalc.asm \
+titlesub.asm
 
 ## Bank 4
-bank4.sob: bank4.asm \
-$(STDFILES) $(STRATFILES) pathmacs.asm maps\pathdata.asm \
-maps\dpathdat.asm maps\kpathdat.asm paths.asm d2strats.asm \
+bank4.sob: bank4.asm bgmacs.inc gamelist.inc\
+$(STDFILES) sprites.asm sprsub.asm kscrdata.asm \
+kscreen.asm  hvscroll.asm \
+mismap.asm mismapsub.asm rammismap.asm mapanime.asm \
+config.asm title.asm
 
 ## Bank 5, bank 13
-bank5.sob: bank5.asm mapmacs.inc istrats.asm \
-$(STDFILES) maps\map1_1a.asm maps\MAPP.asm maps\map2_3a.asm \
-maps\map2_3b.asm maps\airlock1.asm maps\map2_3c.asm maps\map2_4.asm \
-maps\castanet.asm maps\map2_5.asm maps\trucker.asm maps\map2_6a.asm \
-maps\map2_6b.asm maps\map2_6c.asm maps\map2_6d.asm maps\map3_1a.asm \
-maps\3-1.asm maps\map3_1b.asm maps\webmonster.asm maps\map3_2.asm \
-maps\map3_3a.asm maps\map3_3b.asm maps\map3_4a.asm maps\3-4-t.asm \
-maps\map3_4b.asm maps\map3_4c.asm maps\map3_5.asm maps\map3_6.asm \
-maps\planet.asm maps\transformer.asm maps\map3_7a.asm maps\map3_7b.asm \
-maps\map3_7c.asm maps\map3_7d.asm maps\MOTHERS.asm maps\cl_gnd.asm \
-maps\cl_warp.asm maps\cl_ship.asm maps\cl_earth.asm maps\cl_turn.asm \
-maps\cl_bridg.asm maps\cl_dive.asm maps\cl_chase.asm maps\cl_under.asm \
-maps\cl_warpo.asm maps\maplist.asm maps\1-1.asm maps\map1_1b.asm \
-maps\map1_2.asm maps\map1_3a.asm maps\1-3-t1.asm maps\map1_3b.asm \
-maps\map1_3a1.asm maps\1-3-t1.asm maps\map1_3b1.asm maps\map1_3a2.asm \
-maps\1-3-t2.asm maps\map1_3b2.asm maps\1-3-t3.asm maps\map1_3c.asm \
-maps\washmape.asm maps\map1_3d.asm maps\map1_4.asm maps\map1_5.asm \
-maps\planet.asm maps\map1_6a.asm maps\map1_6b.asm maps\map1_6c.asm \
-maps\map1_6d.asm maps\map2_1a.asm maps\2-1.asm maps\map2_1b.asm \
-maps\map2_2.asm maps\level_bh.asm maps\bhole.asm maps\level_s.asm \
-maps\special.asm maps\mexitmap.asm maps\lexitmap.asm maps\armsmap.asm \
-maps\level1_1.asm maps\level1_2.asm maps\washent.asm maps\level1_3.asm \
-maps\level1_4.asm maps\level1_5.asm maps\dm_lb1.asm maps\dm_end.asm \
-maps\finalmap.asm maps\level1_6.asm maps\level2_1.asm maps\level2_2.asm \
-maps\level2_3.asm maps\level2_4.asm maps\level2_5.asm maps\cl_colon.asm \
-maps\level2_6.asm maps\level3_1.asm maps\level3_2.asm maps\level3_3.asm \
-maps\washmap.asm maps\level3_4.asm maps\level3_5.asm maps\level3_6.asm \
-maps\level3_7.asm maps\credits.asm maps\intro.asm maps\title.asm \
-maps\maplist2.asm maps\training.asm
+bank5.sob: bank5.asm olsmacs.inc mapmacs.inc istrats.asm \
+$(STDFILES) maps\MAPP.asm maps\titlemap.asm maps\mis\exp1.asm \
+maps\mis\stg1.asm maps\mis\stg2.asm maps\mis\stg3.asm maps\mis\stg4.asm \
+maps\mis\stg5.asm maps\mis\stg6.asm maps\mis\ext1.asm maps\mis\ext2.asm \
+maps\mis\ext3.asm maps\mis\ext4.asm maps\mis\sos1.asm maps\mis\sos2.asm \
+maps\mis\sos3.asm maps\mis\rdstg1.asm maps\bat\bat1.asm maps\bat\bat2.asm \
+maps\bat\bat3.asm maps\mis\tra1.asm \
+maps\maplist.asm \
+maps\mis\demo0.asm maps\mis\demo1.asm maps\mis\demo2.asm maps\mis\demo3.asm \
+maps\mis\demo4.asm maps\mis\demo5.asm maps\mis\demo6.asm maps\mis\demo7.asm \
+maps\mis\demo8.asm maps\mis\demo9.asm \
+maps\mis\test.asm
 
 ## Bank 6
 bank6.sob: bank6.asm \
-$(STDFILES) $(STRATFILES) expstrat.asm gstrats.asm gcstrats.asm \
-gistrats.asm 
+$(STDFILES) $(STRATFILES) players.inc player.asm \
+tstrats.asm tplayer.asm kplayer.asm gakki.asm egdata.asm 
 
 ## Bank 7
 bank7.sob: bank7.asm \
-$(STDFILES) $(STRATFILES) gb3strats.asm \
+$(STDFILES) $(STRATFILES) players.inc views.asm \
+curdat.asm display.asm voffset.asm \
+xplayer.asm dstrats.asm kstrats.asm 
 
 ## Bank 8
-bank8.sob: bank8.asm \
-$(STDFILES) $(STRATFILES) gbstrats.asm gastrats.asm \
-
-## Bank 9
-bank9.sob: bank9.asm \
-$(STDFILES) $(STRATFILES) dstrats.asm 
+bank8.sob: bank8.asm pathmacs.inc \
+$(STDFILES) $(STRATFILES) pathdata.asm dpathdat.asm \
+tpathdat.asm paths.asm kpathdat.asm bpathdat.asm ppathdat.asm gpathdat.asm \
+paths2.asm slopes.asm mapcode.asm weapons.asm \
+chart.asm fonts.asm data\arctan.asm \
+result.asm
 
 ## Bank 10
 bank10.sob: bank10.asm \
-$(STDFILES) $(STRATFILES) kstrats.asm ga2strats.asm \
+$(STDFILES) $(STRATFILES) \
+pathkern.asm friends.asm slopedef.asm
 
 ## Bank 11
 bank11.sob: bank11.asm \
-$(STDFILES) $(STRATFILES) pistrats.asm pcstrats.asm \
-pstrats.asm gb2strats.asm 
+$(STDFILES) $(STRATFILES) mmacs.mc mytest.mc \
+mmessage.mc mkawa.mc \
+oamlist.asm oamdata.asm \
+wipepaus.asm oamface.asm oamplane.asm \
+wipedoor.asm wipeconf.asm wipegame.asm wipepsel.asm \
+wipemap.asm wipebsel.asm wipebatt.asm wipe.asm wipebeam.asm\
+missobj.asm gameover.asm continue.asm gameobj.asm \
+wipetitl.asm \
+yjdebug.asm hell.asm yjmap.asm pselect.asm \
+clear.asm pausemap.asm \
+yajima.inc mapexp.asm oamset.asm pselect2.asm titleobj.asm \
+bestscore.asm nameset.asm mesdata.asm
+
+
 
 ## Banks 12, 13, 14, 15, 16, 17
 shbanks.sob: shbanks.asm shmacs.inc stratequ.inc \
-$(STDFILES) shapes.asm shapes.asm kshapes.asm \
-kshapes.asm shapes2.asm shapes2.asm shapes3.asm \
-shapes3.asm shapes4.asm shapes4.asm shapes5.asm \
-shapes5.asm ushapes.asm ushapes.asm pshapes.asm \
-pshapes.asm 
+$(STDFILES) $(STRATFILES) shapes.asm shapes2.asm \
+eshapes2.asm eshapes.asm bshapes.asm wshapes.asm \
+ushapes.asm pshapes.asm pshapes2.asm 
+
 
 ## Banks 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
 incbins.sob: incbins.asm \
-$(STDFILES) msprites\sprites3.dat msprites\sprites4.dat data\moji_2.fon \
-mdata.mc data\demo.ccr data\demo.pcr data\b.ccr \
-data\b.pcr data\hole-a.ccr data\gfx\l.col data\obj-1.ccr \
-data\gfx\e-test0.col data\gfx\e-test.col data\gfx\bg2-b.col data\gfx\bg2-c.col \
-data\gfx\bg2-d.col data\gfx\space.col data\gfx\b-m.col data\gfx\t-m.col \
-data\gfx\t-m-2.col data\gfx\t-m-3.col data\gfx\t-m-4.col data\gfx\stars.col \
-data\gfx\light.col data\e-test.ccr data\e-test.pcr data\e-test2.ccr \
-data\e-test2.pcr data\fox.ccr data\fox.pcr \
-data\st-p.ccr data\2-2.ccr data\2-3.ccr data\2-3b.ccr \
-data\stars.ccr data\2-2.pcr data\1-3-b.ccr data\space.ccr \
-data\last.pcr data\3-2.ccr data\fs-bg3.ccr data\3-3.ccr \
-data\map.ccr data\gfx\cp.col data\fs-ni.pcr data\t-ss.pcr \
-data\3-4.ccr data\lsb.ccr data\f-1.ccr data\b-hole.ccr \
-data\t-f-s.pcr data\st-p.pcr data\2-3.pcr \
-data\2-3b.pcr data\2-3h.pcr data\map.pcr data\stars.pcr \
-data\3-2.pcr data\1-3-b.pcr data\1-3.pcr data\1-4.pcr \
-data\1-4.ccr data\3-3.pcr data\3-4.pcr data\hole-a.pcr \
-data\lsb.pcr data\f-obj.ccr data\b-hole.pcr data\gfx\obj-1.col \
-data\gfx\bg2-f.col data\dog.pcr data\f-1.pcr data\t-st.ccr \
-data\t-sp.ccr data\t-sp.pcr data\2-4.pcr data\b-m.ccr \
-data\c-m.ccr data\cont.ccr data\cont.pcr data\2-4.ccr \
-data\t-st.pcr data\dog.ccr data\ti-3.ccr data\ti-3.pcr \
-data\cp.pcr data\cp.ccr data\gfx\bg2-e.col data\gfx\bg2-a.col \
-data\face.cgx data\gfx\hole.col snd\sgsound0.bin snd\sgsound1.bin \
-snd\sgsound2.bin snd\sgsound3.bin snd\sgsound4.bin snd\sgsound5.bin \
-snd\sgsound6.bin snd\sgsound7.bin snd\sgsound8.bin snd\sgsound9.bin \
-snd\sgsounda.bin snd\sgbgma.bin snd\sgbgmb.bin snd\sgbgmc.bin \
-snd\sgbgmd.bin snd\sgbgme.bin snd\sgbgmf.bin snd\sgbgmg.bin \
-snd\sgbgmh.bin snd\sgbgmi.bin snd\sgbgmj.bin snd\sgbgmk.bin \
-snd\sgbgml.bin snd\sgbgmm.bin snd\sgbgmn.bin snd\sgbgmo.bin \
-snd\sgbgm1.bin snd\sgbgm2.bin snd\sgbgm3.bin snd\sgbgm4.bin \
-snd\sgbgm5.bin snd\sgbgm6.bin snd\sgbgm7.bin snd\sgbgm8.bin \
-snd\sgbgm9.bin snd\sgbgm10.bin 
+$(STDFILES) msprites\spt_01.bin msprites\spt_23.bin msprites\spt_45.bin \
+data\a0.pcr data\a0.ccr data\a1.pcr data\a1.ccr \
+data\a2.pcr data\a2.ccr data\a3.pcr data\a3.ccr \
+data\a4.pcr data\a5.pcr data\a5.ccr data\a6.pcr \
+data\a6.ccr data\a7.pcr data\a7.ccr data\a8.ccr \
+data\a8.pcr data\a9.ccr data\a9.pcr data\a10.ccr \
+data\a10.pcr data\a11.ccr data\a11.pcr data\a12.pcr \
+data\a13.ccr data\a13.pcr data\a14.ccr data\a14.pcr \
+data\a15.ccr data\a15.pcr data\a16.pcr data\a17.pcr \
+data\a18.pcr data\a19.pcr data\a20.pcr data\a21.pcr data\a22.pcr \
+data\a23.pcr data\a24.pcr data\a25.pcr \
+data\e0.ccr data\e1.ccr data\e2.ccr \
+data\e3.ccr data\e4.ccr data\e5.ccr data\e6.ccr data\e7.ccr \
+data\w0.ccr data\w1.cgx data\w2.cgx data\b0.ccr \
+data\b1.ccr data\b7.ccr data\b8.ccr \
+data\b9.ccr data\b14.ccr data\b16.ccr data\b0.pcr \
+data\b1.pcr data\b2.pcr data\b3.pcr data\b4.pcr \
+data\b5.pcr data\b6.pcr data\b7.pcr data\b8.pcr \
+data\b10.pcr data\b11.pcr data\b12.pcr data\b13.pcr \
+data\b14.pcr data\b15.pcr data\b16.pcr \
+data\allcols.pac data\kawaguti.cgx \
+data\moji_2.fon mdata.mc d3_3.asm sprdata.asm
 
-
+## Banks 26, 27, 28, 29, 30, 31
+incbins2.sob: incbins2.asm \
+$(STDFILES) sound\fox2snd.bin sound\sdse1.bin sound\sdse2.bin \
+sound\ffset1.bin sound\ffset2.bin \
+sound\spset1.bin sound\spset2.bin sound\ggset1.bin \
+sound\ggset2.bin sound\music01.bin sound\music02.bin sound\music03.bin \
+sound\music04.bin sound\music05.bin sound\music06.bin sound\music07.bin \
+sound\music08.bin sound\music09.bin sound\music10.bin sound\music11.bin \
+sound\music12.bin sound\music13.bin sound\music14.bin sound\music17.bin \
+sound\music18.bin sound\music18b.bin \
+sound\music20.bin sound\music21.bin sound\music22.bin sound\music23.bin \
+sound\music24.bin sound\music25.bin \
+sound\sdgrd1.bin sound\sdgrd2.bin sound\sdgrd3.bin \
+sound\sdend1.bin sound\sdspac.bin \
+sound\sdinf.bin sound\sdcnt.bin sound\sdovr.bin \
+sound\sddis.bin sound\sdtlk.bin \
+sound\sdst1.bin sound\sdst2.bin \
+sound\sdst3.bin sound\sdst4.bin sound\sdst5.bin sound\sdst6.bin \
 

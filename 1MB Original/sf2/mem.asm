@@ -22,7 +22,7 @@
 ;*                                                                         *
 ;***************************************************************************
 
-	INCPUBLICS	mem.ext
+	INCPUB	mem
 
 ; free memory structure
 
@@ -41,13 +41,16 @@ fm_sizeof	equ		fm_size-heap
 	struct		sp_size,0
 sp_sizeof	equ		sp_size-heap
 
-firstblock	=	2
+firstblock	=	2	; location 0 is pointer to first freeblock
+
+
 
 ;---------------------------------------------------------
 ; initialise_memory_l
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ; Description: Initialises free memory list
 ;---------------------------------------------------------
+
 initmem_l
 	php
 	phb
@@ -56,6 +59,8 @@ initmem_l
 	pha
 	plb		; switch data bank
 	ai16
+
+; set first free block to maximum size of heap
 
 	ldx	#firstblock
 	stz	fm_next,x
@@ -90,18 +95,10 @@ avail_l	LONGA
 	plb
 	a16
 
-	sprint	0,4
-
 	ldx	heap
 	lda	#0
 .addagain	clc
 	adc	fm_length,x
-	pha
-	txa
-;	printw
-	lda	fm_length,x
-;	printw
-	pla
 	ldy	fm_next,x
 	tyx
 	bne	.addagain
@@ -116,10 +113,11 @@ avail_l	LONGA
 ; free_l
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ; Entry: a16 = address of block to be freed
+; assumes dbr=7e
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ; Description: Frees the specified block
 ;---------------------------------------------------------
-
+ 
 free_l	LONGA
 	cmp	#0
 	bne	.tisok
@@ -128,16 +126,15 @@ free_l	LONGA
 	phx
 	phy
 	php
-	phb
-	i8
-	ldx	#$7e
-	phx
-	plb
-	i16
 
 	dec	a
 	dec	a
-	sta	fmtemp1		; start pos
+	sta	fmtemp1
+	a8
+	storenasty
+	nastyon		; run the mario chip in parallel
+	a16
+	lda	fmtemp1		; start pos
 	tax
 	clc
 	adc	heap,x
@@ -145,8 +142,9 @@ free_l	LONGA
 	lda	heap,x
 	sta	fmtemp3		; length
 
+; search for free block to add memory to (easy insert)
 	ldy	heap
-	lbeq	.newlist
+	lbeq	.newlist	; if no freelist then create one
 .scanfree
 	tya
 	clc
@@ -160,6 +158,7 @@ free_l	LONGA
 	lda	fm_next,y
 	tay
 	bne	.scanfree
+
 ; if there is no easy insertion create a new block
 
 	lda	heap,x
@@ -177,7 +176,7 @@ free_l	LONGA
 	bra	.success
 
 .afterit
-; the block to free is after the block in y
+; the block to free is after the block in y (easy insert #1)
 
 	lda	fm_length,y
 	clc
@@ -188,7 +187,7 @@ free_l	LONGA
 	bra	.success
 
 .beforeit
-; the block to free is before the block in y
+; the block to free is before the block in y (easy insert #2)
 
 	lda	fm_length,y
 	clc
@@ -222,7 +221,11 @@ free_l	LONGA
 	stz	fm_next,x
 .success
 .cantfree
-	plb
+	sta	fmtemp1
+	a8
+	restorenasty
+	a16
+	lda	fmtemp1
 	plp
 	ply
 	plx
@@ -246,6 +249,7 @@ free_l	LONGA
 ;**********
 .optimise
 ; scans for blocks to optimise, block to optimise in x
+; to yuu no wa: joins adjacent free blocks together
 	stx	fmtemp1	; start position
 	txa
 	clc
@@ -277,7 +281,6 @@ free_l	LONGA
 	jsr	.delink
 
 	ldx	fmtemp1
-;	jsr	.optimise	; recursive until fully optimised
 	rts
 
 ; ok, if y<x
@@ -291,7 +294,6 @@ free_l	LONGA
 	jsr	.delink	; delink x from free block list
 
 	ldx	fmtemp1
-;	jsr	.optimise	; recursive until fully optimised
 	rts
 
 	
@@ -300,6 +302,7 @@ free_l	LONGA
 ; alloc_l
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ; Entry: a16 = length of block wanted
+; assumes dbr=7e
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ; Exit:  a16 = address of block wanted (0 if unavailable)
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -310,12 +313,14 @@ alloc_l	LONGA
 	phx
 	phy
 	php
-	phb
-	i8
-	ldx	#$7e
-	phx
-	plb		; switch data bank
-	i16
+
+	sta	fmtemp1
+	a8
+	storenasty	; run in parallel with the mario chip
+	nastyon
+	a16
+
+	lda	fmtemp1
 
 	inc	a
 	and	#$fffe	; round to nearest word
@@ -384,7 +389,11 @@ alloc_l	LONGA
 
 .success
 .notfound
-	plb
+	sta	fmtemp1
+	a8
+	restorenasty
+	a16
+	lda	fmtemp1
 	plp
 	ply
 	plx
@@ -513,6 +522,9 @@ sallfree_l
 	plx
 	stz	al_memptr,x
 .nothing
+	stz	al_resources,x
+	stz	al_stackptr,x
+	stz	al_stratmem,x
 	plb
 	plp
 	ply
@@ -533,6 +545,7 @@ sallfree_l
 ;-------------------------------------------------------------
 
 mpush_l	longa
+	blink 3
 	phx
 	php
 	phb
@@ -595,6 +608,10 @@ smpush_l	longa
 	plb
 	a16
 
+	IFEQ	1
+; Method #1
+; allocates structure for each stack item
+
 	lda	#sp_sizeof
 	jsl	salloc_l
 	cmp	#0
@@ -615,6 +632,65 @@ smpush_l	longa
 	sta	sp_data+2,x
 	txa
 .failed
+	ELSEIF
+; Method #2
+; allocates new structure if exceeds current stack's boundaries
+
+	pla
+	phy
+	tay
+	bne	.notnew	; begin fresh stack if one doesn't exist
+
+	lda	#1+4*8
+	jsl	salloc_l
+	tay
+	a8
+	lda	#1
+	sta	heap,y
+	a16
+	bra	.norealloc
+.notnew	LONGA
+	lda.w	heap,y
+	and	#255
+	inc	a
+	a8
+	sta.w	heap,y
+	bit	#7
+	a16
+	bne	.norealloc
+
+; calculate size of new block
+	clc
+	adc	#8
+	asl	a
+	asl	a
+	inc	a
+	jsl	srealloc_l	; re-allocate it
+	cmp	#0
+	bne	.okcarryon
+	blink	3
+.okcarryon
+	tay			; new block into y
+	
+.norealloc	LONGA
+	phy
+	lda.w	heap,y
+	and	#255
+	asl	a
+	asl	a	; *4
+	sty	fmtemp1
+	sec
+	adc	fmtemp1
+	tay		; y = y + (*y)*4 +1
+
+	lda	stackdata
+	sta	heap-4,y
+	lda	stackdata+2
+	sta	heap-2,y
+		
+	pla		; return pointer to stack
+	ply
+	ENDC
 	plb
 	plp
 	plx
@@ -645,6 +721,10 @@ mpull_l	longa
 	plb
 	i16
 
+	IFEQ	1
+; method #1
+; searches through link list of stack structures
+
 	tax
 	beq	.endofstack
 	lda	sp_prev,x
@@ -657,6 +737,40 @@ mpull_l	longa
 	jsl	free_l
 	pla
 .endofstack
+	ELSEIF
+; Method #2
+; gets data from end of list (reallocs list if decreases past certain
+; boundaries in order to preserve memory) -- not yet
+
+	phy
+	tay
+	bne	.nobl2
+	blink	3
+.nobl2
+	phy
+
+	lda.w	heap,y
+	and	#255
+	bne	.nobl
+	blink	3
+.nobl	dec	a
+	a8
+	sta.w	heap,y
+	a16
+	asl	a
+	asl	a
+	sty	fmtemp1
+	sec
+	adc	y1
+	tay
+	lda	heap,y
+	sta	stackdata
+	lda	heap+2,y
+	sta	stackdata+2
+
+	pla	; return the stack ptr
+	ply
+	ENDC
 	plb
 	plp
 	plx
@@ -689,6 +803,10 @@ smpull_l	longa
 	a16
 	ply
 
+	IFEQ	1
+; method #1
+; searches through link list of stack structures
+
 	beq	.endofstack
 	lda	sp_prev,y
 	pha
@@ -700,6 +818,35 @@ smpull_l	longa
 	jsl	sfree_l
 	pla
 .endofstack
+
+	ELSEIF
+; Method #2
+; gets data from end of list (reallocs list if decreases past certain
+; boundaries in order to preserve memory)
+
+	phy
+	lda.w	heap,y
+	and	#255
+	bne	.nobl
+	blink	3		; pulled past beginning of stack
+.nobl	dec	a
+	a8
+	sta.w	heap,y
+	a16
+	asl	a
+	asl	a
+	sty	fmtemp1
+	sec
+	adc	fmtemp1
+	tay
+	lda	heap,y
+	sta	stackdata
+	lda	heap+2,y
+	sta	stackdata+2
+
+	pla	; return the stack ptr
+	ENDC
+
 	plb
 	plp
 	ply
@@ -707,3 +854,81 @@ smpull_l	longa
 	rtl
 
 
+;---------------------------------------------------------
+; realloc_l
+;- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+; Entry: a16 = length of block wanted
+; Entry: y = block to reallocate
+; Entry: x = alien to resource track for
+;- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+; Exit:  a16 = address of block wanted (0 if unavailable)
+; Exit:  x unchanged
+; Exit:  y trashed
+;- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+; Description: Re-allocates memory block to a new size
+;---------------------------------------------------------
+	LONGA
+	LONGI
+srealloc_l
+; store the new length wanted
+	cpy	#0
+	lbeq	salloc_l
+
+	sta	smtemp1
+
+	a8
+	storenasty	; runs in parallel with the mario chip
+	nastyon
+	a16
+
+	lda	smtemp1
+; allocate the new amount
+	jsl	salloc_l
+	beq	.exiterr
+
+; preserve data
+	pha
+	phy
+	phx
+; copy the data over from old to new
+	tyx	; x=source
+	tay	; y=destination
+; copy the minimum length
+	lda	fm_length-(fm_sizeof+2),x
+	cmp	smtemp1
+	bcs	.usenewlen
+	sta	smtemp1
+.usenewlen	a8
+.copy
+	lda.w	heap,x
+	sta.w	heap,y
+	inx
+	iny
+
+	a16
+	dec	smtemp1
+	a8
+	bne	.copy
+
+	a16
+
+; free the old data area
+
+	plx
+	pla	; restore y as a for the sfree routine
+
+	jsl	sfree_l	
+
+	pla	; restore the newly allocated address
+	sta	smtemp1
+
+	a8
+	restorenasty
+	a16
+
+	lda	smtemp1
+	rtl
+.exiterr
+	blink 3
+	rtl
+

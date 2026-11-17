@@ -1,0 +1,529 @@
+ArgSfx-Extender v1.52 (DBR=OFF)  Copyright (c) Argonaut Software Ltd. 1992
+Optimising, ClearLines version
+5955K Free,  Tuesday 30th August 1994
+[01m[32m-- Generating JAPAN/NTSC/FULL DEBUG/21Mhz version for dylan --[00m
+-- BANK 0:
+-- (1) 00008006 blink.asm:         193
+    -- (2) 000080C7 data\etabs.dat:   2624
+-- (1) 000080C7 sgtabs.asm:       2624
+    -- (2) 00008E3B data\nintendo.pal  256
+    -- (2) 00009F7D font_1.bin:        435
+    -- (2) 0000A130 font_0.bin:       1438
+    -- (2) 0000A6CE mm.bin:           2394
+-- (1) 00008B07 sgdata.asm:      14414
+-- (1) 0000C355 data\arctan.asm:   512
+-- (1) 0000C555 istrats.asm:         0
+-- (1) 0000C555 ushapes.asm:      1350
+-- (1) 0000CA9B pshapes.asm:      1470
+-- (1) 0000D059 pshapes2.asm:      450
+-- (1) 0000D21B shapes.asm:       2790
+-- (1) 0000DD01 shapes2.asm:       930
+-- (1) 0000E0A3 bshapes.asm:      1170
+-- (1) 0000E535 wshapes.asm:       570
+-- (1) 0000E76F eshapes.asm:      2100
+-- (1) 0000EFA3 eshapes2.asm:     2940
+-- 1241 bytes free.
+------------------------------- MEMORY USAGE ----------------------------------
+Zero Page Free       =    1 (000%)      Work Ram Free        =  296 (004%)
+Extended Ram Free    = 3735 (007%)      Xxtended Ram Free    = 7595 (006%)
+No of Shapes         =  459 (100%)
+-------------------------------------------------------------------------------
+Writing SOB file : bank0.SOB      0 Error(s), 0 Warning(s). (0.0s)
+
+ArgSfx-Extender v1.52 (DBR=OFF)  Copyright (c) Argonaut Software Ltd. 1992
+Optimising, ClearLines version
+5955K Free,  Tuesday 30th August 1994
+[01m[32m-- Generating JAPAN/NTSC/FULL DEBUG/21Mhz version for dylan --[00m
+-- BANK 1:
+    -- (2) 00018000 mtvars.mc:           0
+    -- (2) 00018000 mkvars.mc:           0
+-- (1) 00018000 mvars.mc:            0
+-- (1) 00018000 mmacs.mc:            0
+-- (1) 00018000 mshtab.mc:         108
+-- (1) 0001806C mmaths.mc:         486
+-- (1) 00018252 mwrot.mc:           87
+-- (1) 000182A9 mwcrot.mc:         610
+faces cache = 610
+-- (1) 0001850B mobj.mc:          4876
+-- (1) 00019817 mclip.mc:         3365
+3490 Tex clipper size 
+-- (1) 0001A53C mtxtclp.mc:       3490
+poly+line cache = 403
+-- (1) 0001B2DE mdrawp.mc:        1153
+-- (1) 0001B75F msprite.mc:          2
+-- (1) 0001B761 mgdots.mc:        1410
+-- (1) 0001BCE3 mcircle.mc:        330
+    -- (2) 0001C5F1 mscreen.mc:        422
+    -- (2) 0001C797 mcursor.mc:        704
+-- (1) 0001BE2D mdrawlis.mc:      3114
+-- (1) 0001CA57 mdecru.mc:         493
+-- (1) 0001CC44 mtxtprt.mc:          0
+-- (1) 0001CC44 mplanet.mc:       5134
+-- (1) 0001E052 mdsprite.mc:      1380
+-- (1) 0001E5B6 mpart.mc:          547
+-- (1) 0001E7D9 mbumwipe.mc:       224
+-- (1) 0001E8B9 mhud.mc:           569
+-- (1) 0001EAF2 mhofs.mc:          624
+-- (1) 0001ED62 mdebug.mc:        1090
+-- (1) 0001F1A4 mplanclp.mc:      1918
+-- (1) 0001F922 mkawa.mc:          141
+-- (1) 0001F9AF mslopes.mc:        824
+    -- (2) 0001FCED gametext.asm:      208
+-- (1) 0001FCE7 fontdata.asm:      214
+-- 579 bytes free.
+------------------------------- MEMORY USAGE ----------------------------------
+Zero Page Free       =    1 (000%)      Work Ram Free        =  296 (004%)
+Extended Ram Free    = 3735 (007%)      Xxtended Ram Free    = 7595 (006%)
+ZMario Ram Free      =   10 (002%)      Mario Ram Free       = 5056 (032%)
+-------------------------------------------------------------------------------
+Writing SOB file : bank1.SOB      0 Error(s), 0 Warning(s). (0.0s)
+
+ArgSfx-Extender v1.52 (DBR=OFF)  Copyright (c) Argonaut Software Ltd. 1992
+Optimising, ClearLines version
+5955K Free,  Tuesday 30th August 1994
+[01m[32m-- Generating JAPAN/NTSC/FULL DEBUG/21Mhz version for dylan --[00m
+-- BANK 2:
+    -- (2) 007F0008 irq.asm:          5875
+    -- (2) 007F16FB showview.asm:     1396
+    -- (2) 007F1C6F hdmatabs.asm:      123
+    -- (2) 007F1CEA mem.asm:          1067
+    -- (2) 007F2115 ramsrou.asm:      7734
+        -- (3) 007F49D6 colboxes.asm:     1566
+    -- (2) 007F3F4B coldet.asm:       4265
+    -- (2) 007F4FF4 ramspr.asm:        723
+    -- (2) 007F52C7 mmtbl.asm:         191
+        -- (3) 007F5386 yajima.inc:          0
+    -- (2) 007F5386 yjradar.asm:       228
+    -- (2) 007F546A raster.asm:       2081
+-- (1) 00028000 ramstuff.asm:    24485
+-- 8283 bytes free.
+-- BANK 3:
+-- (1) 00038004 trans.asm:        2257
+-- (1) 000388D5 main.asm:         1173
+-- (1) 00038D6A game.asm:          129
+-- (1) 00038DEB obj.asm:          1281
+-- (1) 000392EC planets.asm:       135
+-- (1) 00039373 world.asm:        4165
+-- (1) 0003A3B8 sysstrat.asm:     1193
+-- (1) 0003A861 stratrou.asm:     1990
+-- (1) 0003B027 nmi.asm:           124
+-- (1) 0003B0A3 screen.asm:       3515
+-- (1) 0003BE5E intro.asm:        9422
+-- (1) 0003E32C bgs.asm:          2811
+    -- (2) 0003F0B0 sndtbl.asm:        466
+-- (1) 0003EE27 sound.asm:        1115
+-- (1) 0003F282 draw.asm:          503
+-- (1) 0003F479 mapscr.asm:          0
+-- (1) 0003F479 debug.asm:        1529
+-- (1) 0003FA72 bootnmi.asm:       685
+-- 737 bytes free.
+------------------------------- MEMORY USAGE ----------------------------------
+Zero Page Free       =    1 (000%)      Work Ram Free        =  296 (004%)
+Extended Ram Free    = 3735 (007%)      Xxtended Ram Free    = 7595 (006%)
+-------------------------------------------------------------------------------
+Writing SOB file : bank2.SOB      0 Error(s), 0 Warning(s). (0.0s)
+
+ArgSfx-Extender v1.52 (DBR=OFF)  Copyright (c) Argonaut Software Ltd. 1992
+Optimising, ClearLines version
+5955K Free,  Tuesday 30th August 1994
+[01m[32m-- Generating JAPAN/NTSC/FULL DEBUG/21Mhz version for dylan --[00m
+-- BANK 4:
+    -- (2) 00048000 pathdata.asm:    15004
+    -- (2) 0004BA9C dpathdat.asm:     9191
+    -- (2) 0004DE83 tpathdat.asm:     2554
+    -- (2) 0004E87D kpathdat.asm:     1419
+Dodora length = 1982
+    -- (2) 0004EE08 bpathdat.asm:     1982
+-- (1) 00048000 paths.asm:       30150
+-- 2618 bytes free.
+------------------------------- MEMORY USAGE ----------------------------------
+Zero Page Free       =    1 (000%)      Work Ram Free        =  296 (004%)
+Extended Ram Free    = 3735 (007%)      Xxtended Ram Free    = 7595 (006%)
+-------------------------------------------------------------------------------
+Writing SOB file : bank4.SOB      0 Error(s), 0 Warning(s). (0.0s)
+
+ArgSfx-Extender v1.52 (DBR=OFF)  Copyright (c) Argonaut Software Ltd. 1992
+Optimising, ClearLines version
+5955K Free,  Tuesday 30th August 1994
+[01m[32m-- Generating JAPAN/NTSC/FULL DEBUG/21Mhz version for dylan --[00m
+-- BANK 5:
+    -- (2) 00058003 maps\MAPP.asm:      50
+    -- (2) 00058035 maps\titlemap.asm   51
+    -- (2) 00058068 maps\mis\exp1.asm   51
+    -- (2) 0005809B maps\mis\stg1.asm 2309
+    -- (2) 000589A0 maps\mis\stg2.asm 3945
+    -- (2) 00059909 maps\mis\stg3.asm 2177
+    -- (2) 0005A18A maps\mis\stg4.asm 2108
+    -- (2) 0005A9C6 maps\mis\stg5.asm  729
+    -- (2) 0005AC9F maps\mis\stg6.asm 2066
+    -- (2) 0005B4B1 maps\mis\ext1.asm  904
+    -- (2) 0005B839 maps\mis\ext2.asm  824
+    -- (2) 0005BB71 maps\mis\ext3.asm 2623
+    -- (2) 0005C5B0 maps\mis\ext4.asm 1293
+    -- (2) 0005CABD maps\mis\sos1.asm   26
+    -- (2) 0005CAD7 maps\mis\sos2.asm   26
+    -- (2) 0005CAF1 maps\mis\sos3.asm   26
+    -- (2) 0005CB0B maps\mis\rdstg1.a  326
+    -- (2) 0005CC51 maps\bat\bat1.asm  865
+    -- (2) 0005CFB2 maps\bat\bat2.asm  234
+    -- (2) 0005D09C maps\bat\bat3.asm  318
+    -- (2) 0005D1DA maps\bat\bat4.asm  238
+    -- (2) 0005D2C8 maps\bat\bat5.asm  249
+    -- (2) 0005D3C1 maps\mis\tra1.asm 2794
+    -- (2) 0005DEAB maps\mis\tra2.asm  180
+    -- (2) 0005DF5F maps\mis\tra3.asm  279
+-- (1) 00058000 maps\maplist.asm:24694
+-- 8074 bytes free.
+-- BANK 13:
+-- 32768 bytes free.
+------------------------------- MEMORY USAGE ----------------------------------
+Zero Page Free       =    1 (000%)      Work Ram Free        =  296 (004%)
+Extended Ram Free    = 3735 (007%)      Xxtended Ram Free    = 7595 (006%)
+-------------------------------------------------------------------------------
+Writing SOB file : bank5.SOB      0 Error(s), 0 Warning(s). (0.0s)
+
+ArgSfx-Extender v1.52 (DBR=OFF)  Copyright (c) Argonaut Software Ltd. 1992
+Optimising, ClearLines version
+5955K Free,  Tuesday 30th August 1994
+[01m[32m-- Generating JAPAN/NTSC/FULL DEBUG/21Mhz version for dylan --[00m
+-- BANK 6:
+-- (1) 00068000 players.inc:         0
+-- (1) 00068000 player.asm:       6548
+-- (1) 00069994 tplayer.asm:      9246
+-- (1) 0006BDB2 kplayer.asm:     14275
+-- 2699 bytes free.
+------------------------------- MEMORY USAGE ----------------------------------
+Zero Page Free       =    1 (000%)      Work Ram Free        =  296 (004%)
+Extended Ram Free    = 3735 (007%)      Xxtended Ram Free    = 7595 (006%)
+-------------------------------------------------------------------------------
+Writing SOB file : bank6.SOB      0 Error(s), 0 Warning(s). (0.0s)
+
+ArgSfx-Extender v1.52 (DBR=OFF)  Copyright (c) Argonaut Software Ltd. 1992
+Optimising, ClearLines version
+5955K Free,  Tuesday 30th August 1994
+[01m[32m-- Generating JAPAN/NTSC/FULL DEBUG/21Mhz version for dylan --[00m
+-- BANK 7:
+-- (1) 00078000 players.inc:         0
+-- (1) 00078000 views.asm:       10301
+-- (1) 0007A83D tstrats.asm:      1224
+    -- (2) 0007BA86 curdat.asm:        946
+-- (1) 0007AD05 display.asm:      4403
+-- (1) 0007BE38 voffset.asm:       476
+-- (1) 0007C014 xplayer.asm:     12883
+-- (1) 0007F267 dstrats.asm:       868
+-- (1) 0007F5CB kstrats.asm:      1021
+-- 1592 bytes free.
+------------------------------- MEMORY USAGE ----------------------------------
+Zero Page Free       =    1 (000%)      Work Ram Free        =  296 (004%)
+Extended Ram Free    = 3735 (007%)      Xxtended Ram Free    = 7595 (006%)
+-------------------------------------------------------------------------------
+Writing SOB file : bank7.SOB      0 Error(s), 0 Warning(s). (0.0s)
+
+ArgSfx-Extender v1.52 (DBR=OFF)  Copyright (c) Argonaut Software Ltd. 1992
+Optimising, ClearLines version
+5955K Free,  Tuesday 30th August 1994
+[01m[32m-- Generating JAPAN/NTSC/FULL DEBUG/21Mhz version for dylan --[00m
+-- BANK 8:
+    -- (2) 00089FE3 sprdata.asm:      1172
+-- (1) 00088000 sprites.asm:      9335
+    -- (2) 0008A95C kscrdata.asm:      171
+-- (1) 0008A477 kscreen.asm:      1424
+-- (1) 0008AA07 windows.asm:      2351
+-- (1) 0008B336 title.asm:       10220
+-- (1) 0008DB22 ramtitle.asm:     3970
+-- (1) 0008EAA4 titlesub.asm:     1016
+-- (1) 0008EE9C hvscroll.asm:      449
+-- (1) 0008F05D kcalc.asm:         108
+-- (1) 0008F0C9 config.asm:       1768
+-- 2127 bytes free.
+------------------------------- MEMORY USAGE ----------------------------------
+Zero Page Free       =    1 (000%)      Work Ram Free        =  296 (004%)
+Extended Ram Free    = 3735 (007%)      Xxtended Ram Free    = 7595 (006%)
+-------------------------------------------------------------------------------
+Writing SOB file : bank8.SOB      0 Error(s), 0 Warning(s). (0.0s)
+
+ArgSfx-Extender v1.52 (DBR=OFF)  Copyright (c) Argonaut Software Ltd. 1992
+Optimising, ClearLines version
+5955K Free,  Tuesday 30th August 1994
+[01m[32m-- Generating JAPAN/NTSC/FULL DEBUG/21Mhz version for dylan --[00m
+-- BANK 9:
+    -- (2) 00098728 defspr.asm:        555
+    -- (2) 00098953 data\p_col.col:     32
+    -- (2) 00098973 data\p_col.col:     32
+    -- (2) 00098993 data\p_col.col:     32
+    -- (2) 000989B3 data\p_col.col:     32
+    -- (2) 00098A33 coltab.asm:        640
+    -- (2) 00098CB3 light.asm:         400
+-- (1) 00098000 coltabs.asm:      3683
+-- (1) 00098E63 slopes.asm:       2941
+-- (1) 000999E0 mapcode.asm:      1493
+-- (1) 00099FB5 weapons.asm:      5646
+-- (1) 0009B5C3 chart.asm:        1541
+-- 17464 bytes free.
+------------------------------- MEMORY USAGE ----------------------------------
+Zero Page Free       =    1 (000%)      Work Ram Free        =  296 (004%)
+Extended Ram Free    = 3735 (007%)      Xxtended Ram Free    = 7595 (006%)
+-------------------------------------------------------------------------------
+Writing SOB file : bank9.SOB      0 Error(s), 0 Warning(s). (0.0s)
+
+ArgSfx-Extender v1.52 (DBR=OFF)  Copyright (c) Argonaut Software Ltd. 1992
+Optimising, ClearLines version
+5955K Free,  Tuesday 30th August 1994
+[01m[32m-- Generating JAPAN/NTSC/FULL DEBUG/21Mhz version for dylan --[00m
+-- BANK 10:
+Warning: Path command wa 2 shika nokottenai yo!
+Warning: EXTRA Path command wa 232 shika nokottenai yo!
+-- (1) 000A8000 pathkern.asm:    16931
+-- (1) 000AC223 friends.asm:       412
+-- (1) 000AC3BF slopedef.asm:     9376
+-- 6049 bytes free.
+------------------------------- MEMORY USAGE ----------------------------------
+Zero Page Free       =    1 (000%)      Work Ram Free        =  296 (004%)
+Extended Ram Free    = 3735 (007%)      Xxtended Ram Free    = 7595 (006%)
+-------------------------------------------------------------------------------
+Writing SOB file : bank10.SOB      0 Error(s), 0 Warning(s). (0.0s)
+
+ArgSfx-Extender v1.52 (DBR=OFF)  Copyright (c) Argonaut Software Ltd. 1992
+Optimising, ClearLines version
+5955K Free,  Tuesday 30th August 1994
+[01m[32m-- Generating JAPAN/NTSC/FULL DEBUG/21Mhz version for dylan --[00m
+-- BANK 11:
+-- (1) 000B8001 yajima.inc:          0
+-- (1) 000B8001 wipedoor.inc:      512
+-- (1) 000B8201 oamlist.asm:       194
+-- (1) 000B82C3 oamdata.asm:       398
+-- (1) 000B8451 d4_0.asm:          557
+-- (1) 000B867E d4_1.asm:         1010
+-- (1) 000B8A70 d2_0.asm:          691
+-- (1) 000B8D23 d2_1.asm:          686
+-- (1) 000B8FD1 d2_2.asm:          694
+-- (1) 000B9287 d2_3.asm:          695
+-- (1) 000B953E d2_4.asm:          578
+-- (1) 000B9780 d2_5.asm:          588
+-- (1) 000B99CC d2_6.asm:          814
+-- (1) 000B9CFA d2_7.asm:          722
+    -- (2) 000BA26F wipeconf.asm:      245
+    -- (2) 000BA364 wipegame.asm:      376
+    -- (2) 000BA4DC wipepsel.asm:      318
+    -- (2) 000BA61A wipemap.asm:      1075
+    -- (2) 000BAA4D wipeexp.asm:       112
+    -- (2) 000BAABD wipebsel.asm:      150
+    -- (2) 000BAB53 wipebatt.asm:        1
+-- (1) 000B9FCC wipe.asm:         2952
+-- (1) 000BAB54 missobj.asm:       847
+-- (1) 000BAEA3 gameover.asm:     2037
+-- (1) 000BB698 continue.asm:      320
+-- (1) 000BB7D8 gameobj.asm:       107
+-- (1) 000BB843 hell.asm:          836
+-- (1) 000BBB87 pselect.asm:      2628
+-- 14901 bytes free.
+------------------------------- MEMORY USAGE ----------------------------------
+Zero Page Free       =    1 (000%)      Work Ram Free        =  296 (004%)
+Extended Ram Free    = 3735 (007%)      Xxtended Ram Free    = 7595 (006%)
+-------------------------------------------------------------------------------
+Writing SOB file : bank11.SOB      0 Error(s), 0 Warning(s). (0.0s)
+
+ArgSfx-Extender v1.52 (DBR=OFF)  Copyright (c) Argonaut Software Ltd. 1992
+Optimising, ClearLines version
+5955K Free,  Tuesday 30th August 1994
+[01m[32m-- Generating JAPAN/NTSC/FULL DEBUG/21Mhz version for dylan --[00m
+-- BANK 12:
+-- (1) 000C8000 shapes.asm:      32657
+-- 111 bytes free.
+-- BANK 13:
+-- (1) 000D8000 shapes2.asm:     32715
+-- 53 bytes free.
+-- BANK 14:
+-- (1) 000E8000 eshapes2.asm:    32750
+-- 18 bytes free.
+-- BANK 15:
+-- (1) 000F8000 eshapes.asm:     25990
+-- 6778 bytes free.
+-- BANK 16:
+-- (1) 00108000 bshapes.asm:     21616
+-- (1) 0010D470 wshapes.asm:      9380
+-- 1772 bytes free.
+-- BANK 17:
+-- (1) 00118000 ushapes.asm:        88
+-- (1) 00118058 pshapes.asm:     23725
+-- (1) 0011DD05 pshapes2.asm:     4916
+-- 4039 bytes free.
+------------------------------- MEMORY USAGE ----------------------------------
+Zero Page Free       =    1 (000%)      Work Ram Free        =  296 (004%)
+Extended Ram Free    = 3735 (007%)      Xxtended Ram Free    = 7595 (006%)
+-------------------------------------------------------------------------------
+Writing SOB file : shbanks.SOB      0 Error(s), 0 Warning(s). (0.0s)
+
+ArgSfx-Extender v1.52 (DBR=OFF)  Copyright (c) Argonaut Software Ltd. 1992
+Optimising, ClearLines version
+5947K Free,  Tuesday 30th August 1994
+[01m[32m-- Generating JAPAN/NTSC/FULL DEBUG/21Mhz version for dylan --[00m
+-- BANK 18:
+-- (1) 00128000 msprites\spt_01.b32768
+-- 0 bytes free.
+-- BANK 19:
+-- (1) 00138000 msprites\spt_23.b32768
+-- 0 bytes free.
+-- BANK 20:
+-- (1) 00148000 msprites\spt_45.b32768
+-- 0 bytes free.
+-- BANK 21:
+-- (1) 00158000 data\a0.pcr:       468
+-- (1) 001581D4 data\a0.ccr:      2916
+-- (1) 00158D38 data\a1.pcr:       244
+-- (1) 00158E2C data\a1.ccr:      4720
+-- (1) 0015A09C data\a2.pcr:       816
+-- (1) 0015A3CC data\a2.ccr:      3532
+-- (1) 0015B198 data\a3.pcr:       408
+-- (1) 0015B330 data\a3.ccr:      3972
+-- (1) 0015C2B4 data\a4.pcr:       364
+-- (1) 0015C420 data\a5.pcr:       936
+-- (1) 0015C7C8 data\a5.ccr:      2812
+-- (1) 0015D2C4 data\a6.pcr:       608
+-- (1) 0015D524 data\a6.ccr:      2196
+-- (1) 0015DDB8 data\a7.pcr:       220
+-- (1) 0015DE94 data\a7.ccr:      3632
+-- (1) 0015ECC4 data\a8.pcr:      1452
+-- (1) 0015F270 data\a8.ccr:      2660
+-- 812 bytes free.
+-- BANK 22:
+-- (1) 00168000 data\a9.ccr:      3024
+-- (1) 00168BD0 data\a9.pcr:       560
+-- (1) 00168E00 data\a10.ccr:     4156
+-- (1) 00169E3C data\a10.pcr:     1356
+-- (1) 0016A388 data\a11.ccr:      296
+-- (1) 0016A4B0 data\a11.pcr:      116
+-- (1) 0016A524 data\a12.pcr:       88
+-- (1) 0016A57C data\a13.ccr:     1392
+-- (1) 0016AAEC data\a13.pcr:      152
+-- (1) 0016AB84 data\a14.ccr:     4156
+-- (1) 0016BBC0 data\a14.pcr:     1356
+-- (1) 0016C10C data\a15.ccr:     1964
+-- (1) 0016C8B8 data\a15.pcr:      308
+-- (1) 0016C9EC data\a16.pcr:      220
+-- (1) 0016CAC8 data\a17.pcr:     1356
+-- (1) 0016D014 data\a18.pcr:     1356
+-- (1) 0016D560 data\a19.pcr:     1356
+-- (1) 0016DAAC data\a20.pcr:     1356
+-- (1) 0016DFF8 data\bg-1.ccr:    2840
+-- 5360 bytes free.
+-- BANK 23:
+-- (1) 00178000 data\bg-1.pcr:     548
+-- (1) 00178224 data\e0.ccr:      3572
+-- (1) 00179018 data\e1.ccr:      2452
+-- (1) 001799AC data\e2.ccr:     16656
+-- (1) 0017DABC data\e3.ccr:      5156
+-- (1) 0017EEE0 data\e5.ccr:       576
+-- 3808 bytes free.
+-- BANK 24:
+-- (1) 00188000 data\e4.ccr:      4320
+-- (1) 001890E0 data\e7.ccr:      2216
+-- (1) 00189988 data\w0.ccr:      2256
+-- (1) 0018A258 data\w1.cgx:      2048
+-- (1) 0018AA58 data\b0.ccr:      4956
+-- (1) 0018BDB4 data\b1.ccr:      3220
+-- (1) 0018CA48 data\b2.ccr:      3332
+-- (1) 0018D74C data\b7.ccr:      1608
+-- (1) 0018DD94 data\b9.ccr:      1464
+-- (1) 0018E34C data\b14.ccr:      820
+-- (1) 0018E680 data\b0.pcr:       860
+-- (1) 0018E9DC data\b1.pcr:       316
+-- (1) 0018EB18 data\b2.pcr:       624
+-- (1) 0018ED88 data\b3.pcr:       148
+-- (1) 0018EE1C data\b4.pcr:       164
+-- (1) 0018EEC0 data\b5.pcr:       492
+-- (1) 0018F0AC data\b6.pcr:       216
+-- (1) 0018F184 data\b7.pcr:       404
+-- (1) 0018F318 data\b8.pcr:       864
+-- (1) 0018F678 data\b9.pcr:       360
+-- (1) 0018F7E0 data\b10.pcr:      208
+-- (1) 0018F8B0 data\b11.pcr:      272
+-- (1) 0018F9C0 data\b12.pcr:      204
+-- (1) 0018FA8C data\b14.pcr:      248
+-- (1) 0018FB84 data\b15.pcr:      156
+-- 992 bytes free.
+-- BANK 25:
+-- (1) 00198000 data\t-st.ccr:     540
+-- (1) 0019821C data\t-st.pcr:    1288
+-- (1) 00198724 data\allcols.pac: 3288
+-- (1) 001993FC data\bg-1-1.cgx:  3072
+-- (1) 00199FFC data\kawaguti.cgx 1536
+    -- (2) 0019E4D6 data\moji_2.fon:  2560
+-- (1) 0019A5FC mdata.mc:        19833
+-- 3211 bytes free.
+-- (1) 001A8000 sound\fox2snd.bin10533
+-- (1) 001AA925 sound\sdse.bin:  24424
+-- (1) 001B888D sound\sdff.bin:      9
+-- (1) 001B8896 sound\sdsp.bin:      9
+-- (1) 001B889F sound\sdgg.bin:      9
+-- (1) 001B88A8 sound\ffset1.bin:   33
+-- (1) 001B88C9 sound\ffset2.bin:   33
+-- (1) 001B88EA sound\spset1.bin:   38
+-- (1) 001B8910 sound\spset2.bin:   38
+-- (1) 001B8936 sound\ggset1.bin:   41
+-- (1) 001B895F sound\ggset2.bin:   41
+-- (1) 001B8988 sound\music01.bin   85
+-- (1) 001B89DD sound\music02.bin 3418
+-- (1) 001B9737 sound\music03.bin 1429
+-- (1) 001B9CCC sound\music04.bin  624
+-- (1) 001B9F3C sound\music05.bin 4625
+-- (1) 001BB14D sound\music06.bin 3017
+-- (1) 001BBD16 sound\music07.bin 3928
+-- (1) 001BCC6E sound\music08.bin 4528
+-- (1) 001BDE1E sound\music09.bin 2790
+-- (1) 001BE904 sound\music10.bin 4183
+-- (1) 001BF95B sound\music11.bin 2790
+-- (1) 001C8441 sound\music12.bin 3200
+-- (1) 001C90C1 sound\music13.bin 2790
+-- (1) 001C9BA7 sound\music14.bin 2790
+-- (1) 001CA68D sound\music17.bin 1501
+-- (1) 001CAC6A sound\music18.bin 3364
+-- (1) 001CB98E sound\music19.bin 2761
+-- (1) 001CC457 sound\music20.bin 2761
+-- (1) 001CCF20 sound\music21.bin 2790
+-- (1) 001CDA06 sound\music22.bin 2790
+-- (1) 001CE4EC sound\music23.bin 3612
+-- (1) 001CF308 sound\music25.bin  891
+-- (1) 001CF683 sound\music28.bin 1556
+-- (1) 001CFC97 sound\music29.bin 1522
+-- (1) 001D8289 sound\music30.bin 1564
+-- (1) 001D88A5 sound\music31.bin 1564
+-- (1) 001D8EC1 sound\music32.bin    9
+-- (1) 001D8ECA sound\sdtit1.bin:10715
+-- (1) 001DB8A5 sound\sdgrd1.bin: 5944
+-- (1) 001DCFDD sound\sdgrd2.bin: 5306
+-- (1) 001DE497 sound\sdgrd3.bin: 2400
+-- (1) 001DEDF7 sound\sdgrd4.bin: 1905
+-- (1) 001DF568 sound\sdgrd5.bin: 7686
+-- (1) 001E936E sound\sdsea1.bin: 7725
+-- (1) 001EB19B sound\sdspa1.bin: 8092
+-- (1) 001ED137 sound\sdspa2.bin: 1320
+-- (1) 001ED65F sound\sdspa3.bin: 1320
+-- (1) 001EDB87 sound\sdsss1.bin: 4126
+-- (1) 001EEBA5 sound\sdinf.bin:  1996
+-- (1) 001EF371 sound\sdst1.bin:  3033
+-- (1) 001EFF4A sound\sdst2.bin:  3015
+-- (1) 001F8B11 sound\sdst3.bin:  2352
+-- (1) 001F9441 sound\sdst4.bin:  2336
+-- (1) 001F9D61 sound\sdst5.bin:  2336
+-- (1) 001FA681 sound\sdst6.bin:  2350
+-- (1) 001FAFAF sound\sdex1.bin:  2981
+-- (1) 001FBB54 sound\sdex2.bin:  2981
+-- (1) 001FC6F9 sound\sdex3.bin:  2981
+------------------------------- MEMORY USAGE ----------------------------------
+Zero Page Free       =    1 (000%)      Work Ram Free        =  296 (004%)
+Extended Ram Free    = 3735 (007%)      Xxtended Ram Free    = 7595 (006%)
+-------------------------------------------------------------------------------
+Writing SOB file : incbins.SOB      0 Error(s), 0 Warning(s). (0.0s)
+
+ArgLink SFX v1.11x         (c) 1993 Argonaut Software Ltd.
+
+Constructing Rom Image.
+Processing Externals.
+Sending Image.
+
+-------------------------------------------------------------------------------
+| Publics: 3219   Externs: 18010  Files: 13     Blocks: 180   Rom Size: 1012K |
+| Hash Chains: 924        Dos Memory:    0K            Extended Memory: 1262K |
+-------------------------------------------------------------------------------
+

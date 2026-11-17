@@ -1,5 +1,5 @@
 
-	incpublics	fontdata.ext
+	incpub	fontdata
 
 fontdata
 charbanks	dw	font0fon&WM,font0wid&WM,font0trn&WM
@@ -9,8 +9,8 @@ moji	macro
 	endm
 
 incfont	macro
-font0wid	incbinfile	data\\moji_\1.fon
-font0trn	incfile	data\\moji_\1.trn
+font0wid	;incbinfile	data\\moji_\1.fon
+font0trn	;incfile	data\\moji_\1.trn
 font0fon	equ	font0wid+\2
 	endm
 

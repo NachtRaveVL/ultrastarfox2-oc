@@ -69,8 +69,19 @@ ctrlmapcspecial	equ	132
 ctrlnobj		equ	134
 ctrlmqnobj		equ	136
 ctrlmapwait2		equ	138
-ctrlmapsetpath		equ	140
-
+ctrlmapsetpath	equ	140
+ctrlmapinertobj	equ	142
+ctrlmapinertpath	equ	144
+ctrlmapsetscale	equ	146
+ctrlmaparea		equ	148
+ctrlmapifswitch	equ	150
+ctrlmapifnotswitch	equ	152
+ctrlmapsetdust	equ	154
+ctrlmapareaout	equ	156
+ctrlmapgotoiflevel	equ	158
+ctrlmapinerttarget	equ	160
+ctrlmapgotoifplanet	equ	162
+ctrlmapgotoifsatellite	equ	164
 ;-----------------------------------------------------------------------------
 mapdef	macro
 	dw	((\1)&$7fff)
@@ -391,9 +402,9 @@ addalvarptr	macro				; alvar,value
 
 setalvar	macro
 
-	ifd	alx_\1
-	error	<Can't do alx_var in setalvar>
-	endc
+	IFD	alx_\1
+	error	<alx_\1 will not work with setalvar>
+	ENDC
 
 	ifc	'\0','N'
 	db	ctrlsetalvarb
@@ -451,8 +462,8 @@ setvar	macro
 	dw	\2&wm
 	db	\2>>16
 	endc
-	dw	\1
-	db	\1>>16
+	dw	(\1)&WM
+	db	(\1)>>16
 	endm
 
 
@@ -905,29 +916,6 @@ wipedone	=	1
 	setfadeup	quick
 	setrestart
 	ENDM
-
-;------------------------------------------------------------------
-mapplayermode	MACRO		\1 mode name
-	mapgotoifplayerdead	.skip\@
-	start_65816
-	phb
-	lda	#$7e
-	pha
-	plb
-
-	jsl		set_player\1_l
-	a16
-	lda	#set_player\1_l&WM
-	sta	newplayerstrat
-	a8
-	lda	#set_player\1_l>>16
-	sta	newplayerstrat+2
-
-	plb
-	end_65816
-.skip\@
-	ENDM
-
 
 ;------------------------------------------------------------------
 mapgotoifplayerdead	MACRO	label
@@ -2104,14 +2092,19 @@ mapdpilarL	MACRO 	; wait,y,z
 
 ;-------------------------------------------------------------------------------------
 mapgotoiflevel	MACRO	level(1-3),label
-	start_65816
-	a8
-	lda	currentlevel
-	cmp	#\1-1
-	bne	.no\@
-	switch	\2
-.no\@
-	end_65816
+
+	db	ctrlmapgotoiflevel
+	db	(\1)-1
+	dw	(\2)&$7fff
+
+;;	start_65816
+;;	a8
+;;	lda	currentlevel
+;;	cmp	#\1-1
+;;	bne	.no\@
+;;	switch	\2
+;;.no\@
+;;	end_65816
 	ENDM
 
 ;-------------------------------------------------------------------------------------
@@ -2135,18 +2128,907 @@ mapgotoifnotlevel	MACRO	level(1-3),label
 ;**********************************************************************************
 ;**********************************************************************************
 
+; STARFOX II MAP MACROS:
+
+;-------------------------------------------------------------------------------------
+
+m_inertobj	MACRO	[x,y,z,roty,shape,strat]
+
+	db	ctrlmapinertobj
+	dw	{x}
+	dw	{y}
+	dw	{z}
+	db	{roty}
+	dw	{shape}&WM
+
+	IFEQ	NARG-5
+	dw	null_istrat&WM
+	db	null_istrat>>16
+	ELSEIF
+	dw	{strat}&WM
+	db	{strat}>>16
+	ENDC
+
+	ENDM
+
+;-------------------------------------------------------------------------------------
+
+m_inertpath	MACRO	[x,y,z,roty,shape,path]
+
+	db	ctrlmapinertpath
+	dw	{x}
+	dw	{y}
+	dw	{z}
+	db	{roty}
+	dw	{shape}&WM
+	dw	path_{path}&WM
+
+	ENDM
+
+;-------------------------------------------------------------------------------------
+
+m_inerttarget	MACRO	[x,y,z,roty,shape,path]
+
+	db	ctrlmapinerttarget
+	dw	{x}
+	dw	{y}
+	dw	{z}
+	db	{roty}
+	dw	{shape}&WM
+	dw	path_{path}&WM
+
+	ENDM
+
+
+;-------------------------------------------------------------------------------------
+
+m_scale	MACRO	[scale]
+;	db	ctrlmapsetscale
+;	db	{scale}
+	ENDM
+
+m_range	MACRO	[range]
+;	db	ctrlmapsetscale
+;	db	65536/{range}
+	ENDM
+
+
+;-----------------------------------------------------------------
+
+map_seadepth		macro	[depth]
+
+;	start_65816
+;
+;	a8
+;	phb
+;
+;	lda	#7eH
+;	pha
+;	plb
+;
+;	ldx	#{depth}
+;	stx	seadepth
+;
+;	ldx	playpt1
+;	jsl	addseadepth_l
+;
+;	;test_screenmode	onescreen
+;	;bne	.nop2\@
+;
+;	ldx	playpt2
+;	jsl	addseadepth_l
+;
+;.nop2\@	plb
+;
+;	end_65816
+
+	endm
+
+
+;-------------------------------------------------------------------------------------
+; defines an area of the map
+
+map_area	MACRO	[areanum,x,z,width,length,mapaddr,onoff,inactive]
+
+	IFGE	{areanum}-number_area
+	error	<Area number must be 0-number_area>
+	ENDC
+
+_ma_inactive	=	128
+_ma_active	=	0
+	IFEQ	NARG-8
+_ma_active	=	_ma_{inactive}
+	ENDC
+
+	db	ctrlmaparea
+	db	{areanum}!_ma_active
+	db	({x})/256,({z})/256
+	db	({width})/256,({length})/256
+	dw	({mapaddr})&$7fff
+	db	({mapaddr})>>16
+
+_ma_von	=	0
+_ma_voff	=	128
+	IFNE	NARG-6
+_ma_onoff	=	_ma_v{onoff}
+	ELSEIF
+_ma_onoff	=	_ma_von
+	ENDC
+
+	start_65816
+	lda	#({areanum})!_ma_onoff
+	jsl	ClearBlockmapArea_l
+	end_65816
+	ENDM
+
+;-------------------------------------------------------------------------------------
+; ends the map data for an area
+
+map_endarea	MACRO
+.lp\@	mapwait	5000
+	mapgoto	.lp\@
+	ENDM
+;-------------------------------------------------------------------------------------
+; sets the switch setting for previously made alien
+
+map_defswitch	MACRO	[switchnum]
+	start_65816
+	cpx	#0
+	beq	.no\@
+	lda	#{switchnum}
+	sta.l	alx_pbyte2,x
+.no\@	end_65816
+	ENDM
+;-------------------------------------------------------------------------------------
+; Checks and jumps if switch flag is or isn't set
+ 
+map_ifswitch	MACRO	[mapaddr]
+_mis_mask	=	0
+	REPT	16
+	irs	1,"\2","\3","\4","\5","\6","\7","\8","\9","\a","\b","\c","\d","\e","\f","\g","h"
+	run	" IFD SWITCH_%$1"
+	run	"_mis_mask = _mis_mask!SWITCH_%$1"
+	ENDC
+	ENDR
+	db	ctrlmapifswitch
+	dw	_mis_mask
+	dw	({mapaddr})&$7fff
+	ENDM
+
+map_ifnotswitch MACRO	[mapaddr]
+_mis_mask	=	0
+	REPT	16
+	irs	1,"\2","\3","\4","\5","\6","\7","\8","\9","\a","\b","\c","\d","\e","\f","\g","\h"
+	run	" IFD SWITCH_%$1"
+	run	"_mis_mask = _mis_mask!SWITCH_%$1"
+	ENDC
+	ENDR
+	db	ctrlmapifnotswitch
+	dw	_mis_mask
+	dw	({mapaddr})&$7fff
+	ENDM
+
+;-------------------------------------------------------------------------------------
+
+switchpath	MACRO	[switch,x,y,z,shape,path]
+
+	map_ifswitch	.mi\@,{switch}
+	pathobj		0,{x},{y},{z},{shape},{path},10,10
+	map_defswitch	{switch}
+.mi\@
+
+	ENDM
+
+
+;-------------------------------------------------------------------------------------
+map_playertunnel	macro
+
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³Tunnel mode wo on ni suru.³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+MYNARG	=	NARG
+	CHK_NARG	0
+
+	start_65816
+
+	a8
+	phb
+
+	lda	#7eH
+	pha
+	plb
+
+	phx
+	phy
+
+	ldx	playpt1
+	jsr	.set\@
+
+
+	a16
+	lda	screenvheight
+	cmp	#24*8
+	a8
+	beq	.exit\@
+
+	ldx	playpt2
+	jsr	.set\@
+	bra	.exit\@
+
+.set\@	ldy	al_sword2,x
+
+	lda	exal_CTLtype,y
+	ora	#exal_CTLtype_hitwall
+	sta	exal_CTLtype,y
+
+	rts
+
+.exit\@	ply
+	plx
+
+	plb
+
+	end_65816
+
+	endm
+;-------------------------------------------------------------------------------------
+map_playerturn	macro	[onoff,roty,centerx,centerz,width]
+
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³"off" = STARFOX I mode(turn shinai mode)³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+MYNARG	=	NARG
+	CHK_NARG	1,5
+
+	start_65816
+
+	a8
+	phb
+
+	lda	#7eH
+	pha
+	plb
+
+	phx
+	phy
+
+	ldx	playpt1
+	jsr	.set\@
+
+	a16
+	lda	screenvheight
+	cmp	#24*8
+	a8
+	beq	.exit\@
+
+	ldx	playpt2
+	jsr	.set\@
+	bra	.exit\@
+
+
+.set\@	ldy	al_sword2,x
+
+	lda	exal_control,y
+
+	IFC	"off","\1"
+	ora	#exal_control_notturn
+	sta	exal_control,y
+
+	lda	#{roty}
+	sta	exal_forceroty,y
+
+	a16
+	lda	#{centerx}
+	sta	exal_forcecx,y
+	lda	#{centerz}
+	sta	exal_forcecz,y
+	lda	#{width}
+	sta	exal_forcewidth,y
+	a8
+	ENDC
+
+	IFC	"on","\1"
+	and	#exal_control_notturn^-1
+	sta	exal_control,y
+	ENDC
+
+
+	rts
+
+
+.exit\@	ply
+	plx
+
+	plb
+
+	end_65816
+
+	endm
+
+;-------------------------------------------------------------------------------------
+map_playerentermode	macro
+
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³player ga tutusenkan ni hairu syori wo on ni suru.³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+MYNARG	=	NARG
+	CHK_NARG	0
+
+	start_65816
+
+	a8
+	phb
+
+	lda	#7eH
+	pha
+	plb
+
+	phx
+	phy
+
+	ldx	playpt1
+	ldy	al_sword2,x
+	lda	exal_control2,y
+	ora	#exal_control2_enter_on
+	sta	exal_control2,y
+
+	ply
+	plx
+
+	plb
+
+	end_65816
+
+	endm
+
+;*************************************************************************************
+;'94/12/25 :kawaguchi :start
+;*************************************************************************************
+map_tutudepth	macro
+	start_65816
+	ramnastyoff
+	km_bitcheckscreenflag	tutumode
+	bne	.tutu
+.room
+	set_zdepthtable	tunnel
+	bra	.skip
+.tutu
+	set_zdepthtable	tutu
+.skip
+	ramnastyon
+	end_65816
+	ENDM
+;--------------------------------------------------------------------
+map_mapareaout	macro	[switch]
+	start_65816
+
+_sw_{switch} = 0
+_sw_on  = 1
+_sw_off = 2
+	IFEQ	_sw_{switch}
+
+	error	"Please Set Switch ON/OFF: \1"
+
+	ELSEIF
+
+	ifeq	_sw_{switch}-1
+	km_setgameflag	areaout
+	endc
+
+	ifeq	_sw_{switch}-2
+	km_clrgameflag	areaout
+	endc
+
+	ENDC
+
+	end_65816
+
+	ENDM
+;-------------------------------------------------------------------------------------
+mapgotoifplanet	MACRO	[addr]
+	db	ctrlmapgotoifplanet
+	dw	{addr}&$7fff
+		ENDM
+;-------------------------------------------------------------------------------------
+mapgotoifsatellite	MACRO	[addr]
+	db	ctrlmapgotoifsatellite
+	dw	{addr}&$7fff
+		ENDM
+;*************************************************************************************
+;kawaguchi end
+;*************************************************************************************
+map_setblockmap	MACRO	[x,z,width,length,onoff]
+
+_msb_on	=	0
+_msb_off	=	255
+
+	start_65816
+	a8
+	lda	#_msb_{onoff}
+	sta	y1
+
+	a16
+	lda	#{x}
+	sta	x1
+	lda	#{z}
+	sta	z1
+	lda	#{width}
+	sta	x2
+	lda	#{length}
+	sta	z2
+
+	jsl	SetBlockMap_l
+	
+	a8
+	end_65816
+		ENDM
+
+;-------------------------------------------------------------------------------------
+
+map_setdust	MACRO
+MYNARG	=	NARG
+	db	ctrlmapsetdust
+
+_ms_flags	=	0
+
+	IFNE	MYNARG
+
+	REPT	MYNARG
+
+	irs	1,"\1","\2","\3","\4","\5","\6","\7","\8","\9","\a","\b","\c","\d"
+
+	defs	2,"df_%$1"
+
+	run	" IFD %$2"
+
+	run	"_ms_flags = _ms_flags!%$2"
+
+	ELSEIF
+	error	<No such flag %$1>
+	ENDC
+
+	ENDR
+
+	ENDC
+
+	dw	_ms_flags
+
+	ENDM
+
+;-------------------------------------------------------------------------------------
+map_dustsprite	MACRO	[sprite,size]
+
+	setvar.w	m_dustsprite,dusttable_{sprite}
+	setvar.b	m_dustsize,{size}
+
+		ENDM
+;-------------------------------------------------------------------------------------
+map_demomode	macro	[num]
+
+	IFC	'\1','off'
+
+	setvar.b	demoflag,0
+	setvar.b	demomode,0
+	setvar.b	demoNo,demo_{num}
+
+	ELSEIF
+
+	setvar.b	demoflag,0
+	setvar.b	demomode,1
+	setvar.b	demoNo,demo_{num}
+
+	setvar.w	demomapptr,.label\@&07fffH
+	setvar.b	demomapbank,.label\@>>16
+
+
+.loop\@	mapwait	5000
+	mapgoto	.loop\@
+
+.label\@
+
+	ENDC
+
+	endm
+;-------------------------------------------------------------------------------------
+map_nextmap	macro	[name,demono]
+
+	setvar.w	intermapptr,{name}&07fffH
+	setvar.b	intermapbank,{name}>>16
+	IFEQ	NARG-2
+	setvar.b	demoNoNext,demo_{demono}
+	ELSEIF
+	setvar.b	demoNonext,demo_wait
+	ENDC
+
+;	start_65816
+;	a16
+;	lda	currentbg
+;	sta	clearmapbg
+;	a8
+;	end_65816
+
+	endm
+
+
+;-------------------------------------------------------------------------------------
+map_vscreensize_mission	macro	[size]
+
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³v scroll no offset wo set suru.³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+MYNARG	=	NARG
+	CHK_NARG	1
+
+	setvar.w	player1_horizon_offset,SCR{size}_Hofs
+
+	endm
+
+map_vscreensize_battle	macro	[size]
+
+MYNARG	=	NARG
+	CHK_NARG	1
+
+	setvar.w	player1_horizon_offset,SCR{size}_P1Hofs
+	setvar.w	player2_horizon_offset,SCR{size}_P2Hofs
+
+	endm
+
+;-------------------------------------------------------------------------------------
+map_dustheight	macro	[height]
+
+MYNARG	=	NARG
+	CHK_NARG	1
+
+	setvar.w	stardustheight,{height}
+
+	endm
+;-------------------------------------------------------------------------------------
+map_dustkazu		macro	[count]
+
+MYNARG	=	NARG
+	CHK_NARG	1
+
+	IFGE	mmaxdust-{count}
+
+	setvar.b	stardustkazu,{count}
+
+	ELSEIF
+	run	" error	<Only 0-",mmaxdust," allowed>"
+	ENDC
+		endm
+;-------------------------------------------------------------------------------------
+; 1994/11/17	yajima
+
+map_rasterON		macro	[switch]
+MYNARG	=	NARG
+	CHK_NARG	1
+
+	setvar.b	raster_control,idx_{switch}
+	endm
+
+;-------------------------------------------------------------------------------------
+; 1994/11/17	yajima
+
+map_rasterOFF	macro
+MYNARG	=	NARG
+	CHK_NARG	0
+
+	setvar.b	raster_control,idx_no_raster
+	endm
+;-------------------------------------------------------------------------------------
+
+map_battlearea	macro	[areahigh,arealow,depth,type]
+
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³ game field no parameter                                            ³
+;³                                                                    ³
+;³areahigh  = gamefield no max Y (example : -500)                     ³
+;³ areahigh = gamefield no min Y (example : -30)                      ³
+;³ depth    = magma toka umi,ryu-sa no men no takasa (example : -1000)³
+;³ type	    = ground                                                  ³
+;³            sea                                                     ³
+;³            water                                                   ³
+;³            magma                                                   ³
+;³            sand                                                    ³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+MYNARG	=	NARG
+	CHK_NARG	4
+
+	setvar.w	BATTLEAREA_maxY,{areahigh}
+	setvar.w	BATTLEAREA_minY,{arealow}
+	setvar.w	SEADEPTH,{depth}
+	setvar.w	m_groundlevel,{depth}
+	setvar.w	shadowheight,{depth}
+	setvar.b	seatype,st_{type}
+	setvar.w	altmeterrate,(({arealow}-{areahigh})/(altmeter_height/2))/2
+
+	endm
+
+
+;-------------------------------------------------------------------------------------
+
+map_arwinginit	macro	[high,low,rotxmax,rotxmin]
+
+MYNARG	=	NARG
+	CHK_NARG	4
+
+	setvar.w	y1,-({high})
+	setvar.w	y2,-({low})
+	setvar.b	x1,{rotxmax}
+	setvar.b	x2,{rotxmin}
+
+	start_65816
+	jsl	map_arwing_init_l
+	end_65816
+
+	endm
+
+;-------------------------------------------------------------------------------------
+map_camerainit_1screen	macro	[midy,yofsmax,maxrotx,minrotx,yofsrate]
+
+MYNARG	=	NARG
+	CHK_NARG	5
+
+	setvar.w	y1,{midy}
+	setvar.b	y2,{yofsmax}
+	setvar.b	x1,{maxrotx}
+	setvar.b	x2,{minrotx}
+	setvar.b	y3,{yofsrate}
+
+	start_65816
+
+	jsl	map_camerainit_1screen_l
+
+
+	end_65816
+
+	endm
 
 
 
 
+;-------------------------------------------------------------------------------------
+map_camerainit_2screen	macro	[midy,yofsmax,maxrotx,minrotx,yofsrate]
+
+MYNARG	=	NARG
+	CHK_NARG	5
+
+	setvar.w	y1,{midy}
+	setvar.b	y2,{yofsmax}
+	setvar.b	x1,{maxrotx}
+	setvar.b	x2,{minrotx}
+	setvar.b	y3,{yofsrate}
+
+	start_65816
+
+	jsl	map_camerainit_2screen_l
+
+	end_65816
+
+	endm
+
+;-----------------------------------------------------------------
+
+map_setplayerpos_battleship	macro
+
+	start_65816
+
+	jsl	map_setplayerpos_battleship_l
+
+	end_65816
+
+	endm
+
+;-----------------------------------------------------------------
+
+map_setplayerpos_relative	macro
+
+	start_65816
+
+	jsl	map_setplayerpos_relative_l
+
+	end_65816
+
+	endm
+
+
+;-----------------------------------------------------------------
+
+map_setplayerpos	macro	[player,x,y,z,roty]
+
+	setvar.w	p{player}_worldx_init,{x}
+	setvar.w	p{player}_worldy_init,{y}
+	setvar.w	p{player}_worldz_init,{z}
+	setvar.b	p{player}_roty_init,{roty}
+
+	start_65816
+
+	jsl	map_setplayerpos_{player}_l
+
+	end_65816
+
+	endm
+
+;-------------------------------------------------------------------------------------
+map_vscrolloff	macro
+
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³V scroll wo off nisuru.³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+MYNARG	=	NARG
+	CHK_NARG	0
+
+	start_65816
+
+	jsl	map_vscroll_off_l
+
+	end_65816
+
+	endm
+;-------------------------------------------------------------------------------------
+map_playerTUTUmode	macro	[dir,addr]
+
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³player ga tutusenkan ni hairu syori wo on ni suru.³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+MYNARG	=	NARG
+	CHK_NARG	2
+
+	setvar.b	x1+2,{addr}>>16
+	setvar.w	x1,{addr}&WM
+
+	setvar.b	tpx,exal_TUTUdir_{dir}
+
+;	setvar.w	tpy,tutuheight_{height}
+
+	start_65816
+	jsl	map_playerTUTUmode_l
+	end_65816
+
+	endm
 
 
 
+;-------------------------------------------------------------------------------------
+
+map_playerblockmap_off	macro	[player]
+
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³player no Blockmap system wo off ni suru.³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+MYNARG	=	NARG
+	CHK_NARG	1
+
+	start_65816
+
+	jsl	map_playerblockmap_off_{player}_l
+
+	end_65816
+
+	endm
+;-------------------------------------------------------------------------------------
+
+map_playerblockmap_on	macro	[player]
+
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³player no Blockmap system wo on ni suru. ³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+MYNARG	=	NARG
+	CHK_NARG	1
+
+	start_65816
+
+	jsl	map_playerblockmap_on_{player}_l
+
+	end_65816
+
+	endm
 
 
+;-------------------------------------------------------------------------------------
+map_maxrange	MACRO	[range]
+	setvar.w	maxmaprangestore,{range}
+	ENDM
+;-------------------------------------------------------------------------------------
+map_ifasteroids MACRO	[addr]
+	start_65816
+	a16
+	lda.l	kw_MisMapFlag
+	and	#kmimpf_asteroid
+	printb	asteroids
+	beq	.cont
+	switch	{addr}
+.cont
+	end_65816
+	ENDM
 
 
+;-------------------------------------------------------------------------------------
+map_playermode	macro	[field,mode]
 
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³field =       ³
+;³              ³
+;³  ground      ³
+;³  tunnel      ³
+;³  desert      ³
+;³  space       ³
+;³  tunnel      ³
+;³  sun         ³
+;³  room        ³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³mode =        ³dono KEITAI de hajimeruka wo shitei suru. 
+;³              ³
+;³  ARWING      ³default wa ARWING
+;³  ROBOT       ³
+;³  UFO         ³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
 
+MYNARG	=	NARG
+	CHK_NARG	1,2
 
+	IFEQ	NARG-2
+	setvar.b	playerctlmode,map_{field}
+	setvar.b	playerinitmode,playerinitmode_{mode}
 
+	ELSEIF
+	setvar.b	playerctlmode,map_{field}
+	setvar.b	playerinitmode,0
+	ENDC
+
+	endm
+
+;-------------------------------------------------------------------------------------
+map_demomode_clear	macro	[demono]
+
+MYNARG	=	NARG
+	CHK_NARG	1,2
+
+	setvar.b	demoNoClear,demo_{demono}
+
+	endm
+
+;-------------------------------------------------------------------------------------
+setstgclrbg	macro	[name]
+
+MYNARG	=	NARG
+	CHK_NARG	1
+
+	setvar.w	clearmapbg,bg_{name}-bglists
+
+	endm
+
+;-------------------------------------------------------------------------------------
+setstgclrdust	macro
+
+MYNARG	=	NARG
+	CHK_NARG	0
+
+	start_65816
+	a16
+	lda.l	m_dustsprite
+	sta	clear_dustsprite
+	lda.l	m_dustflags
+	sta	clear_dustflags
+	a8
+	lda.l	m_dustsize
+	sta	clear_dustsize
+
+	end_65816
+
+	endm
+
+;-------------------------------------------------------------------------------------
+
+	include		olsmacs.inc
+           

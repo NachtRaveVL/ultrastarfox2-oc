@@ -1,3 +1,28 @@
+;컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴
+decrunch_palettes	macro
+	savemode
+	ai16
+	phx
+
+	lda	#allcolscru&WM		;uncrunch colours and copy up
+	sta.l	m_enddata
+	lda	#palettes_base
+	sta.l	m_decaddr
+	lda	#0
+	sta.l	m_decoffset
+	a8
+	lda	#allcolscru>>16
+	sta.l	m_enddatabnk
+	lda	#mdecrunch>>16
+	ldx	#mdecrunch&WM
+	jsl	runmario_l
+
+	plx
+	returnmode
+		endm
+
+;컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴
+
 flashscr	macro
 	endm
 ;	ldx	#0
@@ -106,9 +131,26 @@ offset	=	\5
 	a8
 	jsl	dec_chr_l
 	waittrans
-	lda	#20
+	lda	#iv_randtrans
 	sta	trans_flag
 	waittrans
+	endm
+
+
+decram	macro	[src,offset]
+offset	=	0
+	ifeq	narg-2
+offset	=	{offset}
+	endc
+	a16
+	lda	#offset
+	sta.l	m_decoffset
+	lda	#{src}>>16
+	sta.l	m_enddatabnk
+	lda	#{src}&WM
+	sta.l	m_enddata
+	a8
+	jsl	dec_chr_l
 	endm
 
 decbg2vram	macro
@@ -130,7 +172,7 @@ decbg2vram	macro
 	a8
 	jsl	dec_l
 	waittrans
-	lda	#20
+	lda	#iv_randtrans
 	sta	trans_flag
 	waittrans
 	endm
@@ -152,6 +194,27 @@ offset	=	\5
 	lda	#\2
 	sta	vram1addr
 	lda	#\4
+	sta	vram1len
+	a8
+	jsl	dec_chr_l
+	jsl	randtrans
+	endm
+
+;------------------------------------------------------------------------
+decxvramnotrans macro
+offset	=	0
+	ifeq	narg-5
+offset	=	\5
+	endc
+	a16
+	lda	#offset
+	sta.l	m_decoffset
+	lda	#\2>>16
+	sta.l	m_enddatabnk
+	lda	#\2&WM
+	sta.l	m_enddata
+	stx	vram1addr
+	lda	#\3
 	sta	vram1len
 	a8
 	jsl	dec_chr_l
@@ -180,10 +243,38 @@ decbg2vramnotrans macro
 	endm
 
 ;------------------------------------------------------------------------
-init_bg	macro	[mode]
+init_bg	macro	[mode,bgmode,charsize]
 	a8
 
 	flashscr2
+
+_ibg_horz	=	0
+_ibg_vert	=	1
+	IFD	_ibg_{bgmode}
+	lda	screenmode
+	IFEQ	_ibg_{bgmode}
+	and	#~sm_vertconnect
+	ELSEIF
+	ora	#sm_vertconnect
+	ENDC
+	sta	screenmode
+	ELSEIF
+	error	<Invalid Mode (HORZ or VERT) specified>
+	ENDC
+
+	IFNE	{charsize}-8
+	IFNE	{charsize}-16
+	error	<Invalid character size (8 or 16) specified>
+	ENDC
+	ENDC
+
+	test_screenmode	swapbg1bg2
+	beq	.n1\@
+	lda	#({charsize}>>4)<<4
+	bra	.n2\@
+.n1\@	lda	#({charsize}>>4)<<5
+.n2\@
+	sta	bg2charsize
 
 	ifc	"{mode}","mode1"
 	jsr	initmode1
@@ -193,29 +284,39 @@ init_bg	macro	[mode]
 	jsr	initmode2
 	endc
 
+
 	endm
 
 set_bg	macro
 ;	waittrans
-	lda	#16
+	lda	#iv_newbg2chr
 	sta	trans_flag
-;	waittrans
+	waittrans
 	endm
 
 set_bg3	macro
 ;	waittrans
-	lda	#22
+	lda	#iv_newbg3
 	sta	trans_flag
 ;	waittrans
 	endm
 
+set_palette	macro
+	waittrans
+	lda	#iv_newpalette
+	sta	trans_flag
+	waittrans
+	endm
+
 ;------------------------------------------------------------------------
-bg2chr	MACRO	name[,start,len]
-addr	=	vchr_logback
-len	=	6*k
+bg2chr	MACRO	name[len,start]
+addr	=	0
+len	=	bg2_cgx_len
 	IFNE	NARG-1
-addr	=	\2
-len	=	\3
+len	=	\2
+	IFEQ	NARG-3
+addr	=	\3
+	ENDC
 	ENDC
 
 	IFNE	LONGA
@@ -224,8 +325,8 @@ len	=	\3
 
 	IFEQ	0
 	jsr	bg2chr
-	dw	bg\1ccr&WM
-	db	bg\1ccr>>16
+	dw	\1_ccr&WM
+	db	\1_ccr>>16
 	dw	addr
 	dw	len
 
@@ -247,8 +348,8 @@ len	=	\3
 	ENDM
 
 bg2scr	MACRO	name[,start,len]
-addr	=	vsc_base2
-len	=	8*k
+addr	=	0
+len	=	bg2_scr_len
 	IFNE	NARG-1
 addr	=	\2
 len	=	\3
@@ -259,8 +360,8 @@ len	=	\3
 	printf	"%m needs to be in a8%n"
 	ENDC
 	jsr	bg2scr
-	dw	bg\1pcr&WM
-	db	bg\1pcr>>16
+	dw	\1_pcr&WM
+	db	\1_pcr>>16
 	dw	addr
 	dw	len
 
@@ -281,12 +382,27 @@ len	=	\3
 
 ;-------------------------------------------------------------------------
 bg3chr	MACRO
-addr	=	vsc_base2
-len	=	2048
+addr	=	0		;_me_bg3_scr
+len	=	256*16
 	IFNE	NARG-1
-addr	=	\2
-len	=	\3
+addr	=	\3
+	IFEQ	NARG-3
+len	=	\2
 	ENDC
+	ENDC
+
+	IFNE	LONGA
+	printf	"%m needs to be in a8%n"
+	ENDC
+
+	IFEQ	0
+	jsr	bg2chr
+	dw	\1_ccr&WM
+	db	\1_ccr>>16
+	dw	addr
+	dw	len
+
+	ELSEIF
 	a16
 	lda	#0
 	sta.l	m_decoffset
@@ -304,15 +420,29 @@ len	=	\3
 	sta	bg3scrollflag
 	lda	#1+2+4+16
 	sta	tm
+	ENDC
 	ENDM
 
+;-------------------------------------------------------------------------
 bg3scr	MACRO	
-addr	=	vsc_base2+1*k
+addr	=	0	;vsc_base2+1*k
 len	=	2048
 	IFNE	NARG-1
 addr	=	\2
 len	=	\3
 	ENDC
+
+	IFEQ	0
+	IFNE	LONGA
+	printf	"%m needs to be in a8%n"
+	ENDC
+	jsr	bg2scr
+	dw	\1_pcr&WM
+	db	\1_pcr>>16
+	dw	addr
+	dw	len
+
+	ELSEIF
 	a16
 	lda	#bg\1pcr>>16
 	sta.l	m_enddatabnk
@@ -324,15 +454,34 @@ len	=	\3
 	sta	vram2len
 	a8
 	jsl	dec_bg3_l
-	ENDM
-
-;------------------------------------------------------------------------
-
-palette	MACRO	name[,length]
-len	=	224
-	IFNE	NARG-1
-len	=	\2
 	ENDC
+
+	ENDM
+;-------------------------------------------------------------------------
+km_setbg3size	macro	
+	km_chga8
+	lda	#%01000000
+	sta	bg3charsize
+	km_reta16
+	endm
+;-------------------------------------------------------------------------
+km_clrbg3size	macro
+	km_chga8
+	lda	#%00000000
+	sta	bg3charsize
+	km_reta16
+	endm
+;------------------------------------------------------------------------
+palette	MACRO	name[,length,start]
+len	=	4*32
+	IFNE	NARG-1
+len	=	\2*32
+	ENDC
+stapal	=	0
+	IFEQ	NARG-3
+stapal	=	\3*16
+	ENDC
+
 	IFEQ	0
 
 	IFNE	LONGA
@@ -340,9 +489,10 @@ len	=	\2
 	ENDC
 
 	jsr	dopalette
-	dw	bg\1pac&WM
-	db	bg\1pac>>16
+	dw	\1_pac&WM
+	db	\1_pac>>16
 	dw	len
+	dw	stapal
 
 	ELSEIF
 	lda	#bg\1pac>>16
@@ -371,9 +521,9 @@ setbg3vofs	MACRO
 ;------------------------------------------------------------------------
 waittrans	macro
 .\@	lda	trans_flag
-	beq	.ok\@
-	cmp	#32
 	bne	.\@
+;;	cmp	#32
+;;	bne	.\@
 .ok\@
 	endm
 
@@ -388,7 +538,8 @@ sethdma	macro
 
 planet	macro	[depth]
 	stz	inatunnel
-	stz	gamemode
+	lda	#GROUND_MODE
+	sta	gamemode
 	stz	lastrot
 	stz	lastrot+1
 	setdepth	{depth}		;night
@@ -403,7 +554,8 @@ planet	macro	[depth]
 undergnd	macro	[depth]
 	lda	#1
 	sta	inatunnel
-	stz	gamemode
+	lda	#GROUND_MODE
+	sta	gamemode
 	stz	lastrot
 	stz	lastrot+1
 	setdepth	{depth}		;night
@@ -419,7 +571,8 @@ undergnd	macro	[depth]
 nucleus	macro	[depth]
 	lda	#1
 	sta	inatunnel
-	stz	gamemode
+	lda	#GROUND_MODE
+	sta	gamemode
 	stz	lastrot
 	stz	lastrot+1
 	setdepth	{depth}		;night
@@ -440,7 +593,8 @@ tunnel	macro	[depth]
 	sta	hdmaen_gc
 	stz	lastrot
 	stz	lastrot+1
-	stz	gamemode
+	lda	#GROUND_MODE
+	sta	gamemode
 	setdepth	{depth}		;night
 	sethdma
 	waittrans
@@ -710,6 +864,6 @@ changedefaultID	macro	[colourID]
 
 
 
-
-
-
+
+
+

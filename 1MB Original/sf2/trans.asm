@@ -25,11 +25,13 @@
 ;º                                                                         º
 ;ÈÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼
 
-	INCPUBLICS	trans.ext
+	INCPUB	trans
 
-
-	printf	"aldead= ",:$aldead,"%n"
-
+de_jsl	macro	[addr]
+;;;	kbug1
+	jsl	{addr}
+;;;	kbug1
+	endm
 ;-----------------------------------------------------------------------
 ;-----------------------------------------------------------------------
 ;-----------------------------------------------------------------------
@@ -38,142 +40,566 @@
 
 transfer_l
 	a8i16
+
 	lda	framec
 	sta	framer
 	stz	framec
 .notfinished
 	lda	trans_flag
 	bne	.notfinished
-	stz	noirqbit3
-	lda	#2		;start screen transferring
-	sta	trans_flag
 
-	jsr	do_circle_explosion
-	jsl	calcbgscroll_l
+	test_screenmode	twoscreen
+	lbne		.normaltrans
 
-	jsr	calcbg2voffsets
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; this is the main game transfer routine for one screen mode
+; it runs the drawing of the 3d in parallel with the transfer
+; of the double buffer and in parallel with the path strategies
+; (and anything else that does a romnastyoff and runs in ram)
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;* MISSION Version *
+	lda	#iv_gameirq1_1
+	sta	trans_flag	; begin the transfer
 
-	ai16
-	lda	bgsscrollZ
-	sta	oldviewposz
+	jsl	copydrawlist_l
 
-	lda	bg3scrollflag
-	beq	.noscroll
-	ldx	viewpt
+	jsl	generate_collist_l
+
+	lda	trans_flag
+;	printh	check1,dylan
+
+	jsl	begin_3d_display_l
+
+	lda	trans_flag
+;	printh	check2,dylan
+
+	jsl	setwindowtabs_l		;kawaguchi
+	jsl	find_window_pri_l	;kawaguchi
+
+	jsl	sethvscroll_l		;kawaguchi
+
+;* kawaguchi *
+;;;	lda	trans_flag
+;;;	printh	<hvscroll irq>,kawaguchi
+
+	jsl	set_horizon_l
+
+	jsl	setvofst_l	; (2/10)kawagoe
+	jsl	cc_alart_l
+
+	jsl	bg2horzvertscroll_l
+
+	jsl	set_enemy_cursor_P1_l	; Kawagoe
+	jsl	set_player_cursor_P1_l	; Kawagoe
+
+	jsl	parallel_mismap_l	;kawaguchi
+;;;;	jsl	draw_Wave_p1_l		;Kawaguchi
+;;;;	jsl	do_spritesp1radar_l	;Kawaguchi
+	jsl	do_sprites_l		;kawaguchi
+
+	ramnastyoff
+	ldx	mapptr
+	jsl	newobjs_l
+	ramnastyon
+
+	jsl	scaninerts_l
+
+
+	lda	trans_flag
+;	printh	gamecode,dylan
+
+; ÄÄÄÄÄÄÄÄÄÄ debug
+;	jsl	finishit_l
+
+	jsl	dostrats1_l
+	jsl	dostrats2_l
+
+	lda	trans_flag
+;	printh	<Strat finish>,dylan
+
+	jsl	showview1_l
+
+	jsl	finish_3d_display_l
+
+	IFEQ	1	; Turbo sprites test
+
+	ldx	playpt1
+	a16
 	lda	al_worldx,x
-	asra
-	asra
-	asra
-	dec	a
-	dec	a
-	dec	a
-	dec	a
-	sta	bg3scroll
-.noscroll
-	lda	dospacesc
-	and	#$ff
-	beq	.noscrollsp
-	cmp	#1
-	beq	.l15
+	printd	px
+	lda	al_worldz,x
+	printd	pz
 
-	lda	spacescz
-	clc
-	adc	lastzchange
-	cmp	#500
-	bcc	.stspsc
-	lda	bg2yscroll
-	cmp	#-294
-	beq	.noscrollsp
-	dec	a
-	sta	bg2yscroll
-	lda	#0
-	bra	.stspsc
-.l15
-	lda	spacescz
-	clc
-	adc	lastzchange
-	cmp	#2000
-	bcc	.stspsc
-	lda	bg2yscroll
-	cmp	#212
-	beq	.noscrollsp
-	inc	a
-	sta	bg2yscroll
-	lda	#0
-.stspsc	sta	spacescz
-.noscrollsp
-	jsr	do_hpositions
-	jsr	dmahpos
-	jsl	find_window_pri_l
-
-	a8i16
-	lda	doingwipe
-	bne	.skip
-	inc	noirqbit3
-.skip
-	lda	freezestrats
-	bit	#1
-	lbne	stratsfrozen
-
-
-	IFNE	debuginfo2
 	a8
-	s_jmp_keyup		b,normstrats2
-	s_jmp_keyup		x,normstrats2
-
-	s_jmp_keyup		left,.ndec
-	s_jmp_lastkeydown	left,.ndec
-	s_dec_var		B,superspeeddelay
-.ndec
-
-	s_jmp_keyup		right,.ninc
-	s_jmp_lastkeydown	right,.ninc
-	s_inc_var		B,superspeeddelay
-.ninc
+	phb
+	a8
+	lda	#$70
+	pha
+	plb
 
 
-	lda	superspeedcnt
-	beq	normstrats
-	bpl	.faster
-	inc	a
-	sta	superspeedcnt	
-	bra	stratsfrozen
-.faster	pha
-	php
-	jsr	dostrats
-	plp
+	ldx	#m_ts_buffer&WM
+
+	lda	#40
+.lp
+	pha
+
+	lda	#115
+	sta.w	ts_sprite,x
+	lda	#32
+	sta.w	ts_size,x
+	lda	#0
+	sta.w	ts_anim,x
+	lda	#8
+	sta.w	ts_animlimit,x
+
+	a16
+	lda	x1
+	sta.w	ts_x,x
+	clc
+	adc	#50
+	sta	x1
+	lda	z1
+	sta.w	ts_z,x
+	clc
+	adc	#50
+	sta	z1
+	lda	#0
+	sta.w	ts_y,x
+
+	txa
+	clc
+	adc	#ts_sizeof
+	tax
+	a8
+
 	pla
 	dec	a
-	bne	.faster
-	s_set_var	B,superspeedcnt,superspeeddelay
-	bra	stratsfrozen
-normstrats2
-	s_set_var	B,superspeeddelay,#0
-normstrats
-	s_set_var	B,superspeedcnt,superspeeddelay
+	bne	.lp
+
+;	call_mario	mTurboSprites
+	plb
+
+
 	ENDC
 
-	jsr	dostrats
 
-stratsfrozen
+;'94/9/26 :comment ni shimashita !!
+;	km_cmpcheckgamemode	missionexplain
+;	bne	.skipexp
+;	jsl	missobj_l		;yajima
+;	jsl	kexp_makingplanet_l	;kawaguchi
+;.skipexp
+	lda	trans_flag
+;	printh	<3d finish>,dylan
+
+
+	lda	bgflags
+	beq	.normtt
+	jsr	transswap
+.normtt
+
+	jmp	.finishtrans
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; this is the old trans loop
+
+.normaltrans
+	test_screenmode	3dglasses
+	beq	.twoscreen
+	lda	#iv_gameirq1_1
+	bra	.onescreen
+
+.twoscreen	lda	#iv_gameirq1
+.onescreen	sta	trans_flag		;start screen transferring
+
+; IRQ #1 & #2 are occurring
+; meanwhile:
+
+	jsl	generate_collist_l
+	
+
+	jsl	begin_3d_display2_l
+
+; insert anything here that needs to have the world matrix and view set up
+; for screen #2
+
+	jsl	set_player_cursor_P2_l	; Kawagoe
+
+
+;;;;	jsl	draw_Wave_p2_l		;kawaguchi
+
+	jsl	setwindowtabs_l		;kawaguchi
+	jsl	find_window_pri_l	;kawaguchi
+
+	jsl	do_sprites_l		;kawaguchi
+
+;	jsl	setvofst_l	; SAISYO NO BASYO
+
+	jsl	sethvscroll_l		;kawaguchi
+
+	test_screenmode	3dglasses
+	bne	.stratsnothere2
+
+	bit	#sm_twoscreen
+	bne	.stratsnothere2
+
+;--	jsl	dostrats1_l
+;--	jsl	dostrats2_l
+
+.stratsnothere2
+
+	jsl	dostrats1_l
+
+	jsl	set_enemy_cursor_P2_l	; Kawagoe
+
+	jsl	set_horizon_l
+
+	jsl	setvofst_l	; (2/10)kawagoe
+
+	jsl	finish_3d_display2_l
+	jsl	copydrawlist_l
+
+	
+.endirq2
+	test_screenmode	onescreen
+	beq	.tswait
+.oswait
+; wait until the first 3 irq's have completed in onescreen mode
+
+	lda	trans_flag
+	beq	.no2ndtrans
+	cmp	#iv_gameirq4_1
+	bne	.oswait
+	bra	.no2ndtrans
+
+
+; wait to initiate transfer of player 2's bg in twoscreen mode
+.tswait
+	lda	trans_flag
+	bne	.tswait
+
+	lda	#iv_gameirq3
+	sta	trans_flag
+
+.no2ndtrans
+; IRQ #3 & #4 are occuring
+; meanwhile:
+	jsl	bg2horzvertscroll_l
+;;--	call_mario	mclrbitmap1
+
+	jsl	begin_3d_display1_l
+
+; insert anything here that needs to have the world matrix and view set up
+; for screen #1
+
+	jsl	set_player_cursor_P1_l	; Kawagoe
+
+;;;;	jsl	draw_Wave_p1_l		;Kawaguchi
+;;;;	jsl	do_spritesp1radar_l	;Kawaguchi
+
+	lda	screenmode
+	bit	#sm_onescreen
+	bne	.stratsnothere
+
+;--	jsl	dostrats1_l
+	jsl	dostrats2_l
+
+	jsl	 set_enemy_cursor_P1_l	; Kawagoe
+
+.stratsnothere
+	jsl	finish_3d_display1_l
+
+	lda	screenmode
+	bit	#sm_3dglasses
+	bne	.dontdoview2
+
+	a8
+	ldx	mapptr
+	jsl	newobjs_l
+	jsl	showview2_l
+	jsl	copydrawlist_l
+.dontdoview2
+
+	jsl	scaninerts_l
+
+.endirq4	lda	trans_flag
+	bne	.endirq4
+
+	lda	bgflags
+	beq	.normalspl
+	jsr	transswap
+.normalspl
+	lda	screenmode
+	bit	#sm_3dglasses
+	bne	.clritnow
+	bit	#sm_twoscreen
+	beq	.nottwoscreen
+.clritnow
+;;--	call_mario	mclrbitmap2
+.nottwoscreen
+
+
+.finishtrans
+;------------------------------------------------------------
+;* sound port2 value set *
+;'94/9/4 :by kawaguchi
+	a8
+	km_bitcheckgameflag	battle
+	bne	.noset_port2
+	km_setvar	sdport2,sdport2tmp
+	km_setvar	sdchkno2,sdchkno2tmp
+	km_stxvar	sdchkptr2,sdchkptr2tmp
+	km_stxvar	sdchklen2,sddist2
+
+;* enemy ga touroku sarete iruka check *
+	a16
+	lda	sddist2
+	inc	a
+	bne	.enemy_exist
+	km_setval	sdport2,0
+	km_setval	sdchkno2,0
+	km_stxval	sdchkptr2,0
+.enemy_exist
+.noset_port2
+	a8
+;------------------------------------------------------------
+	jsl	set_kscreen_l		;kawaguchi
+	jsl	set_cockpit_l
+	jsl	DisplayMessages_l	;player no kao&mes hyouji
+	jsl	main_gameclear_l	;YAJIMA
+	jsl	showtechdata_l		; credits test
+
+	lda	trans_flag
+;	printh	<ALL finish>,dylan
+
+	a8
+	lda	framec
+	sta	framerate
+	lda	framecount
+	clc
+	adc	framer
+	sta	framecount
+	inc	frames
+	lda	framecount
+	IFEQ	PAL
+	cmp	#60		; per second
+	ELSEIF
+	cmp	#50		; per second
+	ENDC
+	bcc	.noreset
+	lda	frames
+	sta	framesb
+	stz	frames
+	lda	framecount
+	sec
+	IFEQ	PAL
+	sbc	#60
+	ELSEIF
+	sbc	#50
+	ENDC
+	sta	framecount
+.noreset
+	lda	framesb
+	printd	< FPS >
+
+	IFEQ	1	; frame rate test
+
+	phb
+	a8
+	lda	#$7e
+	pha
+	plb
+	km_testkeydown	X
+	beq	.nox
+	lda	#1
+	sta	temptempflag
+	bra	.oktemp
+
+.nox	lda	#0
+	sta	temptempflag
+.oktemp
+	plb
+
+	ENDC
+
+	IFEQ	1	; Alien count display
+
+	ai16
+	stz	x1
+	lda	allst
+	beq	.empty
+.count
+	tax
+	inc	x1
+	lda	_next,x
+	bne	.count
+
+.empty
+	a8i16
+	lda	x1
+	printd	<Num Aliens>
+
+	ENDC
+
+	IFNE	pathcount	; path command count check
+
+	a16
+	lda.l	pathcommandcount
+	printd	<Path commands>
+	lda	#0
+	sta.l	pathcommandcount
 	a8
 
-	lda	cont0
-	sta	lastcont0
-	lda	contl0
-	sta	lastcontl0
+	ENDC
+
+	IFNE	blockmap_dbg
+
+	jsl	showblockmap_l		; debugging
+
+	ENDC
+
+;;	a8
+;;	lda.l	CurrentArea
+;;	printh	CArea,YAMADA
+;;	lda.l	SecondaryArea
+;;	printh	SArea,YAMADA
+
+	IFEQ	1
+
+	a8i16
+	phb
+	lda	#$7e
+	pha
+	plb
+
+	a16
+	ldx	playpt1
+	lda	al_worldx,x
+	blockmap_scale_x
+	sta	x1
+	blockmap_scale_mask
+	sta	y1
+	lsr	x1
+	lsr	x1
+	lsr	x1
+	lda	al_worldz,x
+	blockmap_scale_z
+	clc
+	adc	x1
+	tax
+	lda	solidblockmap&WM,x
+	and	y1
+	printb	Mask
+	
+	a8
+	plb
+
+	ENDC
+
+	IFEQ	1
+	phb
+	a8
+	lda	#$7e
+	pha
+	plb
+
+	km_testkeydown	X
+	beq	.notpressed
+	a16
+	lda	#16
+	jsl	alloc_l
+.notpressed
+	jsl	avail_l
+	a16
+	printd	<Ram Available>
+	a8
+	plb
+
+	ENDC
+
+	IFEQ	1
+	ai16
+	lda	#(test_slo-xroutines+xrstart)&WM
+	sta.l	m_pntptr
+	lda	#15
+	sta.l	m_bigx
+	lda	#-5
+	sta.l	m_bigz
+	a8
+	call_mario	MClosestLine
+	a16
+	lda.l	m_pntptr
+	printd	Distance
+	lda.l	m_bigx
+	printd	newx
+	lda.l	m_bigz
+	printd	newz
+
+	ENDC
+
+	IFNE	polllaginfo	; print xroutines debug info
+	a16
+	lda.l	xroutines
+	printh	<Poll lag lo>,dylan
+	lda.l	xroutines+2
+	printh	<Poll lag hi>,dylan
+
+	lda	#0
+	sta.l	xroutines
+	sta.l	xroutines+2
+	a8
+
+	ENDC
+
+;*** Debug Mode Display ***
+	km_acmpkeydown	TLR
+	bne	.notmodechange
+	km_testjoypad	X
+	beq	.notmodechange
+	km_eorgameflag	debug	;debug mode FLAG no kirikae
+.notmodechange
+;debug mode ka inakawa <displaydebugging_l> routine no nakade set shitearu.
+	jsl	displaydebugging_l
+
+	ifeq	1
+	lda	checkirq1
+	printd	< IRQ1 >
+	lda	checkirq2
+	printd	< IRQ2 >
+	lda	checkirq3
+	printd	< IRQ3 >
+	lda	checkirq4
+	printd	< IRQ4 >
+	lda	checkirq
+	printd	< Mario Wait IRQ >
+	endc
+	rtl
+
+;========================================================
+;========================================================
+;========================================================
+;========================================================
+;========================================================
+;======================= OBSOLETE =======================
+;========================================================
+;========================================================
+;========================================================
+;========================================================
+
+
+	IFEQ	1
+
 
 	jsl	getview_l
 
-	jsl	dosounds_l
-	jsl	palgoto_l
-	jsl	fadepalto_l
-	jsl	showview_l
-	jsl	build_drawlist_l
-	jsl	do_sprites_l
-	jsr	calcmeters
+;	jsl	dosounds_l
+;	jsl	palgoto_l
+	jsl	showview_ram_l
+	jsl	copydrawlist_l
+;	jsl	do_sprites_l
+;	jsr	calcmeters
 
-	jsl	generate_collist_l
 
 	a8
 .twait	lda	transbmp1
@@ -223,8 +649,7 @@ stratsfrozen
 	sbc	#60
 	sta	framecount
 .noreset	
-;	lda	nosetport3
-;	printd	25,1
+	printd	1,1
 
 
 
@@ -315,22 +740,15 @@ stratsfrozen
 ;	printb
 	rtl
 
-
+	ENDC
 
 	shorta
 	longi
 transswap_l	jsr	transswap
 	rtl
 transswap
-	lda	transbmp1		;...but this isn't!
-	cmp	#2
-	bne	transswap
-
-	disable
-	lda	trans_flag
-	stz	trans_flag
-	pha
-	enable
+	php
+	waittrans
 
 	a8			;DO BG CHANGES ETC.
 	lda	bgflags
@@ -342,7 +760,22 @@ transswap
 	lda	bgflags
 	bit	#bgf_bg
 	beq	.noreq
+
+	lda	showmap
+	cmp	#bitmap1_dbl
+	bne	.notyet
+
 	jsl	dobgreq_l
+
+;* bug (kawaguchi) *
+	IFEQ	1
+	a8
+	lda	#0
+	sta.l	$2121
+	sta.l	$2122
+	sta.l	$2122
+	a16
+	ENDC
 .noreq
 	ai16
 	lda	bgflags
@@ -354,61 +787,176 @@ transswap
 	lda	bgflags
 	and	#~(bgf_info+bgf_bg+bgf_restart)
 	sta	bgflags
-	pla
-	sta	trans_flag
-	rts
 
-
-;-----------------------------------------------------------------------
-dostrats
- 	incw	gameframe
-
-	phb
-	lda	#$7e
-	pha
-	plb
-	jsl	init_strats_l		;init coll player move, etc.
-	jsl	update_objects_l
-	ldx	allst			;do all strategies
-stratlp	stz	aldead
-	jsl	do_strat_l
-	lda	aldead
-	bne	.killal
-	ldy	_next,x
-.killed	tyx
-	bne	stratlp
-	bra	.cont
-.killal	ldy	_next,x
- 	jsl	removedeadal_l
-	bra	.killed
-.cont	plb
-	rts
-
-;-----------------------------------------------------------------------
-find_window_pri_l
-	php
-	a8i16
-	jsr	find_window_pri
+	stz	trans_flag
+.notyet
 	plp
-	rtl
-
-find_window_pri
-	stz	tpa+1
-	lda	windowmode
-	sta	tpa
-	a16
-	beq	.nothing
-	ldx	#maxwindows
-	lda	#windowarray
-.findhighest
-	ror	tpa
-	bcs	.found
-	adc	#wm_sizeof
-	dex
-	bne	.findhighest
-.nothing	lda	#0
-.found	sta	windowptr
 	rts
+
+
+
+;-----------------------------------------------------------------------
+	shorta
+	longi
+; make copy of screen #1's view while strategies are done
+copyview3d
+	IFEQ	1
+
+	php
+
+	lda	screenmode
+	bit	#sm_3dglasses
+	beq	.nocopy
+
+	a16
+	ldy	#viewblk1
+
+	lda.w	al_sword1,y
+	sta	tempview
+	lda.w	al_sword2,y
+	sta	tempview+2
+
+	lda.w	al_worldx,y
+	sta	tempview+4
+
+	lda.w	al_worldy,y
+	sta	tempview+6
+
+	lda.w	al_worldz,y
+	sta	tempview+8
+
+	lda.w	al_rotx,y
+	sta	tempview+10
+	lda.w	al_roty,y
+	sta	tempview+12
+	lda.w	al_rotz,y
+	sta	tempview+14
+
+
+	a8
+	lda.w	al_sbyte4,y
+	sta	tempview+16
+	
+.nocopy
+	plp
+
+	ENDC
+
+
+	rts
+
+
+; copy the copy of screen 1's view intro screen 2's view after the strats
+; have finished
+; this is only done for the red/green 3d glasses
+	shorta
+	longi
+copy3dview
+
+	IFEQ	1
+
+	php
+
+	lda	screenmode
+	bit	#sm_3dglasses
+	lbeq	.nocopy
+
+	a16
+	ldx	#viewblk2
+
+	lda	tempview
+	sta	al_sword1,x
+	lda	tempview+2
+	sta	al_sword2,x
+
+	lda	tempview+4
+	sta	al_worldx,x
+
+	lda	tempview+6
+	sta	al_worldy,x
+
+	lda	tempview+8
+	sta	al_worldz,x
+
+	lda	tempview+10
+	sta	al_rotx,x
+	lda	tempview+12
+	sta	al_roty,x
+	lda	tempview+14
+	sta	al_rotz,x
+
+
+	a8
+	lda	tempview+16
+	sta	al_sbyte4,x
+
+; right eye manipulation
+	a16
+	lda	al_worldx,x
+	clc
+	adc	tempview+22
+	clc
+	adc	tempview+22
+	sta	al_worldx,x
+
+	lda	al_roty,x
+	sec
+	sbc	tempview+20
+	sec
+	sbc	tempview+20
+	sta	al_roty,x
+
+; left eye manipulation
+	ldx	#viewblk1
+	a16
+	lda	al_worldx,x
+	sec
+	sbc	tempview+22
+	sta	al_worldx,x
+
+	lda	al_roty,x
+	clc
+	adc	tempview+20
+	sta	al_roty,x
+
+	testjoypad2	TLEFT
+	beq		.nodec
+
+	inc	tempview+22
+.nodec
+	testjoypad2	TRIGHT
+	beq		.noinc
+
+	dec	tempview+22
+
+.noinc
+
+	testjoypad2	LEFT
+	beq		.nodec2
+
+	lda	tempview+20
+	clc
+	adc	#128
+	sta	tempview+20
+.nodec2
+	testjoypad2	RIGHT
+	beq		.noinc2
+
+	lda	tempview+20
+	sec
+	sbc	#128
+	sta	tempview+20
+
+.noinc2
+
+
+.nocopy
+	plp
+
+	ENDC
+
+	rts
+
 
 
 ;-----------------------------------------------------------------------
@@ -416,6 +964,7 @@ calcbg2voffsets_l
 	jsr	calcbg2voffsets
 	rtl
 calcbg2voffsets
+	IFEQ	1
 	ai16
 	stz	dobg2
 	lda	dovofs
@@ -487,6 +1036,7 @@ calcbg2voffsets
 	bne	.lp2
 	lda	#1
 	sta	dobg2
+	ENDC
 	rts
 
 
@@ -542,6 +1092,7 @@ clrotherhalf_l
 
 
 ;------------------------------------------------------------------------------
+	IFEQ	1
 do_hpositions_l
 	jsr	do_hpositions
 	rtl
@@ -661,6 +1212,7 @@ dmahpos	ai8
 	enable
 	rts
 
+	ENDC
 
 ;------------------------------------------------------------------------------
 calcmeters	a8i16
@@ -670,6 +1222,7 @@ calcmeters	a8i16
 	lda	#0
 .ok	sta.l	m_damage
 
+	IFEQ	1
 boost	lda.l	m_boostcnt
 	beq	.end
 	lda.l	m_boostanim
@@ -692,8 +1245,11 @@ boost	lda.l	m_boostcnt
 	rts
 
 
-
+	ENDC
 ;------------------------------------------------------------------------------
+;'94/10/17 :kawaguchi ga krister no routine wo comment shimashita !!!!
+
+	Ifeq	1
 init_wipe	macro
 \1_circle	equ	*-circletab
 	db	ct_init_wipe
@@ -747,7 +1303,7 @@ do_circle_explosion
 	ldx	circleanim
 	bne	circle_com
 	a8
-	dealloc_window	circle
+	dealloc_window	circle,1
 	stz	doingwipe
 	rts
 circle_com	a16
@@ -1120,7 +1676,7 @@ circlecomend
 .continue
 
 	a8
-	alloc_window circle		;allocate a window
+	alloc_window circle,1		;allocate a window
 	stz	wm_coldata,x
 	lda	circlesrcblue
 	sta	wm_coldata_b,x
@@ -1150,9 +1706,9 @@ copywh0wh1	a8
 	lda	whichcircle
 	beq	.lp2
 .lp	lda.l	m_circlebuf,x
-	sta.w	xhdma_wh0wh1_1+2,y
+;	sta.w	(xhdma_wh0wh1_1+2)&WM,y
 	lda.l	m_circlebuf2,x
-	sta.w	xhdma_wh0wh1_1+1,y
+;	sta.w	(xhdma_wh0wh1_1+1)&WM,y
 	dey
 	dey
 	dey
@@ -1162,9 +1718,9 @@ copywh0wh1	a8
 	plb
 	rts
 .lp2	lda.l	m_circlebuf,x
-	sta.w	xhdma_wh0wh1_2+2,y
+;	sta.w	xhdma_wh0wh1_2+2,y
 	lda.l	m_circlebuf2,x
-	sta.w	xhdma_wh0wh1_2+1,y
+;	sta.w	xhdma_wh0wh1_2+1,y
 	dey
 	dey
 	dey
@@ -1311,7 +1867,7 @@ wipe_do	a8
 	longi
 wipeend_do	stz	circleanim
 	a8
-	dealloc_window wipe
+;	dealloc_window wipe,1
 	rts
 
 
@@ -1336,7 +1892,8 @@ do_window_wipe
 	lda	#1
 	sta	doingwipe
 
-	alloc_window wipe		;allocate a window
+
+;	alloc_window wipe,1		;allocate a window
 	lda.l	m_winwbglog
 	sta	wm_wbglog,x
 
@@ -1351,6 +1908,62 @@ do_window_wipe
 
 
 
+calcbgscroll_l
+	phy
+	php
+	i8
+	
 
+	a16
+	lda		outvx
+	asra
+	asra
+	asra
+	asra
+	asra
+	asra
+	sta	tpa
+	asra
+	clc
+	adc	tpa
+	nega
 
+	ldy	nomaxbg2Yscroll
+	bne	.nmin
+
+	cmp	#232
+	bmi	.nmax
+	lda	#232
+.nmax
+
+	cmp	#-56
+	bpl	.nmin
+	lda	#-56
+.nmin
+
+	clc
+	adc		bg2Yscroll
+	and		#511
+	sta		bg2scroll
+	stz		lastrot
+
+	lda		outvy
+	sec
+	sbc		player_turnrot
+	asra	
+	asra	
+	asra	
+	asra	
+	asra
+	clc
+	adc		bg2Xscroll
+	sta.l		m_scrollxoff
+	a8
+
+	plp
+	ply
+	rtl
+	ENDC
+
+;'94/10/17 :kawaguchi ga krister no routine wo comment shimashita !!
 

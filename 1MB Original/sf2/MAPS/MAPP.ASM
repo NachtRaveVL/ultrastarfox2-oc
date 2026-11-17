@@ -1,17 +1,45 @@
+
 mapp
-	mapobj	0,0,-30,0,nullshape,player_Istrat
-	setalvar.w	worldz,0
-;	mapobj	0,0,0,0,pcolB,pBody_Istrat
-	mapobj	0,0,0,0,nullshape,pBody_Istrat
-	setalvar.w	worldz,0
-;	mapobj	0,0,0,0,pcolLW,pLWing_Istrat
-	mapobj	0,0,0,0,nullshape,pLWing_Istrat
-	setalvar.w	worldz,0
-;	mapobj	0,0,0,0,pcolRW,pRWing_Istrat
-	mapobj	0,0,0,0,nullshape,pRWing_Istrat
-	setalvar.w	worldz,0
+
+	mapobj	0,400,-150,0000,nullshape,EXplayer_Istrat
+	start_65816
+
+	test_screenmode	onescreen
+	beq		.continue
+	switch		.noplayer2
+.continue
+
+	IFEQ	1
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	ENDC
+
+	end_65816
+
+	mapobj	0,200,-50,0000,nullshape,EXplayer2_Istrat
+;	setalvar	roty,deg180
+.noplayer2
 	mapend
-	
 
 
 

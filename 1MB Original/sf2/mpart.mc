@@ -16,7 +16,6 @@ part_POSX	equ	6
 part_POSY	equ	8
 part_POSZ	equ	10
 part_UNIQUE	equ	12
-part_len	equ	14
 
 
 partF_objalive	equ	1
@@ -25,13 +24,6 @@ partF_line	equ	4
 partF_friction	equ	8 
 partF_fadeout	equ	16 
 		  
-	Zmalc	m_particlerand,2
-
-	malc	m_particles,part_len*(maxparticles+1)
-;	malc	m_particlerand2,2
-;	malc	m_drawparticles,(8+6)*(maxparticles+1)
-
-
 
 ;*****************************************************************************
 ; entry:
@@ -516,10 +508,12 @@ mmake_particles
 
 	getbs
 	inc	r14
+	add	r0
 	mstoreb2	r0,part_VX,rpartptr,rt
 	mstorew2	r0,part_POSX,rpartptr,rt
 
 	getbs
+	add	r0
 	mstoreb2	r0,part_VY,rpartptr,rt
 	mstorew2	r0,part_POSY,rpartptr,rt
 
@@ -528,6 +522,7 @@ mmake_particles
  	and	rpartrand
 	miwt	rt,31
 	sub	rt
+	add	r0
 	mstoreb2	r0,part_VZ,rpartptr,rt
 	mstorew2	r0,part_POSZ,rpartptr,rt
 
@@ -595,12 +590,15 @@ partprojpnt 	MACRO	jmp to \3 if off screen. \1,\2,r6 (x,y,z) -> \1,\2 (projx,pro
 
 	from	\1
 	fmult
-	rol
-	ibt	rmhi,#mvanishx		; vanishx
+;	rol
+	lms	rmhi,[m_vanishx]
+;	ibt	rmhi,#mvanishx		; vanishx
 	to	\1
 	add	rmhi
 
-	miwt	rmlo,mrightclp-1	; x clip check
+	lms	rmlo,[m_xright]
+	dec	rmlo
+;	miwt	rmlo,mrightclp-1	; x clip check
 	from	\1
 	sub	rmlo
 	mlbcs	\3
@@ -608,12 +606,15 @@ partprojpnt 	MACRO	jmp to \3 if off screen. \1,\2,r6 (x,y,z) -> \1,\2 (projx,pro
 
 	from	\2
 	fmult
-	rol
-	ibt	rmhi,#mvanishy		; vanishy
+;	rol
+	lms	rmhi,[m_vanishy]
+;	ibt	rmhi,#mvanishy		; vanishy
 	to	\2
 	add	rmhi
 
-	miwt	rmhi,mbotclp-1	; y clip check
+	lms	rmhi,[m_ybot]
+	dec	rmhi
+;	miwt	rmhi,mbotclp-1	; y clip check
 	from	\2
 	sub	rmhi
 	mlbcs	\3
@@ -1049,4 +1050,4 @@ mupdate_particles
 	nop
 
 
-
+

@@ -20,16 +20,19 @@ RAMLEFT		=	1	; displays information on ram space
 
 ;-----------------------------------------------------------------------
 
+	IFD	CANSI
+ANSI	=	CANSI
+	ENDC
+
 	IFEQ	ANSI
 TITLE_BAR	=	0
 	ENDC
-
 
 	IFND	filelist
 	IFD	makefile
 filelist	=	1
 	fopen	+files.log
-	printf	"%n--------------------------------------------%n"
+	printf	"%nOBJECT: %$initfile_str %n"
 	fclose
 	ELSEIF
 filelist	=	0
@@ -37,9 +40,10 @@ filelist	=	0
 	ENDC
 
 
-	INCLUDE	ifcold.asm
-
 	include	macros.inc
+	include	kmacs.inc
+	include	tmacros.inc
+	include	ymacros.inc
 
 
 totaltime	=	0
@@ -47,12 +51,16 @@ totaltime	=	0
 
 
 	include	vars.inc
+	include	kvars.inc
+
+	include sound.inc
+	include sound2.inc
 
 	include	sfxregs.inc
 	include	soundequ.inc
 	include	structs.inc
 	include	alcs.inc
-
+	include mvars.inc	; 1994.10.7 append by H.Yajima
 
 
 ;---------------------------------------------------------
@@ -69,12 +77,7 @@ totaltime	=	0
 
 	defend	"%00      %ie Error(s), %iw Warning(s). (%36",totaltime/100,".",totaltime-((totaltime/100)*100),"s%00)%n"
 	deferror	"%00%31%01** %q%f%q (%l) %d: %e %u**%00 %n%s"
-;	deferror	"%d%e%q%f%q%n	extern	%u%n"
 
-;	fopen	status.doc
-;	printf	"-------------------------------- STARGLIDER -----------------------------------%n"
-;	fclose
-;	printf	"%01-------------------------------- STARGLIDER -----------------------------------%00%n"
 
 
 ;---------------------------------------------------------
@@ -82,5 +85,23 @@ totaltime	=	0
 	IFD	makefile
 	fileslog	<$(STDFILES)>
 	ENDC
+
+
+
+; -- Generate externs file --
+
+	fclose
+
+	fopen	externs.log
+
+	printf	";-- Include file for externs and publics%n"
+
+	fclose
+
+
+
+
+
+	INCLUDE	ext\all.ext
 
 

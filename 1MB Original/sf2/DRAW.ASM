@@ -1,5 +1,281 @@
 
-	INCPUBLICS	draw.ext
+	INCPUB	draw
+
+;컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴�
+; run through the debug list and display the data
+
+displaydebugging_l
+	phb
+	phx
+	phy
+	pha
+	php
+	a8i16
+	lda	#$7e
+	pha
+	plb
+
+; Mario chip test bay ---------
+;
+;;	timer_on	temp1
+;;	call_mario	mtestit
+;;	timer_off	temp1,<Mario Test>,Dylan
+; -----------------------------
+
+	a16
+	lda	#smallfont&WM
+	sta.l	m_font
+
+	lda	#17
+	sta.l	m_y1
+	
+	lda	#4
+	sta.l	m_x1
+
+	ldx	#0
+	ldy	debugcount
+.nxtone	a8
+	lda	de_type,x
+	lbeq	.nxt
+
+	dey
+
+	km_bitcheckgameflag	debug
+	bne			.okdraw
+
+;	km_setgameflag	freeze
+;	bra	.wob12
+;	dec			de_count,x
+;	lbne			.nxt
+	stz			de_count,x
+	stz			de_type,x
+	dec			debugcount
+	brl			.nxt
+.okdraw
+;	km_clrgameflag	freeze
+.wob12
+	a16
+	lda	#$90e
+	sta.l	m_textcolour
+	lda	de_text,x
+	sta.l	m_txtdata
+	a8
+	lda	de_text+2,x
+	sta.l	m_txtdatabank
+
+	phx
+	call_mario	mprintstring
+	plx
+
+	dec	de_count,x
+	bne	.con
+	stz	de_type,x
+	dec	debugcount
+.con
+	a16
+	lda.l	m_x1
+	clc
+	adc	#4
+	sta.l	m_x1
+	lda	#$409
+	sta.l	m_textcolour
+	lda	de_value,x
+	sta.l	m_txtdata
+	a8
+	lda	de_type,x
+	cmp	#dt_nonumber
+	beq	.incy
+
+	cmp	#dt_bin
+	bne	.dec
+	phx
+	call_mario	mprintbinary
+	plx
+	bra	.incy
+.dec
+	cmp	#dt_dec
+	bne	.hex
+
+	phx
+	call_mario	mprintdecimal
+	plx
+	bra	.incy
+.hex
+	phx
+	call_mario	mprinthex
+	plx
+
+.incy
+	a16
+	lda.l	m_x1
+	clc
+	adc	#4
+	sta.l	m_x1
+	cmp	#64
+	bcc	.nxt
+	lda	#4
+	sta.l	m_x1
+	lda.l	m_y1
+	clc
+	adc	#10
+	sta.l	m_y1
+	clc
+	adc	#10+16
+	cmp	screenvheight
+	bcs	.out
+
+.nxt	a16
+	txa
+	clc
+	adc	#de_sizeof
+	tax
+	cpy	#0
+	lbne	.nxtone
+.out
+
+	plp
+	pla
+	ply
+	plx
+	plb
+	rtl
+
+
+;컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴�
+; add print number to debug buffer
+
+addprintw_l
+	phb
+	phx
+	phy
+	pha
+	php
+	i8
+	ldx	#$7e
+	phx
+	plb
+	a8i16
+
+	pha
+
+	jsr	findsameslot
+	pla
+	cpx	#-1
+	bne	.foundsame
+
+	pha
+	jsr	findemptyslot
+	pla
+	cpx	#-1
+	beq	.noway
+
+	inc	debugcount
+
+.foundsame
+	sta	de_type,x
+	lda.l	textpt+2
+	sta.l	de_text+2,x
+	lda	#debug_delay
+	sta	de_count,x
+	a16
+	lda	printpt
+	sta	de_value,x
+	lda.l	textpt
+	sta	de_text,x
+
+.noway
+	plp
+	pla
+	ply
+	plx
+	plb
+	
+	rtl
+
+findemptyslot
+	php
+	a16
+	ldx	#0
+	ldy	#number_debug
+.nxtslot
+	lda	de_type,x
+	and	#255
+	beq	.foundone
+	txa
+	clc
+	adc	#de_sizeof
+	tax
+	dey
+	bne	.nxtslot
+.notfound
+	ldx	#-1
+.foundone
+	plp
+	rts
+
+;-----------
+findsameslot
+	php
+	a16
+	ldx	#0
+	ldy	debugcount
+	beq	.notfound
+.nxtslot
+	a8
+	lda	de_type,x
+	beq	.nxt
+	dey
+	lda	de_count,x
+	cmp	#debug_delay
+	beq	.nxt
+
+	a16
+	lda	textpt
+	cmp	de_text,x
+	bne	.nxt
+	a8
+	lda	textpt+2
+	cmp	de_text+2,x
+	beq	.foundone
+	
+.nxt
+	a16
+	txa
+	clc
+	adc	#de_sizeof
+	tax
+	cpy	#0
+	bne	.nxtslot
+.notfound
+	ldx	#-1
+.foundone
+	plp
+	rts
+
+
+
+
+
+;-----------------------------------------------------
+; set screen size and offsets to add when printing
+
+setprintparams
+	php
+	a16
+	lda	screenmode
+	bit	#sm_onescreen
+	beq	.2scr
+	lda	#char_size*bitmapheight_1*bitmapwidth_1
+	sta	tpx
+	lda	#char_size*bitmapheight_1
+	bra	.1scr
+.2scr
+	lda	#col_size*num_col
+	sta	tpx
+	lda	#col_size
+.1scr	sta	tpa
+	plp
+	rts
 
 	IFEQ	1
 
@@ -64,6 +340,9 @@ plot0
 	plp
 	rts
 
+	ENDC
+
+	IFNE	0 debuginfo
 
 printt_l
 	phb
@@ -210,7 +489,7 @@ printb_l
 
 	shorta
 printbsd
-	IFEQ	debuginfo
+	IFEQ	0 debuginfo
 	rts
 	ELSEIF
 
@@ -234,7 +513,7 @@ printbsd
 
 	shorta
 printbd
-	IFEQ	debuginfo
+	IFEQ	0 debuginfo
 	rts
 printb_l
 printbsd_l
@@ -297,21 +576,25 @@ printt_l
 
 	rts
 
+	IFEQ	1
 
 .decimaltable
 tmp	=	0
 
 	REPT	100
 	defs	1,tmp
-	run	" db $",tmp/10,tmp-((tmp/10)*10)
+;	run	" db $",tmp/10,tmp-((tmp/10)*10)
 tmp	=	tmp+1
 	ENDR
 
+
+	ENDC
 
 printchar
 	php
 	ai16
 	pha
+	jsr	setprintparams
 	lda	printpt
 	clc
 	adc	drawmap
@@ -329,12 +612,12 @@ printchar
 	sta	tpy
 	phx
 
-.1	lda	debugspace,y
+.1	lda	debugspace,y		;plot
 	eor	hilite
 	and	#$ff00
-	sta.l	bitmapbase,x
+	sta.l	bitmapbase,x		;plane0,plane1
 	lda	debugspace,y
-	sta.l	bitmapbase+16,x
+	sta.l	bitmapbase+16,x		;plane2,plane3
 	inx
 	inx
 	iny
@@ -343,15 +626,17 @@ printchar
 	bne	.1
 	pla
 	clc
-	adc	#col_size
+	adc	tpa	;#col_size
 	tax
 	sec
 	sbc	drawmap
 
-	cmp	#col_size*num_col
+	cmp	tpx	;#col_size*num_col
 	bcc	.booboo
 	sec
-	sbc	#col_size*num_col-32
+	sbc	tpx	;#col_size*num_col-32
+	sec
+	sbc	#32
 	
 .booboo
 	sta	printpt
@@ -363,7 +648,7 @@ printchar
 	ENDC
 
 printb
-	IFEQ	debuginfo
+	IFEQ	0 debuginfo
 	rts
 	ELSEIF
 
@@ -378,6 +663,8 @@ printb
 	pha
 	and	#$00f0
 	tay
+
+	jsr	setprintparams
 
 	lda	#8
 	sta	tpy
@@ -396,16 +683,18 @@ printb
 	bne	.1
 	pla
 	clc
-	adc	#col_size
+	adc	tpa	;#col_size
 	tax
-	adc	#col_size
+	adc	tpa	;#col_size
 	sec
 	sbc	drawmap
 
-	cmp	#col_size*num_col
+	cmp	tpx
 	bcc	.booboo
 	sec
-	sbc	#col_size*num_col-32
+	sbc	tpx	;#col_size*num_col-32
+	sec
+	sbc	#32
 	
 .booboo
 	sta	printpt

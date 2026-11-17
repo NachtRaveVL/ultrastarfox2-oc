@@ -12,10 +12,16 @@ copy_to_0101_l
 	bpl	.codeloop2
 
 	ldx	#xlen-1
-.codeloop4	lda.l	$28000,x
+.codeloop4	lda.l	xrstart,x
 	sta.l	xroutines,x
 	dex
 	bpl	.codeloop4
+
+	ldx	#rampathsize-1
+.codeloop5	lda.l	rampathstart,x
+	sta.l	rampatharea,x
+	dex
+	bpl	.codeloop5
 
 	plp
 	rtl
@@ -48,7 +54,6 @@ nmihan
 	pha
 	plb
 
-	nastyon
 	jsl	irqcode_l
 	a8
 	inc	framec
@@ -69,9 +74,7 @@ nmihan
 	pha
 	plb
 
-	nastyoff
 	jsl	fnmi_l
-	nastyon
 	a8
 	lda	rdnmir
 

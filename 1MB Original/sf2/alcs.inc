@@ -4,8 +4,6 @@
 
 alcon	=	1
 
-
-
 ;---- Zero Page variables ----
 
 	zalc	trans_flag,1
@@ -57,23 +55,14 @@ alcon	=	1
 	zalc	vmap1,2
 	zalc	vmap2,2
 	zalc	vcmap,2
-	zalc	textpt,3
+	zalc	textpt,4
 	zalc	tempaddrl,3
 
-	alc	cont0l,1
-	alc	cont0,1
-	alc	contl0l,1
-	alc	contl0,1
-	alc	cont1l,1
-	alc	cont1,1
-	alc	contl1l,1
-	alc	contl1,1
-	alc	trig0,0
-	alc	trig0l,1
-	alc	trig0h,1
-	alc	trig1,0
-	alc	trig1l,1
-	alc	trig1h,1
+	alc	cont0,2
+	alc	cont1,2
+	alc	trig0,2
+	alc	trig1,2
+
 	alc	nmitimen_gc,1
 	alc	hdmaen_gc,1
 	alc	bcx,2
@@ -83,9 +72,9 @@ alcon	=	1
 
 
 ;Map game zone alien lists and heights
-	alc	zonex,1
-	alc	zonez,1
-	alc	zoneof,2
+;	alc	zonex,1
+;	alc	zonez,1
+;	alc	zoneof,2
 	alc	worldx,2
 	alc	worldy,2
 	alc	worldz,2
@@ -107,13 +96,14 @@ alcon	=	1
 	alc	plroty,2
 	alc	plrotz,2
 	alc	viewpt,2
-	alc	playpt,2
+	alc	playpt1,2
+	alc	playpt2,2
 	alc	al1pt,2
 	alc	al2pt,2
 	alc	al3pt,2
 	alc	gunx,1
 	alc	guny,1
-	alc	tjmp,2
+	alc	tjmp,3
 	alc	flags,1
 	alc	type,1
 	alc	nearestpt,2
@@ -128,20 +118,22 @@ alcon	=	1
 	alc	enemys,1
 	alc	attackers,1
 	alc	rcol,2
-	alc	xcol,2
-	alc	ycol,2
-	alc	zcol,2
+	zalc	xcol,2
+	zalc	ycol,2
+	zalc	zcol,2
 	alc	depthtabptr,2
-	alc	mario_draw_mode,1
-	alc	spriteblk,(128*4)+(128/4)
-	alc	windowarray,maxwindows*wm_sizeof
-	alc	windowmode,1
+	zalc	mario_draw_mode,1
+;;;	alc	spriteblk,(128*4)+(128/4)
+	alc	windowarray1,maxwindows*wm_sizeof
+	alc	windowarray2,maxwindows*wm_sizeof
+	alc	windowmode1,2
+	alc	windowmode2,2
 
 	include	GILESalc.inc
 
 	xalc	friends,2
-xlen	=	22*1024+400
-	xalc	xroutines,xlen
+xlen	=	31*1024+512
+	xxalc	xroutines,xlen
 
 
 
@@ -166,7 +158,6 @@ xlen	=	22*1024+400
 	zalc	sptr,2
 	zalc	pptr,2
 	zalc	lptr,2
-	zalc	fptr,3
 	zalc	count1,1
 	zalc	count2,1
 	zalc	divsor,0
@@ -211,9 +202,9 @@ xlen	=	22*1024+400
 	zalc	z1,2
 	zalc	shiftz,1
 	zalc	numnoclip,1
-	zalc	noclip,1
+;	zalc	noclip,1
 	zalc	noclipx,1
-	zalc	linedrawvec,2
+;	zalc	linedrawvec,2
 	zalc	pauseflag,1
 	zalc	strptr,2
 
@@ -242,7 +233,7 @@ xlen	=	22*1024+400
 	zalc	numals,1
 	zalc	numdrawn,1
 	zalc	numinrange,1
-	alc	gameframe,2
+	zalc	gameframe,2
 	alc	colframe,1
 	alc	animframe,1
 	zalc	framenum,1
@@ -255,24 +246,24 @@ xlen	=	22*1024+400
 	zalc	vanishx,2
 	zalc	vanishy,2
 
-	zalc	keybyte,1
-	zalc	keybytel,1
-	zalc	keybytep1,1
-	zalc	keybytep2,1
-	zalc	keybytec1,1
-	zalc	keybytec2,1
+;	zalc	keybyte,1
+;	zalc	keybytel,1
+;	zalc	keybytep1,1
+;	zalc	keybytep2,1
+;	zalc	keybytec1,1
+;	zalc	keybytec2,1
 
-	zalc	lasertemp,1
-	zalc	collradius,2
-	zalc	nearest,2
-	zalc	nearestz,2
-	zalc	drawflags,1
+;	zalc	lasertemp,1
+;	zalc	collradius,2
+;	zalc	nearest,2
+;	zalc	nearestz,2
+;	zalc	drawflags,1
 	zalc	drawopt,1
 
-	zalc	x1f,1
-	zalc	x2f,1
-	zalc	x1finc,1
-	zalc	x1inc,2
+;	zalc	x1f,1
+;	zalc	x2f,1
+;	zalc	x1finc,1
+;	zalc	x1inc,2
 	zalc	x2finc,1
 	zalc	x2inc,2
 	zalc	dy1,1
@@ -282,8 +273,6 @@ xlen	=	22*1024+400
 	zalc	highx,1
 	zalc	numpnts2,1
 	zalc	pat0ptr,2
-	zalc	pattern0,1
-	zalc	pattern1,1
 
 
 ; Vars kept between levels
@@ -296,7 +285,7 @@ xlen	=	22*1024+400
 	alc	varstart,0
 
 	alc	scalejmp,2
-	alc	z2,2
+	zalc	z2,2
 
 	alc	sinvx,1
 	alc	cosvx,1
@@ -347,12 +336,12 @@ xlen	=	22*1024+400
 	alc	t3,1
 	alc	t4w,1
 	alc	t4,1
-	alc	sx,1
-	alc	cx,1
-	alc	sy,1
-	alc	cy,1
-	alc	sz,1
-	alc	cz,1
+	zalc	sx,1
+	zalc	cx,1
+	zalc	sy,1
+	zalc	cy,1
+	zalc	sz,1
+	zalc	cz,1
 
 	alc	rmat11w,1
 	alc	rmat11,1
@@ -540,7 +529,8 @@ mio_mode	equ	$303a
 	alc	framecount,1
 	alc	frames,1
 	alc	framesb,1
-	alc	windowptr,2
+	alc	windowptr1,2
+	alc	windowptr2,2
 
 	alc	circleobj,2
 	alc	circleanim,2
@@ -583,12 +573,7 @@ mio_mode	equ	$303a
 	alc	bg_dmalist,2
 	alc	bgtransspeed,2
 	alc	newtm,1
-	alc	lightx,2
-	alc	lighty,2
-	alc	lightz,2
-	alc	lightangle,2
 	alc	lives,1
-	alc	comet,1
 
 ; draw
 	alc	hilite,2
@@ -679,6 +664,7 @@ mio_mode	equ	$303a
 	alc	vram3addr,3		;Palette address (24 bit, not VRAM)
 	alc	vram3len,2
 	alc	gamepal,1
+	alc	palettestart,2
 
 ; continue
 	alc	credits,2
@@ -704,8 +690,8 @@ mio_mode	equ	$303a
 	alc	planetdead,2
 	alc	oldplanetdead,2
 	alc	coldataval,1
-	alc	fadedir,1
-	alc	fade,1
+	zalc	fadedir,1
+	zalc	fade,1
 	alc	hdmabg2hofs1,2
 	alc	hdmabg2hofs2,2
 	alc	bg3scrollflag,1
@@ -732,7 +718,6 @@ mio_mode	equ	$303a
 	alc	shadx,2
 	alc	shadz,2
 	alc	shadowheight,2
-	alc	foxyfoxy,1
 	alc	stayblack,1
 	alc	cgadsub_bak,1
 	alc	coldata_bak,1
@@ -741,7 +726,7 @@ mio_mode	equ	$303a
 	alc	texxy,2
 	alc	head,2
 	alc	spare,2
-	alc	zbblks,zb_size*number_zb
+;	alc	zbblks,zb_size*number_zb
 
 	alc	numshapes,2
 	alc	dlptr,2
@@ -756,9 +741,9 @@ mio_mode	equ	$303a
 	alc	objx,2
 	alc	objy,2
 	alc	objz,2
-	alc	temphitflag2,1
-	alc	flagset,1
-	alc	temphitflag,1
+	zalc	temphitflag2,1
+	zalc	flagset,1
+	zalc	temphitflag,1
 	alc	collistcnt,2
 	alc	collistcnt2,2
 	alc	tmpcl,2
@@ -767,25 +752,49 @@ mio_mode	equ	$303a
 	alc	keeppstrat,1
 	alc	monitorcrosshairon,1	; FOR MONITOR TEST ONLY!!!
 
-	xalc	xhdma_tables,xhdma_max
+	xalc	gamepalbuff,32
+
+;	xalc	xhdma_tables,xhdma_max
 
 ; pstrats
 	alc	spectotdead,1
 	alc	spectot,1
 	alc	defaultID,2
+	alc	irqend_flag,1
+
+	alc	xtclip,2
+	alc	ytclip,2
 
 
-	include	kalcs.inc
+; timer equates and alcs (blame Giles if something goes wrong)
+timer_size	=	4
+dummy_timer	=	timer_size*0
+gameframe_timer	=	timer_size*1
+display_timer	=	timer_size*2
+dynamics_timer	=	timer_size*3
+strats_timer	=	timer_size*4
+temp1_timer	=	timer_size*5
+temp2_timer	=	timer_size*6
+temp3_timer	=	timer_size*7
+max_timer	=	timer_size*8
+
+	alc	timers,max_timer
+
 	include	dalcs.inc
+	include	kalcs.inc
 	include	ealcs.inc
+	include	talcs.inc
+	include	yalcs.inc
+
+	include palettes.inc
 
 	IFGT	wmempt-$2000
-	printf	"%n%nTOO MANY ALCS USED%n%n"
+	printf	"%n%nTOO MANY ALCS USED ",wmempt,"%n%n"
 	fail
 	ENDC
 
 alcon	=	0
 
 
-
-
+
+

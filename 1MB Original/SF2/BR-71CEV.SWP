@@ -1,0 +1,3508 @@
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³                                                                    ³
+;³                 STARFOX II - REVENGE OF PEPPY -                    ³
+;³                                                                    ³
+;ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´
+;³                                                                    ³
+;³ FILE:         PLAYER.ASM                                           ³
+;³ AUTHOR:       Dylan Cuthbert & Takumi Kawagoe                      ³
+;³ DESCRIPTION:  The Player's strategy                                ³
+;³ DATE CREATED: 16-2-93                                              ³
+;³                                                                    ³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+; usually using	:al_pbyte2  	transform flags (See talcs.inc)
+;		:al_pbyte1	demo(roty buffer)
+;		:al_sword1  	distance of view = 0
+;		:al_sword2  	HEAP memory
+;		:al_pword1	MACRO de tukatteiru!(See TMACROS.INC) time counter(DEMO)
+;		:al_stratstate	player's mode
+;		:al_ptr		view strat pointer(=viewblk1 or 2)
+;		:al_sbyte2	(Robot no roty offset)
+;		:sflag6		dragon ga kannda
+;		:sflag5		ashioto flag (ROBOT)
+;		:sflag4		(for special weapon limitter!)
+;		:sflag3		in the sea flag
+
+	INCPUB	player
+
+arenasize	equ	2000
+
+playerHP	equ	40
+playerAP	equ	2
+
+ROBOTleg_HP		equ	100
+ROBOTleg_AP		equ	1
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;-- work ram --
+
+work0	equ	twork+0		;16bit
+work1	equ	twork+2		;16bit
+work2	equ	twork+4		;16bit
+work3	equ	twork+6		;16bit
+work4	equ	twork+8		;16bit
+work5	equ	twork+10	;16bit
+work6	equ	twork+12	;16bit
+work7	equ	twork+14	;16bit
+work8	equ	twork+16	;16bit
+work9	equ	twork+18	;16bit
+X1c	equ	twork+20	;16bit
+Y1c	equ	twork+22	;16bit
+Z1c	equ	twork+24	;16bit
+work_mx	equ	twork+26	;16bit
+work_mz	equ	twork+28	;16bit
+
+;---------------------------------------------------------------------------------------
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³LOCAL MACRO to make parts of ROBOT³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+makeRBleg	macro	[name,label]
+	pla
+	pha
+	bit		#exal_jetstatus_{name}alive
+	bne		{label}
+	jsr		Onfield_krobo2.generate{name}
+	bcc		{label}
+	pla
+	ora		#exal_jetstatus_{name}alive
+	pha
+	endm
+
+;---------------------------------------------------------------------------------------
+;ÉÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ»
+;ºPlayer no initalº
+;ÈÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼
+	strats_start
+
+	SHORTA
+	LONGI
+
+player_init
+
+	lda	p1_gamestatus
+
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³set player's area³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+	pl_set_area	x,-1
+
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³clear transform flag³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+	pl_clr_transflag	x
+
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³HEAPmemory no initial³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+	s_freeall	x		; release all memory
+	s_alloc		x,y,#tarwing_sizeof
+	sty		al_sword2,x
+	jsr		tarwing_exalvar_init
+
+	s_jmp_alsflag	x,player2,.setplaypt2
+
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³Player 1 no RAM no initial³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+.setplaypt1	stx		playpt1
+	sty		playhpt1
+
+	s_set_alvar	B,y,exal_PILOTNo,p1_PILOTNo
+
+	a16
+	lda	#0
+	sta	p1_worldx_init
+	sta	p1_startx
+	sta	p1_worldy_init
+	sta	p1_starty
+	sta	p1_worldz_init
+	sta	p1_startz
+	a8
+	sta	p1_roty_init
+	jmp	.con
+
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³Player 2 no RAM no initial³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+.setplaypt2	stx		playpt2
+	sty		playhpt2
+
+	s_set_alvar	B,y,exal_PILOTNo,p2_PILOTNo
+
+	a16
+	lda	#0
+	sta	p2_worldx_init
+	sta	p2_startx
+	sta	p2_worldy_init
+	sta	p2_starty
+	sta	p2_worldz_init
+	sta	p2_startz
+	a8
+	sta	p2_roty_init
+
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³alsflag nado no initial³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+.con
+	stx	internalplaypt
+	stx	viewpt
+	stx	viewtoobj
+
+	s_init_anim	x,#0
+
+	s_set_aldata	x,#playerHP,#playerAP
+	s_setnoremove_behind	x
+	s_set_alsflag	x,sameshapecollide
+	s_set_alsflag	x,shadow
+	s_set_alsflag	x,notslope
+
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³DAMAGE METER no initial³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+	pl_DMGMETER_init	x,10
+
+	rts
+
+
+robotyofstab_Ff	equ	45
+robotyofstab_SP	equ	50
+robotyofstab_GG	equ	40
+
+robotyofstab
+
+	shapetab	B,robotyofstab_
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;------------------------------------------------------------------------------
+;	Initial of camera
+;------------------------------------------------------------------------------
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+camera_init_srou
+
+	PUSHXYP
+	s_start_strat
+	a8i16
+
+	pl_ldy_viewblk	x
+	s_copy_pos	y,x
+
+; init rotation
+
+	a16
+	lda	al_roty,x
+	xba
+	and	#0ff00H
+	sta.w	al_roty,y
+
+	PHA
+
+
+	lda	#0
+	sta.w	al_rotx,y
+	sta.w	al_rotz,y
+
+	ldy	al_sword2,x
+
+	sta	exal_camrotx,y
+	sta	exal_camrotz,y
+
+	PLA
+
+	sta	exal_camroty,y
+
+	PULLXYP
+
+	rts
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;------------------------------------------------------------------------------
+;	PLAYER STRAT START
+;------------------------------------------------------------------------------
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; local macro
+
+BGinitdat	macro	[stratmode,demomode,name]
+	dw	{stratmode}&WM
+	dw	{name}_Hofs	; H scroll(one screen mode)
+	dw	{name}_P1Hofs	; H scroll(two screen mode)
+	dw	{name}_P2Hofs	; H scroll(two screen mode)
+	dw	{name}_VofsMAX
+	dw	{name}_VofsRATE
+
+	IFC	"0","{demomode}"
+	dw	0
+	ELSEIF
+	dw	{demomode}&WM	;strat(demo mode)
+	ENDC
+;;;;;	db	{name}_planet_mode
+	endm
+;------------------------------------------------------------------------------
+player2again_istrat	; RE-start (BATTLE MODE)
+
+	s_start_strat
+
+	s_set_var	B,p2_gamestatus,#1
+
+	a16
+	lda	p2_worldx_init
+	sta	al_childx,x
+	sta	p2_startx
+	lda	p2_worldy_init
+	sta	al_childy,x
+	sta	p2_starty
+	lda	p2_worldz_init
+	sta	al_childz,x
+	sta	p2_startz
+	a8
+
+	s_set_alvar	B,x,al_roty,p2_roty_init
+	toheap		y,x
+	s_set_alvar	B,y,exal_roty+1,p2_roty_init
+
+	jmp		player_istrat
+
+playeragain_istrat	; RE-start (BATTLE MODE)
+
+	s_set_var	B,p1_gamestatus,#1
+
+	a16
+	lda	p1_worldx_init
+	sta	al_childx,x
+	sta	p1_startx
+	lda	p1_worldy_init
+	sta	al_childy,x
+	sta	p1_starty
+	lda	p1_worldz_init
+	sta	al_childz,x
+	sta	p1_startz
+	a8
+
+	s_set_alvar	B,x,al_roty,p1_roty_init
+
+	toheap		y,x
+
+	s_set_alvar	B,y,exal_roty+1,p1_roty_init
+
+;initial heap
+
+	lda	#0
+	sta	exal_boost,y
+	sta	exal_brake,y
+
+	jmp	player_istrat
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;--------------------------------------------------------------------------------
+;	PLAYER 1&2 MAIN STRAT
+;--------------------------------------------------------------------------------
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+EXplayer2_istrat
+
+	s_start_strat
+
+	a8i16
+
+	s_set_alsflag	x,player2
+	s_set_var	B,p2_gamestatus,#0
+	s_set_alvar	W,x,al_ptr,#viewblk2
+	s_set_alvar	B,x,al_tx,#2
+
+	jsr		EXplayer_istrat.init
+
+	jsr		camera_init_srou
+	jsl		initEalt_srou_l
+
+	s_set_strat	x,player_istrat
+
+	pl_end_strat
+
+
+EXplayer_istrat
+
+	s_start_strat
+
+	a8i16
+
+	s_set_var	B,playerctlmode,#0	; clear player control mode
+
+	s_clr_alsflag	x,player2
+	s_set_var	B,p1_gamestatus,#0
+	s_set_alvar	W,x,al_ptr,#viewblk1
+	s_set_alvar	B,x,al_tx,#1
+
+	jsr		EXplayer_istrat.init
+
+	jsl		player_RAMinit_l	; (game)
+
+	jsr		camera_init_srou
+	jsl		initEalt_srou_l
+
+	s_set_strat	x,player_istrat
+
+	pl_end_strat
+
+
+.init	LOCAL
+
+	s_set_alsflag	x,colldisable
+	s_set_aldata	x,#255,#1
+	s_set_alptrs	x,player_istrat,hit_istrat,playerexplode_istrat
+	jsr		player_init
+
+	rts
+
+player_istrat
+	s_start_strat
+
+	a8i16
+
+;	pl_p2_coltab	x,id_1_c
+
+	s_set_expstrat	x,playerexplode_istrat
+
+	s_clr_alsflag	x,colldisable
+
+	s_clr_alsflag	x,realobj
+
+	s_set_strat	x,PLAYERMAIN.strat
+
+	s_set_resource	L,x,start_hit,#hitplayer_start
+	s_set_resource	L,x,while_hit,#hitplayer_while
+	s_set_resource	L,x,end_hit,#hitplayer_end
+
+	toheap		y,x
+
+	c_set_demoviewstrat	x,off,y
+
+	set_bg_mode	player_ctl_mode,playerctlmode,x,9
+
+player_ctl_mode
+
+	dw	.gnd&WM		;0
+	dw	.mrn&WM		;1
+	dw	.dst&WM		;2
+	dw	.cms&WM		;3
+	dw	.cms2&WM	;4
+	dw	.gnd2&WM	;5
+	dw	.tnl&WM		;6
+	dw	.sun&WM		;7
+	dw	.gnd&WM		;8
+	dw	.room&WM	;9
+
+
+;.gnd	BGinitdat	.onfield_AW,ground
+;.mrn	BGinitdat	.onmarine_AW,marine
+;.dst	BGinitdat	.onfield_AW,desert
+;.cms	BGinitdat	.cosmo_AW,cosmos
+;.cms2	BGinitdat	.cosmo_AW,cosmos
+;.gnd2	BGinitdat	.cosmo_AW,ground2
+;.tnl	BGinitdat	.tunnel_AW,tunnel
+;.sun	BGinitdat	.cosmo_AW,sun
+;.room	BGinitdat	.room_AW,tunnel
+
+
+
+.gnd	BGinitdat	of_Arwing0_init,DM_BS_0_0_init,ground
+.mrn	BGinitdat	of_Arwing0_init,DM_BS_0_0_init,marine
+.dst	BGinitdat	of_Arwing0_init,DM_BS_0_0_init,desert
+.cms	BGinitdat	cs_Arwing0_init,DM_BS_0_0_init,cosmos
+.cms2	BGinitdat	cs_Arwing0_init,DM_BS_0_0_init,cosmos
+.gnd2	BGinitdat	cs_Arwing0_init,DM_BS_0_0_init,ground2
+.tnl	BGinitdat	of_Arwing0_init,0,tunnel
+.sun	BGinitdat	cs_Arwing0_init,DM_BS_0_0_init,sun
+.room	BGinitdat	of_Arwing0_init,0,tunnel
+
+
+	IFEQ	1
+.cosmo_AW
+	pl_mode_change	x,DM_BS_0_1_init
+;	pl_mode_change	x,cs_Arwing0_init
+	jmp		PLAYERMAIN.strat
+
+.onfield_AW
+	pl_mode_change	x,DM_BS_0_0_init
+;	pl_mode_change	x,of_Arwing0_init
+	jmp		PLAYERMAIN.strat
+.room_AW
+.tunnel_AW
+	pl_mode_change	x,of_Arwing0_init
+	jmp		PLAYERMAIN.strat
+
+;.inspace_AW
+;	pl_mode_change	x,is_Armer0_init
+;	jmp		PLAYERMAIN.strat
+
+.onfield_RB
+	pl_mode_change	x,of_krobo_init
+	jmp		PLAYERMAIN.strat
+
+.onmarine_AW
+	pl_mode_change	x,of_Arwing0_init
+	jmp		PLAYERMAIN.strat
+
+.modeend
+	ENDC
+
+;  ÉÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ»
+;  º                                                          º
+;  º                  STRATS FOR PLAYER                       º
+;  º                                                          º
+;  ÈÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼
+
+;  -- PLAYER MODE TABLE --
+
+PLAYERMAIN
+
+.strat	LOCAL
+
+	s_start_strat
+
+	a8i16
+
+ 	s_copy_alvar2alvar	W,x,al_worldx,x,al_childx
+	s_copy_alvar2alvar	W,x,al_worldy,x,al_childy
+	s_copy_alvar2alvar	W,x,al_worldz,x,al_childz
+
+	s_copy_alvar2alvar	B,x,al_rotx,x,al_childrotx 
+	s_copy_alvar2alvar	B,x,al_roty,x,al_childroty
+	s_copy_alvar2alvar	B,x,al_rotz,x,al_childrotz
+
+
+	testjoypad	Y,ptrig
+	rlbeq		.noburn
+
+;	pl_burn		x,on,ALL
+
+.noburn
+	toheap	y,x
+
+	a16
+
+
+	stz	x1
+
+	ldy	allst
+
+.loop	lda.w	_next,y
+	beq	.exit
+	inc	x1
+	tay
+	bra	.loop
+
+.exit	a8
+
+	lda	x1
+	printh	number,kawagoe
+
+
+
+;;;	s_set_colltype	x,FRIEND
+
+;*************************************
+;*************************************
+;*************************************
+
+	jsl	timechart_l
+
+;*************************************
+;*************************************
+;*************************************
+
+	testjoypad	A,pcont
+	beq		.nodead
+	testjoypad	Y,ptrig
+	beq		.nodead
+	testjoypad	tleft,pcont
+	beq		.nodead
+	testjoypad	tright,pcont
+	beq		.nodead
+
+	s_set_alvar	B,x,al_HP,#0
+
+.nodead
+
+	toheap	y,x
+
+	a8
+
+;	lda	#tarwing_sizeof
+;	printh	<HEAP SIZE>,kawagoe
+
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³set pilot No³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+	s_jmp_alsflag	x,player2,.p2PN
+.p1PN	lda		p1_pilotNo
+	bra		.staPN
+.p2PN	lda		p2_pilotNo
+.staPN	sta		exal_pilotNo,y
+
+
+
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³tell player's position to enemy³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+	s_jmp_alsflag		x,player2,.posp2
+.posp1	s_copy_alvar2var	W,x,player1_worldx,al_worldx
+	s_copy_alvar2var	W,x,player1_worldy,al_worldy
+	s_copy_alvar2var	W,x,player1_worldz,al_worldz
+
+	bra			.pospp
+.posp2	s_copy_alvar2var	W,x,player2_worldx,al_worldx
+	s_copy_alvar2var	W,x,player2_worldy,al_worldy
+	s_copy_alvar2var	W,x,player2_worldz,al_worldz
+.pospp
+
+;inc general timer
+
+	pl_inc_timer	x
+
+	s_mode_table
+
+
+; main control mode......
+
+	s_mode_entry	Onfield_krobo_init,of_krobo_init
+	s_mode_entry	Onfield_krobo,of_krobo
+	s_mode_entry	Onfield_krobo2,of_krobo2
+
+	s_mode_entry	Inspace_Armer0_init,is_Armer0_init
+	s_mode_entry	Inspace_Armer0,is_Armer0
+
+	s_mode_entry	Onfield_Arwing0_init,of_Arwing0_init
+	s_mode_entry	Onfield_Arwing0,of_Arwing0
+
+	s_mode_entry	Cosmo_Arwing0_init,cs_Arwing0_init
+	s_mode_entry	Cosmo_Arwing0,cs_Arwing0
+
+
+; transform mode.......
+
+
+	s_mode_entry	Aw2Rb_init,pl_Arwing2Robo
+	s_mode_entry	Aw2Rb,Tr_Aw2Rb
+
+	s_mode_entry	Rb2Aw_init,pl_Robo2Arwing
+	s_mode_entry	Rb2Aw,Tr_Rb2Aw
+
+	s_mode_entry	Aw2Am_init,pl_Arwing2Armer
+	s_mode_entry	Aw2Am,Tr_Aw2Am
+
+	s_mode_entry	Am2Aw_init,pl_Armer2Arwing
+	s_mode_entry	Am2Aw,Tr_Am2Aw
+
+; demonstration mode ....
+
+;	( clear demo )
+
+	s_mode_entry	DEMO_AWCLEAR_0_0_init,DM_AWC_0_0_init
+	s_mode_entry	DEMO_AWCLEAR_0_0,DM_AWC_0_0
+	s_mode_entry	DEMO_AWCLEAR_0_1,DM_AWC_0_1
+
+;	( game start demo )
+
+	s_mode_entry	DEMO_BATTLESTART_0_0_init,DM_BS_0_0_init
+	s_mode_entry	DEMO_BATTLESTART_0_1_init,DM_BS_0_1_init
+	s_mode_entry	DEMO_BATTLESTART_0_0,DM_BS_0_0
+;	s_mode_entry	DEMO_BATTLESTART_0_0,DM_BS_0_0
+
+	s_mode_table_end
+
+;---------------------------------------------------------------------------------
+
+; -- ARWING INIT -- on field
+
+Onfield_Arwing0_init
+
+	s_start_strat
+
+	s_clr_alsflag		x,ontheground
+
+	toheap		y,x
+	pl_control	x,on,y
+
+	pl_planetmode		ground
+	pl_jmpnot_ifexistSEA	.nosea
+	pl_planetmode		marine
+.nosea
+
+.pmodeend
+
+
+;.entry	LOCAL
+
+	toheap		y,x
+
+; umi kara tobidasutoki ha control ha OFF ni suru.
+
+;	pl_jmpnot_ifinthesea	x,.onthesea
+;	pl_control_tr		x,off,y
+;
+.onthesea
+
+	pl_SHAPEandCTLNo	x,OF_ARWING
+
+;test	pl_set_PILOTshape	x,x,shape_ARWING
+	jsr			Arwing0_exalvar_init
+	pl_mode_change		x,of_Arwing0
+	s_clr_alsflag		x,ontheground
+
+
+Onfield_Arwing0
+
+	s_start_strat
+
+	a8i16
+
+	toheap			y,x
+;	pl_jmp_ifinthesea	x,.onthesea
+;	pl_control_tr		x,on,y
+.onthesea
+
+	c_jmp_viewstratEQ	x,ONFIELD_ARWING,.nosetofawv,y
+	c_jmp_ifdemoview	x,.nosetofawv,y
+
+	pl_jmp_iftransrising	x,.nosetofawv,y
+
+	c_view_inbetween	x,on,y
+	c_set_viewstrat		x,ONFIELD_ARWING
+
+.nosetofawv
+	pl_clr_transflag	x
+
+	ldy	al_sword2,x
+
+	s_set_alsflag		x,sflag8	; set permanently inside
+	pl_playercontroller	x		; read controller
+;	pl_hpadd	x
+	pl_set_LASTLRkey
+	PL_DO_CTLandVIEW	x,ONFIELD_ARWING
+	pl_check_inthesea	x
+
+	pl_set_PILOTshape	x,x,shape_ARWING
+
+.ofaw_entry	LOCAL
+
+	s_or_alvar		B,x,al_pbyte2,#armode_flag
+
+.ofaw_entry_AM	LOCAL
+
+	jsl		tp_checkshoot_l
+	jsl		set_hudrot_srou_l
+	pl_damage_meter	arwing_HP,DMETERNUM
+	pl_coll_damage	x
+	pl_SE_engine	x
+	pl_SE_trans	x
+	jsl	set_boss_l
+	jsl	battle_end_l
+
+	jsl	entersea_srou_l
+
+
+
+	pl_end_strat
+
+;-----------------------------------------------------------------------
+; -- ARWING STRAT -- in SPACE2
+
+Cosmo_Arwing0_init
+
+	s_start_strat
+
+	toheap		y,x
+	pl_control	x,on,y
+	pl_SHAPEandCTLNo	x,CS_ARWING
+
+	jsr			Arwing0_exalvar_init
+
+	pl_mode_change		x,cs_Arwing0
+	c_view_inbetween	x,on,y
+
+	jsr			cosmo_arwing0.setcosmoview
+
+	pl_jmpnot_ifturn	x,.SF1,y
+	c_set_viewstrat		x,COSMO_ARWING
+	bra			.exitview
+.SF1	c_set_viewstrat		x,ONFIELD_ARWING
+.exitview
+	s_clr_alsflag		x,shadow
+
+	s_clr_alsflag		x,ontheground
+
+;	s_make_obj		#extra2_0_dummy,cosmo_arwing0
+;	s_set_strat		y,extradummy_Istrat
+;	s_set_aldata		y,1,1
+
+
+Cosmo_Arwing0
+
+	s_start_strat
+
+	pl_clr_transflag	x
+
+	s_set_alsflag		x,sflag8	; set permanently inside
+	pl_playercontroller	x		; read controller
+;	pl_hpadd		x
+	pl_set_LASTLRkey
+	PL_DO_CTLandVIEW	x,COSMO_ARWING
+
+	pl_set_PILOTshape	x,x,shape_ARWING
+
+	jmp			Onfield_Arwing0.ofaw_entry
+
+
+.setcosmoview	LOCAL
+
+	s_start_strat
+	pl_jmpnot_ifturn	x,.SF1view,y
+.SF2view	c_set_viewstrat		x,COSMO_ARWING
+	bra			.exitcosmoview
+.SF1view	c_set_viewstrat		x,ONFIELD_ARWING
+.exitcosmoview
+	rts
+
+
+;-----------------------------------------------------------------------
+; -- ARMER INIT -- in SPACE
+Inspace_Armer0_init
+
+	s_start_strat
+
+	toheap		y,x
+	pl_control	x,on,y
+	pl_SHAPEandCTLNo	x,ARMER
+	jsr			Armer0_exalvar_init
+
+	pl_planetmode		space
+
+	pl_mode_change		x,is_Armer0
+;	c_view_inbetween	x,on,y
+;	c_set_viewstrat		x,INSPACE_ARMER
+
+
+;test	pl_set_PILOTshape	x,x,shape_ARMER_BODY
+
+	s_clr_alsflag		x,shadow
+
+	s_clr_alsflag		x,ontheground
+
+
+; -- ARMER STRAT -- in SPACE
+
+Inspace_Armer0
+
+	s_start_strat
+
+	pl_clr_transflag	x
+
+	s_set_alsflag		x,sflag8	; set permanently inside
+
+	jsl	ROBOgottun_srou_l
+
+;---------------------------------------------------------------------------
+	a16
+	lda	#0
+	sta	gd_gravity
+	a8
+	lda	#1
+	jsl	generaldynamics_l
+	jsr	set_worldxyz2exal_srou	; copy pos -> exal pos
+;---------------------------------------------------------------------------
+
+
+	pl_playercontroller	x		; read controller
+;	pl_hpadd	x
+	s_and_alvar		B,x,al_pbyte2,#armode_flag^-1
+	pl_set_LASTLRkey
+	PL_DO_CTLandVIEW	x,INSPACE_ARMER
+
+	jsl		makeLRarm_srou_l	;generatearm
+
+	pl_set_PILOTshape	x,x,shape_ARMER_BODY
+
+	jmp			Onfield_Arwing0.ofaw_entry_AM
+
+;	jsl		tp_checkshoot_l
+;	jsl		set_hudrot_srou_l
+;	pl_damage_meter		armer_HP,DMETERNUM
+;	pl_coll_damage	x
+;	pl_SE_engine	x
+;	pl_SE_trans	x
+;
+;	pl_end_strat
+
+
+
+;ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+; -- ROBOT INIT --
+
+Onfield_krobo_init
+
+;using	:sflag6	ashioto flag
+;	:sflag5 shadow flag(1:shadow on 0:off)
+;	:sbyte1 as state (see ROBOANIM_srou.animdriver)
+;	:sbyte2 as motion counter (ROBOT no sokudo wo kaetarisuru tame)
+;	:sbyte3 leg roty offset (up or down + left or right)
+
+	s_start_strat
+
+	toheap	y,x
+
+	jsr		Robo0_exalvar_init
+
+	pl_planetmode		ground
+	pl_jmpnot_ifexistSEA	.nosea
+	pl_planetmode		marine
+.nosea
+
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³Robot no Yoffset no initial³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+	pl_get_shapeTAB	B,x,y1,robotyofstab
+
+	ldy		al_sword2,x
+	s_set_alvar	B,y,exal_bodyofsy,y1
+
+	a16
+	lda		y1
+	sexa
+	clc
+	adc		exal_worldy,y
+	sta		exal_worldy,y
+	a8
+
+	pl_SHAPEandCTLNo	x,ROBOT
+	pl_mode_change		x,of_krobo
+
+	jsr			ROBOT_init_srou
+
+.exitjmp
+
+;	jmp			PLAYERMAIN.strat
+
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³clear rotz parameters³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+	ldy	al_sword2,x
+	lda	#0
+	sta	exal_rotztilt,y
+
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³clear vector³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+	a16
+	lda	#0
+	sta	al_vy,x
+
+	sta	work_mx
+	sta	work_mz
+
+	a8
+
+	s_clr_alsflag	x,ontheground
+
+;	pl_end_strat
+
+;-----------------------------------------------------------------------
+; -- ROBOT STRAT --
+
+Onfield_krobo
+
+	s_start_strat
+
+	pl_clr_transflag	x
+
+	s_set_alsflag		x,sflag8	; set permanently inside
+
+
+.setview	toheap	y,x
+
+	c_jmp_viewstratEQ	x,ONFIELD_ROBO,.noset,y
+	c_view_inbetween	x,on,y
+	c_set_viewstrat		x,ONFIELD_ROBO
+
+.noset
+
+	lda		exal_jetstatus,y
+	and		#exal_jetstatus_ALL
+	cmp		#exal_jetstatus_ALL
+	bne		.domake
+
+
+.domake	lda			exal_jetstatus,y
+	pha
+
+
+.makeLleg0	makeRBleg	legL0,.makeRleg0
+.makeRleg0	makeRBleg	legR0,.makeLlegEND
+.makeLlegEND
+
+
+	ldy		al_sword2,x
+	pla
+	sta		exal_jetstatus,y
+
+.make_OK
+
+	pl_control		x,on,y
+
+;----------------------------------------------------------------------------
+
+	lda		exal_jetstatus,y
+	and		#exal_jetstatus_ALL
+	cmp		#exal_jetstatus_ALL
+	rlbne		.nochangemode
+
+	pl_set_PILOTshape	x,x,shape_ROBOT_HEAD
+
+	pl_mode_change		x,of_krobo2
+.nochangemode
+;----------------------------------------------------------------------------
+
+onfield_krobo2
+
+	toheap	y,x
+
+;----------------------------------------------------------------------------
+
+	pl_playercontroller	x		; read controller
+
+;----------------------------------------------------------------------------
+
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³ GENERAL DYNAMICS   ³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+	jsl	RB_generaldynamics_l
+
+;----------------------------------------------------------------------------
+
+	jsl	makeshadow_srou_l
+
+;---------------------------------------------------------------------------------------------------
+; shape ni notte itara shadow ha off ni suru..
+
+	pl_jmp_ZENBUinpool	x,.shadowon
+	pl_jmp_UEpool		x,.shadowoff
+	rb_jmp_ifonshape	x,.shadowoff
+.shadowon	s_set_alsflag		x,shadow
+	bra			.shadow
+.shadowoff	s_clr_alsflag		x,shadow
+.shadow
+
+;----------------------------------------------------------------------------
+
+	pl_playercontroller	x		; read controller
+
+;----------------------------------------------------------------------------
+
+	pl_check_inthesea	x
+
+	pl_playercontroller	x		; read controller
+
+;	pl_hpadd		x
+	s_and_alvar		B,x,al_pbyte2,#armode_flag^-1
+	pl_set_LASTLRkey
+	jsl			RB_CAMROTX_l
+	PL_DO_CTLandVIEW	x,ONFIELD_ROBO
+
+;----------------------------------------------------------------------------
+;camera angle
+
+	jsl		tp_checkshoot_l
+
+	jsl		set_hudrot_srou_l
+
+	pl_damage_meter	robot_HP,DMETERNUM
+
+	pl_coll_damage	x	;,20,#scrshock
+
+	pl_SE_engine	x
+	pl_SE_trans	x
+
+;	jsl	Check_KGWindow_l
+
+	jsl	set_boss_l
+
+;	jsl	spline_l
+
+;	set_player_mode2	.player_ctl_mode,KGameMap,x,8
+
+;	s_set_alvar	W,x,al_shape,#nullplayer
+;	pl_set_PILOTshape	x,x,shape_ROBOT_NULL
+
+;	jsl	moveARENA_srou_l
+
+;	rb_upofs	x
+
+	jsl	entersea_srou_l
+
+
+	pl_end_strat
+
+;-----------------------------------------------------------------------------------
+; --- make legs ROBOT ---
+
+.generatelegL0	LOCAL
+	s_make_obj		#nullshape,.generatebodyNG
+
+	s_set_strat		y,RBlegL_Istrat
+	sty			work0
+
+
+	s_push_obj		y
+	ldy			al_sword2,x
+	s_set_alvar		W,y,exal_jetLobjptr,work0
+	s_pull_obj		y
+
+	pl_get_shapeTAB		W,x,x1,RBleg_ofstab
+	s_neg_var		B,x1+0
+
+	jmp			.generateleg
+
+.generatelegR0	LOCAL
+
+	s_make_obj		#nullshape,.generatebodyNG
+;	pl_set_PILOTshape	x,y,shape_ROBOT_ASHI_R
+	s_set_strat		y,RBlegR_Istrat
+	sty			work0
+
+
+	s_push_obj		y
+	ldy			al_sword2,x
+	s_set_alvar		W,y,exal_jetRobjptr,work0
+	s_pull_obj		y
+
+	pl_get_shapeTAB		W,x,x1,RBleg_ofstab
+
+.generateleg
+
+	s_add_roffs2pos		B,y,x,x,x1+0,x1+1,#0,0,1,0
+	s_set_colltype		y,FRIEND
+
+
+.setotherleg	;L leg pointer <---> R leg pointer
+
+;	s_push_obj		y
+;	ldy			al_sword2,x
+;	s_set_alvar		W,y,exal_jetLobjptr,work0
+;	s_set_alvar		W,y,exal_jetRobjptr,work2
+;	s_pull_obj		y
+
+
+.generatebodyOK
+
+	s_set_collstrat		y,hit_istrat
+	s_set_expstrat		y,explode_istrat
+	s_set_aldata		y,#ROBOTleg_HP,#ROBOTleg_AP
+	s_set_alvartobeobj	y,al_ptr,x
+	pl_copy_alsflag		y,x,player2
+.gbOK	sec
+	rts
+
+.generatebodyNG
+
+	clc
+	rts
+
+;-----------------------------------------------------------------------------------
+;ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+;-----------------------------------------------------------------------
+ROBOT_init_srou
+	s_start_strat
+
+	PHY
+
+	ldy		al_sword2,x
+	s_set_alvar	W,y,exal_animptr,#abt_RBstopping&WM
+	s_set_alvar	W,y,exal_animptrNEXT,#abt_RBstopping&WM
+
+	lda	#0
+	sta	exal_motionNo,y
+	rb_set_motioncounter	x,#0
+;	s_init_anim		x,#3
+
+;	s_clr_alsflag		x,shadow
+	s_clr_alsflag		x,sflag6	;ashioto flag
+	s_clr_alsflag		x,sflag5	;shadow flag
+
+	lda		#0
+	sta		al_sbyte1,x
+	sta		al_sbyte2,x
+	sta		al_sbyte3,x	; leg roty offset
+
+	s_jmp_alsflag	x,player2,.okip2
+
+.okip1	s_set_var	B,p1_legflag,#0
+	bra		.okipp
+.okip2	s_set_var	B,p2_legflag,#0
+.okipp
+	ldy		al_sword2,x
+.exitjmp
+
+
+
+	PLY
+
+	rts
+
+;    ÉÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ»
+;    º                                                          º
+;    º           STRATS FOR PLAYER'S TRANSFORMATIONS            º
+;    º                                                          º
+;    ÈÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼
+
+; -- ARWING>>ROBO INIT --
+
+Aw2Rb_init
+	s_start_strat
+
+
+	toheap		y,x
+	jsr			TRANSFORM_srous.init
+
+	t_tranim_init		x,TRanmAW2RB_TAB
+	pl_mode_change		x,Tr_aw2rb
+
+	pl_get_pilotTAB		B,x,x1,speed_tab
+	s_jmp_alvarLESS		B,x,al_vel,x1,.nodown
+	s_set_speed		x,x1
+
+.nodown
+
+	pl_set_transfalling	x,y
+
+	s_clr_alsflag		x,ontheground
+
+	pl_control		x,on,y
+
+;-----------------------------------------------------------------------
+; -- ARWING>>ROBO STRAT --
+
+Aw2Rb
+	s_start_strat
+
+;	vofsoff		1
+
+	pl_set_transflag	x
+
+	s_set_alsflag		x,sflag8	; set permanently inside
+	pl_playercontroller	x		; read controller
+;	pl_hpadd		x
+	PL_DO_CTLandVIEW	x,Trans_AW2RB
+
+	s_achase_alvar		B,x,al_vel,#0,3
+
+.Aw2Rb_entry	LOCAL
+
+	pl_damage_meter	arwing_HP,DMETERNUM
+	pl_coll_damage	x
+
+	pl_SE_engine	x
+	pl_SE_trans	x
+
+	jsl	set_hudrot_srou_l
+
+;	jsl	Check_KGWindow_l
+
+
+	pl_end_strat
+
+;ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+; -- ROBO>>ARWING INIT --
+Rb2Aw_init
+	s_start_strat
+
+	jsr	RBlegbodynullshape
+	jsr	TRANSFORM_srous.init
+	jsr	Arwing0_exalvar_init
+
+	t_tranim_init		x,TRanmRB2AW_TAB
+
+	pl_mode_change		x,Tr_Rb2aw
+
+	s_clr_alsflag		x,ontheground
+
+	pl_control		x,on
+
+	jsl	checktransrising_srou_l
+
+;-----------------------------------------------------------------------
+; -- ROBO>>ARWING STRAT --
+Rb2Aw	; Kawagoe's Arwing
+	s_start_strat
+	pl_set_transflag	x
+	s_set_alsflag		x,sflag8	; set permanently inside
+
+	pl_set_transflag	x
+
+	pl_playercontroller	x
+;	pl_hpadd		x
+	PL_DO_CTLandVIEW	x,Trans_RB2AW
+	pl_check_inthesea	x
+
+.Rb2Aw_entry	LOCAL
+
+	pl_damage_meter		robot_HP,DMETERNUM
+	pl_coll_damage	x
+
+	pl_SE_engine	x
+	pl_SE_trans	x
+
+	jsl	set_hudrot_srou_l
+
+;	jsl	Check_KGWindow_l
+
+	jsr	set_worldxyz2exal_srou
+
+
+	pl_end_strat
+
+;ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+; -- ARWING>>ARMER INIT --
+
+Aw2Am_init
+	s_start_strat
+
+	jsr			TRANSFORM_srous.init
+	jsr			Armer0_exalvar_init
+
+	t_tranim_init		x,TRanmAW2AM_TAB
+	pl_mode_change		x,Tr_Aw2Am
+
+	s_clr_alsflag		x,ontheground
+
+	pl_control		x,on
+
+;-----------------------------------------------------------------------
+; -- ARWING>>ROBO STRAT --
+Aw2Am
+	s_start_strat
+
+	pl_set_transflag	x
+
+	s_set_alsflag		x,sflag8	; set permanently inside
+
+;	pl_hpadd		x
+	PL_DO_CTLandVIEW	x,Trans_AW2AM
+
+.Aw2Am_entry	LOCAL
+
+	pl_damage_meter		arwing_HP,DMETERNUM
+	pl_coll_damage		x
+
+	pl_SE_engine	x
+	pl_SE_trans	x
+
+	jsl	set_hudrot_srou_l
+
+;	jsl	Check_KGWindow_l
+
+	jsr	set_worldxyz2exal_srou
+
+
+	pl_end_strat
+
+;ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+; -- ROBO>>ARWING INIT --
+Am2Aw_init
+	s_start_strat
+	jsr			RBlegbodynullshape
+	km_setflag		al_pbyte2,transform_flag,x
+
+	t_tranim_init		x,TRanmAM2AW_TAB
+
+	pl_mode_change		x,Tr_Am2aw
+
+	s_clr_alsflag		x,ontheground
+
+	pl_control		x,on
+
+;-----------------------------------------------------------------------
+; -- ROBO>>ARWING STRAT --
+Am2Aw	; Kawagoe's Arwing
+
+	s_start_strat
+
+	pl_set_transflag	x
+
+	s_set_alsflag		x,sflag8	; set permanently inside
+;	pl_hpadd		x
+	PL_DO_CTLandVIEW	x,TRANS_AM2AW
+
+.Am2Aw_entry	LOCAL
+	pl_damage_meter		armer_HP,DMETERNUM
+	pl_coll_damage	x	;,20,#scrshock
+	pl_SE_engine	x
+	pl_SE_trans	x
+	jsl		set_hudrot_srou_l
+;	jsl	Check_KGWindow_l
+	pl_end_strat
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+TRANSFORM_srous
+
+.init	LOCAL
+
+	s_start_strat
+
+	s_or_alvar		B,x,al_pbyte2,#transform_flag
+
+;	lda		al_sbyte2,x
+;	eor		#armode_flag
+;	sta		al_sbyte2,x
+
+
+	pl_control		x,on
+	c_view_inbetween	x,on
+	s_set_alsflag		x,shadow
+	pl_set_timer		x,#0
+
+	rts
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³ROBOT no shape wo nullshape ni suru.³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+RBlegbodynullshape
+
+	s_start_strat
+
+	PUSHXYP
+	a8i16
+
+	ldy	al_sword2,x
+
+	a16
+	lda	#nullshape
+
+.R	ldx	exal_jetRobjptr,y
+	beq	.L
+	sta	al_shape,x
+
+.L	ldx	exal_jetLobjptr,y
+	beq	.B
+	sta	al_shape,x
+
+.B	;ldx	exal_bodyobjptr,y
+	;beq	.exit
+
+	;sta	al_shape,x
+.exit
+	a8
+
+	PULLXYP
+	rts
+
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;    ÉÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ»
+;    º                                                          º
+;    º           STRATS FOR PLAYER'S DEMONSTRASION              º
+;    º                                                          º
+;    ÈÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼
+
+
+;ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+DEMO_AWCLEAR_0_0_init
+
+	s_start_strat
+
+	toheap	y,x
+
+	jsr		DEMO_srou.istrat
+	sp_trans_do	x,OF_ARWING,y
+	pl_mode_change	x,DM_AWC_0_0
+
+;-----------------------------------------------------------------------
+DEMO_AWCLEAR_0_0
+
+	s_start_strat
+	a8i16
+	PL_DO_CTLandVIEW	x,DEMO_AWCLEAR_0_0
+	pl_SE_engine	x
+	pl_SE_trans	x
+
+	pl_end_strat
+
+;-----------------------------------------------------------------------
+DEMO_AWCLEAR_0_1
+
+	s_start_strat
+	a8i16
+	PL_DO_CTLandVIEW	x,DEMO_AWCLEAR_0_1
+	pl_SE_engine	x
+	pl_end_strat
+
+;ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+;
+;DEMO_BATTLEAGAIN_0_0_init
+;
+;	s_start_strat
+;
+;	s_set_var	B,y1,#128
+;	s_set_var	B,y2,#0	;	-BATTLESTART_YOFS
+;	s_set_var	W,z1,#BATTLESTART_ZOFS<<8
+;
+;	jmp		DEMO_BATTLESTART_0_0_init.entry
+;
+;ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+
+DEMO_BATTLESTART_0_1_init
+
+	s_start_strat
+
+	toheap	y,x
+
+	jsr			Arwing0_exalvar_init
+	jsr			DEMO_srou
+
+	pl_SHAPEandCTLNo	x,CS_ARWING
+	jsr			cosmo_arwing0.setcosmoview
+	c_set_demoviewstrat	x,gamestart,y
+	ct_set_chartptr		x,battlestart2
+	bra			DEMO_BATTLESTART_0_0_init.enter
+
+DEMO_BATTLESTART_0_0_init
+
+	s_start_strat
+
+	toheap	y,x
+
+	jsr			Arwing0_exalvar_init
+	jsr			DEMO_srou
+
+	pl_SHAPEandCTLNo	x,OF_ARWING
+	pl_planetmode		ground
+	c_set_viewstrat		x,ONFIELD_ARWING
+
+	c_set_demoviewstrat	x,gamestart,y
+	ct_set_chartptr		x,battlestart
+
+.enter	LOCAL
+	pl_mode_change		x,DM_BS_0_0
+	s_set_var		W,DDtest,#-250
+
+;	pl_set_PILOTshape	x,x,shape_ARWING
+
+;-----------------------------------------------------------------------------
+; set pos
+
+;	s_add_roffs2pos	B,x,x,x,#-05fH,#-063H,#-05fH,0,1,0,3,4,3
+	s_add_roffs2pos	B,x,x,x,#-5fH,#-63H,#-5fH,0,1,0,3,4,3
+
+	s_add_alvar	W,y,exal_roty,#-(deg90*256)
+	s_add_alvar	B,x,al_roty,#-deg90
+	s_set_alvar	W,y,exal_rotx,#(deg90*256)
+	s_set_alvar	B,x,al_rotx,#deg90
+;
+	s_set_alvar	B,x,al_rotz,#deg45
+
+
+DEMO_BATTLESTART_0_0
+
+	s_start_strat
+
+	a8i16
+
+	toheap	y,x
+
+	PL_DO_CTLandVIEW	x,DEMO_BATTLESTART_0_0
+
+	pl_damage_meter		arwing_HP,DMETERNUM
+
+;	lda	al_roty,x
+;	printh	ROTY,kawagoe
+
+	pl_end_strat
+
+;ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+
+DEMO_srou
+.istrat	LOCAL
+
+	s_start_strat
+
+	PHY
+
+	pl_control		x,off
+	s_set_alsflag		x,nohitaffect
+	s_set_alsflag		x,sflag8		; set permanently inside
+
+	s_set_alvar		B,x,al_pbyte1,#0	; demo state
+	pl_set_timer		x,#0		;macro	[obj,value]
+;	s_set_alvar		B,x,al_pword1,#0	; demo time counter
+
+	c_cockpitmode		x,off
+	pl_Sboost		x,off
+
+	pl_set_area		x,-1
+
+	pl_ldy_viewblk		x
+	s_set_state		y,#0		 ;state
+
+	PLY
+
+	rts
+
+;ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+
+;	ifeq	1
+
+;kdmgflag	equ	$80
+;kdmgwinflag	equ	$40
+;kdmgallflag	equ	$c0
+;DmgIntTm	equ	5
+
+kawaguchi_hit
+
+	php
+
+	a8i16
+
+	pl_coll_damage	x	;,20,#scrshock
+
+;	jsl	Check_KGWindow_l
+
+	ifeq	1
+
+	ldy	al_sword2,x
+	jmp	.noflag
+
+;-------------------------------------------------------------
+
+	ldy	al_sword2,x
+	jmpnotflag	kgbyte5,#kBomShotflag,.NoBom,y
+
+	lda	kgbyte5,y
+;	and	#~kBomShotflag
+	and	#~$80
+	dec	a
+	bpl	.Timerset
+	beq	.Timerset
+	lda	#0
+	sta	kgbyte5,y
+	bra	.NoBom
+.Timerset
+	ora	#kBomShotflag
+	sta	kgbyte5,y
+.NoBom
+;-------------------------------------------------------------
+;*	Wepon damage check
+;-------------------------------------------------------------
+;----- Damage window check --
+	jmpnotflag	kgbyte6,#kdmgwinflag,.NoFlag,y
+;----- Window timer set -----
+
+
+	lda	kgbyte6,y
+	and	#~kdmgallflag
+	dec	a
+	bmi	.DMGwinEnd
+	ora	#kdmgwinflag
+	sta	kgbyte6,y
+	bra	.Noflag
+.DMGwinEnd
+	lda	#0
+	sta	kgbyte6,y	;Timer Dec
+
+	endc
+;--------------------------------------------------------------------
+.NoFlag
+	a8i16
+;----- Hit check -----
+	s_jmpNOT_alsflag x,collide,.exit
+
+;	s_jmp_ifhitby	x,ENEMYWEAP,.hit
+;	jmp	.exit
+
+;----- hit damage ----
+.hit
+
+	lda	#DmgIntTm
+	ora	#kdmgallflag
+	sta	kgbyte6,y
+
+;	c_shock_cam		x,#scrshock
+;	pl_nohittimer		x,30
+
+;-------------------------------------------------------------
+.exit
+
+	rts
+
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	Calcurate vector & add
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+gen3dvecs_add_l
+	s_start_strat
+
+	PUSHXYP
+	s_gen_3Dvecs		x,al_roty,al_rotx,al_vel
+	s_add_vecs2pos		x
+	PULLXYP
+
+	rtl
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	Calcurate Robot's vector
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+	LONGI
+	SHORTA
+
+RB_gen3dvecs_l
+
+	PUSHXYP
+
+	s_start_strat
+
+	a8i16
+
+;ÚÄÄÄÄÄÄÄÄÄÄÄ¿
+;³Calc vector³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÙ
+
+	ldy			dummyobj
+	s_set_alvar		W,y,al_worldx,#0
+	s_set_alvar		W,y,al_worldz,#0
+	s_add_roffs2pos		B,y,y,x,x1,y1,z1,0,1,0
+
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³add al_mx,al_mz³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+	s_add_alvars	W,x,al_mx,y,al_worldx
+	s_add_alvars	W,x,al_mz,y,al_worldz
+
+	s_add_alvar	W,x,al_mx,work_mx
+	s_add_alvar	W,x,al_mz,work_mz
+
+.exit
+	PULLXYP
+
+	rtl
+
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	Sound routine(use macro!)
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+; FLAG LIST
+
+RB_engine_MASK	equ	%01101100
+RB_engine_echo	equ	%01000000
+RB_engine_start	equ	%00100100
+RB_engine_LV1	equ	%00101000
+RB_engine_LV2	equ	%00101100
+RB_engine_stop	equ	%00000000
+
+AW_engine_MASK	equ	%01101100
+AW_engine_start	equ	%00000100
+AW_engine_stop	equ	%00000000
+AW_engine_speedup	equ	%00001000
+AW_engine_speeddown	equ	%00001100
+
+AW_engine_horiMASK	equ	%00010011
+AW_engine_horiLV0	equ	%00000000
+AW_engine_horiLV1	equ	%00000001
+AW_engine_horiLV2	equ	%00000010
+AW_engine_horiLV3	equ	%00000011
+
+AM_engine_MASK	equ	%00011100
+AM_engine_start	equ	%00100100
+AM_engine_stop	equ	%00000000
+AM_engine_barner	equ	%00101100
+AM_engine_armroll	equ	%00010000
+
+
+
+
+
+
+	SHORTA
+	LONGI
+
+ps_engine_start_l
+
+;	using	:work0
+;		:work1
+	phx
+	phy
+	php
+
+	a8i16
+
+; --- start ---
+.startpros
+	; mission mode or battle mode?
+
+	s_jmp_alsflag	x,player2,.p2engine
+
+.p1engine
+	s_set_var	B,work0,sdport1
+	jsr	.mainpros
+
+;	lda	work0
+;	printb	sound,kawagoe
+
+	s_set_var	B,sdport1,work0
+
+	bra		.exitengine
+
+.p2engine
+;	s_jmpNOT_varAND	B,bgm_music,#80H,.exitengine
+
+	test_screenmode	onescreen
+	bne		.exitengine
+
+
+	s_set_var	B,work0,sdport2
+	jsr	.mainpros
+	s_set_var	B,sdport2,work0
+	bra		.exitengine
+.exitengine
+
+	plp
+	ply
+	plx
+	rtl
+
+
+
+
+.mainpros
+;	In	:work0(=sdport1 or sdport2)
+;	Out	:work0
+
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³player dead?³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+	pl_jmp_ifplayerHP0	x,.AWstop
+
+
+;
+;
+;
+
+
+
+
+
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³kisyu ni yoru bunki³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+	sp_jmp_playertype	x,UFO,.AM
+	sp_jmp_playertype	x,ROBOT,.RB
+
+.AW
+	pl_jmp_iftransrising	x,.AWstop
+	pl_jmpnot_iftransform	x,.AWdo
+
+
+.AWstop	s_set_var	B,work0,#AW_engine_stop
+	jmp		.exitmainpros
+
+.AWdo
+
+;-- engine level --
+
+
+	toheap	y,x
+
+	s_and_var	B,work0,#AW_engine_MASK^-1
+
+.AWlv	;speed
+	pl_jmp_ifboost	x,.AWlvUP
+	pl_jmp_ifbrake	x,.AWlvDW,y
+
+.AWlv1	s_or_var	B,work0,#AW_engine_start
+	bra	.exitAWlv
+.AWlvUP	s_or_var	B,work0,#AW_engine_speedup
+	bra	.exitAWlv
+.AWlvDW	s_or_var	B,work0,#AW_engine_speeddown
+
+.exitAWlv
+
+
+
+
+;--------------------------------------------------------------------------------
+.AWhoriLV
+
+	s_AND_var		B,work0,#AW_engine_horiMASK^-1
+
+;-- sui-hei kasoku & jyo-syo ka-kou --
+
+	s_copy_alvar2var	W,x,y1,al_vy
+
+	pl_abs_var		W,y1
+
+	s_set_var		B,x1+1,#0
+	pl_get_pilotTAB		B,x,x1+0,speed_tab
+	lsr	x1
+	lsr	x1
+	lsr	x1
+	s_jmp_varLESS		W,y1,x1,.nnn
+
+	s_or_var		B,work0,#%00010000
+
+.nnn
+
+;HORI-- -- -- -- --
+
+.AWHORI
+	s_copy_alvar2var	W,y,work1,exal_acclroty
+	s_jmp_varPL		W,work1,.AWhorilvPL
+	s_neg_var		W,work1
+
+.AWhorilvPL
+	pl_jmp_ifrollstart	x,.AWh3
+
+	s_jmp_varMORE	W,work1,#rotyacclBRAKE,.AWh3
+	s_jmp_varMORE	W,work1,#rotyacclLR,.AWh2
+	s_jmp_varMORE	W,work1,#rotyaccl,.AWh1
+	jmp		.exitmainpros
+
+.AWh1	s_or_var	B,work0,#AW_engine_horiLV1
+	jmp		.exitmainpros
+.AWh2	s_or_var	B,work0,#AW_engine_horiLV2
+	jmp		.exitmainpros
+.AWh3	s_or_var	B,work0,#AW_engine_horiLV3
+	jmp		.exitmainpros
+
+;--------------------------------------------------------------------------------
+
+.RB
+	s_and_var		B,work0,#RB_engine_MASK^-1
+
+	toheap		y,x
+
+	s_jmp_alvarAND		B,x,al_pbyte1,#roboTLTR_flag,.RBLV2
+
+	pl_jmp_iftransform	x,.RBtrans
+
+	s_copy_alvar2var	W,y,x2,exal_motionNo
+
+	lda		x2
+; walk F
+	cmp	#m_walkF
+	beq	.RBlv1
+	cmp	#m_walkF1
+	beq	.RBlv1
+	cmp	#m_walkF2
+	beq	.RBlv2
+; walk B
+	cmp	#m_walkB
+	beq	.RBlv1
+	cmp	#m_walkB1
+	beq	.RBlv1
+	cmp	#m_walkB2
+	beq	.RBlv2
+; walk L
+	cmp	#m_walkL
+	beq	.RBlv1
+	cmp	#m_walkL1
+	beq	.RBlv1
+	cmp	#m_walkL2
+	beq	.RBlv2
+; walk R
+	cmp	#m_walkR
+	beq	.RBlv1
+	cmp	#m_walkR1
+	beq	.RBlv1
+	cmp	#m_walkR2
+	beq	.RBlv2
+; turn L R
+	cmp	#m_turnL
+	beq	.RBlv1
+	cmp	#m_turnR
+	beq	.RBlv1
+
+
+
+.RBlv0	lda	#RB_engine_start
+	bra	.RBset
+.RBlv1	lda	#RB_engine_LV1
+	bra	.RBset
+.RBlv2	lda	#RB_engine_LV2
+
+
+.RBset	ora	work0
+	sta	work0
+
+	bra	.exitmainpros
+.RBstop
+.RBtrans
+	s_or_var	B,work0,#RB_engine_stop
+	bra		.exitmainpros
+
+
+.AM
+	pl_jmpNOT_iftransform	x,.AMdo
+.AMstop	s_set_var	B,work0,#AM_engine_stop
+	jmp		.exitmainpros
+
+.AMdo	s_and_var	B,work0,#AM_engine_MASK^-1
+	pl_jet		x,check
+	bne		.AMb
+.AMn	s_set_var	B,work0,#AM_engine_start
+	bra		.AMr
+.AMb	s_set_var	B,work0,#AM_engine_barner
+
+.AMr	pl_jmpNOT_ifarmrollsound	x,.AMnoroll,y
+	s_or_var	B,work0,#AM_engine_armroll
+
+.AMnoroll
+
+.exitmainpros
+
+	pl_jmpnot_ifinthesea	x,.exit
+
+	s_or_var	B,work0,#RB_engine_echo
+
+
+.exit	rts
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	Sound routine (use macro!)
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+pl_SE_Robowalk_l
+
+	s_start_strat
+
+;	in	idx	:player pointer
+
+	PUSHXYP
+
+	pl_jmp_KAOinpool	x,.kaoinpool
+
+	pl_jmp_ASHIinpool	x,.inthesea
+
+	pl_jmpNOT_ifinthesea	x,.ontheground
+
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³walk in the sea³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+.inthesea
+	s_jmpNOT_alsflag	x,ontheground,.exit
+	kplsound		x,waterwalk
+	jmp	.exit
+
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³walk in the pool³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+.kaoinpool
+	s_jmp_alsflag		x,player2,.kpp2
+	kplsound		x,Robowalkinsea1
+	jmp			.exit
+.kpp2	kplsound		x,Robowalkinsea2
+	jmp	.exit
+
+;ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+;³walk on the ground³
+;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+.ontheground
+	s_jmpNOT_alsflag	x,ontheground,.exit
+
+	s_jmp_alsflag		x,player2,.ogp2
+	kplsound		x,Robowalk1
+	jmp			.exit
+.ogp2	kplsound		x,Robowalk2
+
+.exit
+	PULLXYP
+
+	rtl
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	Sound routine (use macro!)
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+pl_SE_Roboswim_l
+
+	s_start_strat
+
+;	in	idx	:player pointer
+
+	PHP
+
+	kplsound		x,Roboswim
+
+	PLP
+
+	rtl
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	Sound routine (use macro!)
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+pl_SE_transEND_l
+
+	s_start_strat
+
+	PUSHYP
+
+	a8i16
+
+	toheap	y,x
+
+	lda	exal_transENDse,y
+	bit	#exal_transENDse_mask
+	beq	.exit
+	dec	a
+	sta	exal_transENDse,y
+	bit	#exal_transENDse_mask
+	bne	.exit
+
+.SE
+	bit	#exal_transENDse_RB
+	bne	.RBse
+
+.AWse	kplsound	x,transArwing2Roboend
+	bra		.exit
+.RBse	kplsound	x,transRobo2Arwingend
+
+.exit	PULLYP
+
+
+	rtl
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	Set last L R key flag
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+setlastLRflag_srou_l
+
+	strats_start
+
+;exal_control exal_control_lastLR
+;
+	PHY
+
+	ldy	al_sword2,x
+
+.skip1	testjoypad	tright,ptrig
+	beq	.skip
+	lda	exal_lastLR,y
+	ora	#exal_lastLR_lastLR
+	bra	.exit0
+.skip
+	testjoypad	tleft,ptrig
+	beq	.exit1
+	lda	exal_lastLR,y
+	and	#exal_lastLR_lastLR^-1
+.exit0	sta	exal_lastLR,y
+.exit1
+
+; -- set LRtrig --
+
+
+
+.LR	lda	exal_lastLR,y
+	and	#(exal_lastLR_L!exal_lastLR_R)^-1
+	sta	exal_lastLR,y
+
+
+	lda	pcont
+	and	#%00110000
+	beq	.nokey
+	cmp	#%00110000
+	beq	.check
+	bit	#%00100000	;l
+	bne	.left
+	bra	.right
+
+
+.check	lda	exal_lastLR,y
+	bit	#exal_lastLR_lastLR
+	bne	.lastright
+
+.lastleft	testjoypad	tleft,pcont
+	beq	.nokey
+.left	lda	exal_lastLR,y
+	ora	#exal_lastLR_L
+	bra	.setLR
+
+.lastright	testjoypad	tright,pcont
+	beq	.nokey
+.right	lda	exal_lastLR,y
+	ora	#exal_lastLR_R
+.setLR	sta	exal_lastLR,y
+
+.nokey
+	PLY
+
+	rtl
+
+	strats_end
+
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	player HP add
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+	SHORTA
+	LONGI
+
+player_hpadd_l
+
+	s_jmp_alsflag	x,player2,.p2
+
+.p1	lda	player1_hpadd
+	stz	player1_hpadd
+	bra	.add
+
+.p2	lda	player2_hpadd
+	stz	player2_hpadd
+.add	clc
+	adc	al_hp,x
+	cmp	#player_HP
+	bcc	.set
+	lda	#player_HP
+.set	sta	al_hp,x
+
+	rtl
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	idX	:player's pointer
+;	out	:idX pilotNo * 2
+
+get_pilotNotoidx_B_l
+
+	php
+
+	ai16
+
+	phy
+	ldy	al_sword2,x
+	lda	exal_pilotNo,y
+	and	#exal_pilotNo_plmask
+	cmp	#max_ep_PLAYER+1
+	bcc	.skip0
+	lda	#0
+
+.skip0	ply
+
+	tax
+
+	plp
+
+	rtl
+
+
+
+get_pilotNotoidx_W_l
+
+	php
+
+	ai16
+
+	jsl	get_pilotNotoidx_B_l
+
+	txa
+	asl	a
+	tax
+
+	plp
+
+	rtl
+
+
+get_shapeNotoidx_W_l
+
+	php
+
+	ai16
+
+	jsl	get_pilotNotoidx_B_l
+
+	txa
+	and	#1^-1
+	tax
+
+	plp
+
+	rtl
+
+
+get_shapeNotoidx_B_l
+
+	php
+
+	ai16
+
+	jsl	get_pilotNotoidx_B_l
+
+	txa
+	lsr	a
+	tax
+
+	plp
+
+	rtl
+
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	SPECIAL WEAPON no kazu no SET
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	use macro "incspweapnum" See tmacro.inc
+
+addspweapnum_srou_l
+
+;	in	x1: add value
+
+	s_start_strat
+
+	PUSHXYP
+
+	a8i16
+
+	ldy	al_sword2,x
+
+	lda	exal_spweap_LMT,y
+	and	#pX_spweap_LMT_LMT	;mask
+	clc
+	adc	x1
+	cmp	#pX_spweap_LMT_num
+	bcc	.set
+	lda	#pX_spweap_LMT_num
+.set	and	#pX_spweap_LMT_LMT	;mask
+	sta	x2
+
+	lda	exal_spweap_LMT,y
+	and	#pX_spweap_LMT_LMT^-1	;mask
+	ora	x2
+	sta	exal_spweap_LMT,y
+
+
+	PULLXYP
+
+	rtl
+
+
+
+
+
+;-----------------------------------------------------------------------------
+incspweappnt_srou_l
+
+;	out	x1:number of current counter
+
+	PUSHXYP
+
+	a8i16
+
+	ldy	al_sword2,x
+	lda	exal_spweap_LMT,y
+	jsr	PXISW_SROU.setx1
+	jsr	PXISW_SROU.add
+	sta	exal_spweap_LMT,y
+
+	PULLXYP
+
+	rtl
+
+
+PXISW_SROU
+.setx1	LOCAL
+
+	pha
+	lsr	a
+	lsr	a
+	lsr	a
+	lsr	a
+	and	#pX_spweap_LMT_PNT>>4	;mask
+	sta	x1
+	pla
+	rts
+
+.add	LOCAL
+	pha
+	and	#%00001111
+	sta	x2
+	pla
+	and	#%11110000
+	clc
+	adc	#%10000
+	cmp	#(pX_spweap_LMT_PNTmax+1)<<4
+	bcc	.sta
+	lda	#0
+.sta	ora	x2
+	rts
+
+;-----------------------------------------------------------------------------
+; SPWEAP pointer wo GET suru. use macro!
+
+getspweappnt_srou_l
+
+;	out	x1:pointer
+
+	PUSHXYP
+
+	a8i16
+
+	ldy	al_sword2,x
+	lda	exal_spweap_LMT,y
+	lsr	a
+	lsr	a
+	lsr	a
+	lsr	a
+	and	#%1111	;pX_spweap_LMT_PNT>>4	;mask
+	sta	x1
+
+	PULLXYP
+
+	rtl
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;syo-totsu sita tokino CAMERA no sindou,muteki FLAG wo SET suru.
+;SOUND mo SET suru.
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+colldamage_srou_l
+
+	phy
+
+	ldy	al_sword2,x
+	pl_nohittimer_dec	x
+	s_achase_alvar	B,y,exal_rotzhit,#0,3
+
+	ply
+
+	rtl
+
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;player no nohit counter wo decriment suru.....
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+
+decnohit_srou_l
+
+	s_start_strat
+
+	PUSHYP
+
+	a8i16
+
+	toheap	y,x
+
+;---------------------------------------------------------------------
+; nohit flag
+	lda		exal_nohit,y
+	and		#exal_nohit_mask
+	beq		.skip
+
+	s_jmpNOT_varAND	B,gameframe,#3,.noflash
+	s_set_alsflag	x,hitflash
+
+.noflash	lda		exal_nohit,y
+	pha
+	and		#exal_nohit_mask^-1
+	sta		exal_nohit,y
+	pla
+	dec		a
+	ora		exal_nohit,y
+	sta		exal_nohit,y
+	beq		.skip
+
+.skip3	s_set_alsflag	x,nohitaffect
+	bra		.skip1
+.skip
+	s_clr_alsflag	x,nohitaffect
+.skip1
+
+;---------------------------------------------------------------------
+; screen no flash
+
+	lda	exal_nohit,y
+	and	#exal_nohit_scrflash^-1
+	sta	exal_nohit,y
+	and	#exal_nohit_mask
+	cmp	#plnohitfrm-plscrflashfrm
+	bcc	.skip4
+
+	lda	exal_nohit,y
+	ora	#exal_nohit_scrflash
+	sta	exal_nohit,y
+
+	lda	#3fH
+	sta	p1addcol_r
+	lda	#40H
+	sta	p1addcol_g
+	lda	#84H
+	sta	p1addcol_b
+
+.skip4
+
+;---------------------------------------------------------------------
+; trans rising no toki, nohitaffect wo set suru....
+
+	lda	exal_nohitRISE,y
+	and	#exal_nohitRISE_mask
+	beq	.ckrise
+
+	dec	a
+	sta	tpx
+	lda	exal_nohitRISE,y
+	and	#exal_nohitRISE_mask^-1
+	ora	tpx
+	sta	exal_nohitRISE,y
+
+;	s_jmp_andframe	#3,.setals
+;	s_set_alsflag		x,hitflash
+	bra	.setals
+
+.ckrise	pl_jmpnot_iftransrising	x,.norise,y
+
+.setals	s_set_alsflag		x,nohitaffect
+
+.norise
+;---------------------------------------------------------------------
+
+
+	PULLYP
+
+	rtl
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	READ PLAYER CONTROLLER
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	set	ptrig&pcont
+
+playercontroller_srou_l
+
+	s_start_strat
+
+	phy
+
+	ldy			#0
+	sty			pcont
+	sty			ptrig
+
+
+	toheap	y,x
+
+	pl_jmp_iftransrising	x,.skip0,y
+
+	s_jmpNOT_alvarAND	B,y,exal_control,#exal_control_on,.skip0
+	s_playercontroller
+
+.skip0	ply
+
+
+	rtl
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	CHANGE PLAYER'S MODE
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+modechangesrou_l
+	s_start_strat
+	s_mode_change		x,work0
+	rtl
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	RAM initial
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+	SHORTA
+	LONGI
+
+player_RAMinit_l	; (game)
+
+	phx
+	phy
+	php
+	a8i16
+
+; player remain
+
+
+; 0 clear
+;	lda	#3
+;	sta	kw_rest
+
+
+	lda	#0
+	sta	exbosstest
+
+;	lda	#1
+;	sta	target_remain
+;	sta	KEnemyNumber
+
+	lda	#0
+	sta	p1_markstatus
+
+	sta	plrseqflag
+
+	sta	voffsetflag
+	sta	player1_hpadd
+	sta	player1_hpadd
+	sta	p1_status
+	sta	p2_status
+	sta	BOSSstatus
+;	sta	EYEdis
+;	sta	LOOKdis
+	sta	sdport1
+	sta	sdport2
+
+	lda	#0ffH
+	sta	groundfriction
+
+
+	lda	#0
+	sta	p1addcol_r
+	sta	p1addcol_g
+	sta	p1addcol_b
+
+
+;	lda	#20H+10H		;3fH
+;	sta	p1addcol_r
+;	lda	#40H+10H		;40H
+;	sta	p1addcol_g
+;	lda	#80H+1fH		;84H
+;	sta	p1addcol_b
+
+
+
+	a16
+
+	lda	#0
+
+	sta	calcbuf
+
+	sta	player1_worldx
+	sta	player1_worldy
+	sta	player1_worldz
+	sta	player2_worldx
+	sta	player2_worldy
+	sta	player2_worldz
+;	sta	p1_ARENA_centerx
+;	sta	p1_ARENA_centerz
+;	sta	p2_ARENA_centerx
+;	sta	p2_ARENA_centerz
+	sta	player1hscroll_offset
+	sta	player2hscroll_offset
+	sta	player1vscroll_offset
+	sta	player2vscroll_offset
+	sta	player1_horizon
+	sta	player2_horizon
+	sta	player1_horizonbak
+	sta	player2_horizonbak
+	sta	p1_camrotzbuf
+	sta	p2_camrotzbuf
+
+	sta	seadepth	; depth of sea
+
+;	lda	#arenasize
+;	sta	ARENA_sizex
+;	sta	ARENA_sizez
+;
+;	sta	p1_ARENA_sizex
+;	sta	p1_ARENA_sizez
+;	sta	p2_ARENA_sizex
+;	sta	p2_ARENA_sizez
+
+
+	plp
+	ply
+	plx
+	rtl
+
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	SET BOSS ROUTINE
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+	SHORTA
+	LONGI
+set_boss_l
+
+bosswait00	equ	30
+
+	phx
+	phy
+	php
+
+	debug_gameclear
+;	ct_set_chartptr	x,gameclear
+
+	debug_bossmode
+
+	lda	KEnemyNumber
+	rlbne	.exit
+
+	ct_set_chartptr	x,boss00
+	
+.exit	plp
+	ply
+	plx
+	rtl
+
+
+	IFEQ	1
+
+;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+	a8i16
+
+	sm_jmp_if2screen	.exit0
+
+;	test_screenmode		onescreen
+;	rlbeq			.exit0
+
+	s_jmp_alsflag	x,player2,.exit0
+
+	debug_bossmode	;.bossappear
+
+;	lda	target_remain
+	lda	KEnemyNumber
+	rlbne	.exit0
+.bossappear
+;-----------------------------------------------------------------
+	pl_jmp_ifBOSSon	.start1
+	s_jmp_varAND	B,BOSSstatus,#BOSSstatus_start,.start0
+	s_or_var	B,BOSSstatus,#BOSSstatus_start
+	pl_set_timer	x,#0	;macro	[obj,value]
+;	s_set_alvar	W,x,al_pword1,#0
+.start0
+;TIMER	pl_inc_timer	x	;macro	[obj]
+;	s_inc_alvar	W,x,al_pword1
+	c_jmp_timerNE	x,#bosswait00,.exit0	;{value},{label}
+;	s_jmp_alvarNE	W,x,al_pword1,#bosswait00,.exit0
+
+;-----------------------------------------------------------------
+; -- set boss --
+.start1	pl_jmp_ifBOSSmode	.playergotoduel	; demo finished?
+	pl_control	x,off
+
+	c_set_viewstrat		x,TEST_DUEL,demo
+
+	pl_jmp_ifBOSSon		.exit0
+	ora	#BOSSstatus_on
+	sta	BOSSstatus
+
+	km_setmissionflag	bossappear
+
+
+	jsl	remove_map_l
+	jsl	makeboss_l
+
+
+	jmp	.exit0
+;-----------------------------------------------------------------
+; -- start duel --
+.playergotoduel
+
+	lda	BOSSstatus
+	bit	#BOSSstatus_duelstart
+	rlbne	.checkbossdeth
+	ora	#BOSSstatus_duelstart
+	sta	BOSSstatus
+
+	pl_control		x,on
+
+	c_view_inbetween	x,on
+
+	s_jmp_varNE		B,KGameMap,#0,.space
+.field	c_set_viewstrat		x,ONFIELD_ARWING
+	;pl_mode_change		x,of_arwing0_init
+	jmp			.finished
+.space	c_set_viewstrat		x,INSPACE_ARWING
+	pl_mode_change		x,cs_arwing0_init
+.finished
+;-----------------------------------------------------------------
+; -- start duel --
+.checkbossdeth
+
+	ldy		BOSSptr
+	bne		.next
+;	lda		BOSSstatus
+;	bit		#BOSSstatus_dead
+;	bne		.next
+;	ora		#BOSSstatus_dead
+;	sta		BOSSstatus
+	pl_control	x,off
+
+	sp_jmp_playertype	x,ROBOT,.kkk
+
+	lda		BOSSstatus
+	bit		#BOSSstatus_dead
+	bne		.next
+	ora		#BOSSstatus_dead
+	sta		BOSSstatus
+
+	pl_mode_change	x,DM_AWC_0_0_init
+
+.kkk
+;-----------------------------------------------------------------
+
+.next
+
+.exit0
+
+	plp
+	ply
+	plx
+	rtl
+
+;<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+;<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+;<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+	ENDC
+
+
+
+
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	BATTLE ga owattaka check suru.
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+battle_end_l
+	s_start_strat
+
+	IFEQ	1
+
+	sm_jmp_if2screen	.exit
+
+;	test_screenmode	onescreen
+;	beq	.exit
+
+;----------------------------------------------------------------------------------
+	s_jmp_alsflag	x,player2,.p2
+;----------------------------------------------------------------------------------
+.p1	pl_jmp_ifplayer2dead	.win
+	bra			.exit
+.p2	pl_jmp_ifplayer1dead	.win
+	bra			.exit
+;----------------------------------------------------------------------------------
+.win	pl_control	x,off
+	pl_mode_change	x,DM_AWC_0_0_init
+;----------------------------------------------------------------------------------
+.exit
+	ENDC
+
+	rtl
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	TABLE of ARWING
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+shape_ARWING	; in space Armer
+
+	DW	A_WING	; fox
+	DW	C_WING	;
+	DW	B_WING	;
+
+shape_ROBOT_NULL	; walker
+
+;	DW	nullROBOTA
+;	DW	nullROBOTB
+;	DW	nullROBOTB
+
+shape_ROBOT_HEAD	; walker
+
+	DW	A_ROBO	; fox
+	DW	C_ROBO
+	DW	B_ROBO
+
+shape_ARMER_BODY	; in space Armer
+
+	DW	MY_BODY	; fox
+	DW	C_UFO_BO
+	DW	B_UFO_BO
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	player no parts(ude toka ashi toka...)no initial
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+plobjinit_srou_l
+
+	PHP
+	s_start_strat
+	a8i16
+	s_start_strat
+
+	s_set_alsflag		y,notslope
+	s_set_alsflag		y,colldisable
+	s_set_aldata		y,#1,#1
+	s_set_alvartobeobj	y,al_ptr,x
+	s_copy_pos		y,x
+	s_copy_rots		y,x
+	s_clr_alsflag		y,shadow
+
+	PLP
+	rtl
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; worldx,y,z buffer <---> worldx,y,z
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+set_exal2worldxyz_srou
+
+	PUSHYP
+
+	s_start_strat
+
+	a8i16
+
+	ldy	al_sword2,x
+
+	a16
+
+	lda	exal_worldx,y
+	sta	al_worldx,x
+
+	lda	exal_worldy,y
+	sta	al_worldy,x
+
+	lda	exal_worldz,y
+	sta	al_worldz,x
+
+	PULLYP
+
+	rts
+
+set_worldxyz2exal_srou
+
+	PUSHYP
+
+	s_start_strat
+
+	a8i16
+
+	ldy	al_sword2,x
+
+	a16
+
+	lda	al_worldx,x
+	sta	exal_worldx,y
+
+	lda	al_worldy,x
+	sta	exal_worldy,y
+
+	lda	al_worldz,x
+	sta	exal_worldz,y
+
+	PULLYP
+
+	rts
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	Copy head pos ---> other obj
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	idx: player's pointer
+;	idy: other objct pointer
+
+copyrobopos_srou_l
+
+
+	PUSHXYP
+
+	s_start_strat
+
+	a8i16
+
+	pl_jmpnot_KAOinpool	x,.normal
+
+.pool	s_copy_pos	y,x
+
+	jmp		.exit
+
+.normal
+
+	s_push_obj	y
+	ldy		al_sword2,x
+	tyx
+	s_pull_obj	y
+
+	s_copy_alvar2alvar	W,y,al_worldx,x,exal_worldx
+	s_copy_alvar2alvar	W,y,al_worldy,x,exal_worldy
+	s_copy_alvar2alvar	W,y,al_worldz,x,exal_worldz
+
+	a16
+	lda		exal_bodyofsy,x
+	sexa
+	nega
+	clc
+	adc.w		al_worldy,y
+	sta.w		al_worldy,y
+
+	lda		exal_bodyfloatofsy,x
+	sexa
+	nega
+	clc
+	adc.w		al_worldy,y
+	sta.w		al_worldy,y
+	a8
+
+
+.exit	PULLXYP
+
+	rtl
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	hit strat
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+playerhit_istrat
+
+	s_jmpto_strat	x
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	hit strats
+;	hit_hlptr	hit list pointer(16bit)
+;	hit_ap		hitter's AP	(16bit)
+;	hit_framecount	hit counter	(8bit)
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+
+;ÉÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ»
+;º  HIT STRAT : FIRST  º
+;ÈÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼
+
+hitplayer_start
+
+	s_start_strat
+	PUSHXYP
+	a8i16
+;	lda	gameframe
+
+
+;DEBUG*********************
+	ldy	hit_hlptr
+	a16
+	lda.w	hl_alptr,y
+	tay
+	a8
+	lda.w	al_collflags,y
+	printb	COLLFLAG,kawagoe
+;**************************
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	hitter's =! then goto hit pros
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+	s_jmp_varnotZERO	B,hit_ap,.hit
+.nohit	s_clr_alsflag	x,hitflash
+	bra		.object
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	effect of hitting
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+.hit	jsl		hit_effect_l
+.sound	s_jmp_varless	B,hit_ap,#4,.ss
+.sl	kplsound	x,damage_l
+	bra		.exitsound
+.ss	kplsound	x,damage_s
+.exitsound
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+.object	;;;jsr	pushobjct_srou
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+	PULLXYP
+
+	s_end_strat
+
+
+
+
+;ÉÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ»
+;º  HIT STRAT : WHILE  º
+;ÈÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼
+
+hitplayer_while
+
+	s_start_strat
+
+	PUSHXYP
+	a8i16
+
+	lda	#0
+	sta	hit_ap
+
+	ldy			al_sword2,x
+
+	s_jmp_alsflag		x,nohitaffect_really,.ap0
+	bra			.apnot0
+
+.ap0	lda	#0
+	sta.l	hit_ap
+.apnot0
+
+	jsr	pushobjct_srou
+
+;	printh	< hit while >,kawagoe
+
+;	lda	hit_framecount
+;	printh	< obj hit count dayo >,kawagoe
+
+	PULLXYP
+
+	s_end_strat
+
+
+;ÉÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ»
+;º  HIT STRAT : END  º
+;ÈÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼
+
+hitplayer_end
+
+	s_start_strat
+
+
+	PUSHXYP
+	a8i16
+
+;	printh	<hit end>,kawagoe
+
+	PULLXYP
+
+	s_end_strat
+
+
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	if hitter's colltype = OBJECT then copy vector
+;
+;	in	idX		: player's pointer
+;		hit_hlptr	: hitlist pointer
+;
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+pushobjct_srou
+
+	s_start_strat
+
+;	sp_jmp_playertype	x,UFO,.do
+;	sp_jmpnot_playertype	x,ROBOT,.notobject
+
+.do	ldy	hit_hlptr
+	a16
+	lda.w	hl_alptr,y
+	tay
+	a8
+
+	s_jmpnot_colltype	y,OBJECT,.notobject
+
+	s_push_obj	y
+
+	toheap	y,x
+
+	a16
+
+	lda	exal_vx,y
+	bmi	.xmi
+.xpl	bit	#0fffcH
+	beq	.nox
+	lda	#4
+	bra	.setx
+.xmi	bit	#0fffcH
+	beq	.nox
+	lda	#-4
+.setx	sta	exal_vx,y
+
+.nox
+
+	lda	exal_vz,y
+	bmi	.zmi
+.zpl	bit	#0fffcH
+	beq	.noz
+	lda	#4
+	bra	.setz
+.zmi	bit	#0fffcH
+	beq	.noz
+	lda	#-4
+.setz	sta	exal_vz,y
+
+.noz
+
+	s_pull_obj	y
+
+	s_copy_alvar2alvar	W,y,al_vx,x,al_mx
+	s_copy_alvar2alvar	W,y,al_vz,x,al_mz
+
+
+;	s_copy_vecs		y,x
+;	s_add_vecs2pos		y
+
+;	ldy	al_sword2,x
+;	lda	hit_framecount
+
+;	printh	< obj hit count dayo>,kawagoe
+
+;	nega
+;	cmp	exal_hit_framecount,y
+;	bcs	.notobject
+;	sta	exal_hit_framecount,y
+.notobject
+	rts
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;demotest_l
+;
+;	s_start_strat
+;
+;	PUSHXYP
+;
+;	a8i16
+;
+;	pl_control	x,off
+;
+;.exit
+;	PULLXYP
+;
+;	rtl
+;
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	Transform suru ka sinaika....
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	in	x1:next mode
+;		idX:player pointer
+
+settransform_srou_l
+
+st_nexttype		equ	x1
+st_nextctlmode	equ	y1
+st_nexttransmode	equ	z1
+
+	PUSHYP
+
+	a8i16
+
+	toheap	y,x
+
+; transform suru?
+
+
+;[same control type?]
+
+	a16
+
+	lda	exal_shapeNoNEXT,y
+	and	#exal_shapeNo_ctmask
+
+;	printh	NEXT,kawagoe
+
+	and	#exal_shapeNo_ctmask
+	rlbeq	.notrans
+
+	PHA
+
+;clear
+	lda	exal_shapeNo,y
+	and	#exal_shapeNo_ctmask
+	sta	tpx
+	PLA
+	cmp	tpx
+	beq	.notrans
+
+; read table data
+
+	jsr	getctldat_srou
+
+;[same type?]
+
+
+	lda	exal_shapeNo,y
+	and	#exal_shapeNo_stmask
+	cmp	st_nexttype
+	beq	.ctlmode
+
+
+;[do transform]
+
+.transmode
+
+;[transform kinshi flag]
+
+	lda	exal_CTLtype,y
+	bit	#exal_CTLtype_notransreally
+	bne	.notrans
+	bit	#exal_CTLtype_notrans
+	beq	.nolock
+	and	#exal_CTLtype_notrans^-1
+	ora	#exal_CTLtype_notransreally
+	sta	exal_CTLtype,y
+.nolock
+
+
+
+
+	jsr	gettransdat_srou
+	lda	st_nexttransmode
+	beq	.notrans
+	bra	.set
+
+
+;[change control]
+
+.ctlmode
+
+	lda	exal_shapeNoNEXT,y
+	and	#exal_shapeNo_ctmask^-1
+	sta	exal_shapeNoNEXT,y
+
+	lda.l	st_nextctlmode
+
+
+.set	sta	x1
+
+	a8
+	s_mode_change	x,x1
+
+	PULLYP
+	sec
+	rtl
+
+
+.notrans	PULLYP
+	clc
+	rtl
+
+
+
+
+
+;-----------------------------------------------------------------------------
+
+getctldat_srou
+
+;	in	:exal_shapeNoNEXT bit 0-3
+;	out	:x1(next type)
+;		:y1(next control mode)
+
+	PUSHXYP
+
+	ai16
+	ldy	al_sword2,x
+	lda	exal_shapeNoNEXT,y
+
+	and	#exal_shapeNo_ctmask
+
+;	printh	NEXTNo,kawagoe
+
+	asl	a
+	asl	a
+
+
+	tax
+
+	lda.l	ctltable,x
+	sta	st_nexttype
+
+	lda.l	ctltable+2,x
+	sta	st_nextctlmode
+
+	PULLXYP
+
+	rts
+
+
+gettransdat_srou
+
+;	in	:exal_shapeNoNEXT bit 0-3
+;	out	:z1(next trans mode)
+
+	PUSHXYP
+
+	a8i16
+
+	toheap	y,x
+
+	sp_jmp_playertype	x,ROBOT,.rb,y
+	sp_jmp_playertype	x,UFO,.am,y
+
+	lda	exal_shapeNoNEXT,y
+	and	#exal_shapeNo_ctmask
+	cmp	#ct_robot
+	beq	.aw2rb
+
+.aw2am	ldy	#pl_arwing2armer	; trans
+	bra	.set
+.aw2rb	ldy	#pl_arwing2robo		; trans
+	bra	.set
+
+.am	ldy	#pl_armer2arwing	; trans
+	bra	.set
+.rb	ldy	#pl_robo2arwing		; trans
+
+.set	sty	st_nexttransmode
+
+	PULLXYP
+
+	rts
+
+
+;--------------------------------------------------------------------------------
+; player mode table
+
+ctltable
+
+;dummy
+	dw	0
+	dw	0	;dummy
+
+;ct_OF_ARWING
+
+	dw	st_OF_ARWING<<4
+	dw	of_arwing0_init	; control
+
+;ct_CS_ARWING
+
+	dw	st_CS_ARWING<<4
+	dw	cs_arwing0_init	; control
+
+;ct_ARMER
+	dw	st_ARMER<<4
+	dw	is_armer0_init	; control
+
+;ct_ROBOT
+	dw	st_ROBOT<<4
+	dw	of_krobo_init	; control
+
+
+
+;transtable
+
+;dummy
+	dw	0
+;
+;ct_OF_ARWING
+
+;	dw	pl_arwing2robo	; trans
+
+;ct_CS_ARWING
+
+;	dw	pl_arwing2armer	; trans
+
+;ct_ARMER
+
+;	dw	pl_armer2arwing	; trans
+
+;ct_ROBOT
+
+;	dw	pl_robo2arwing	; trans
+
+
+
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	player no saigo no syori
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+player_end_strat
+
+	s_start_strat
+
+	a8i16
+
+	jsl			makeburnning_l
+
+	pl_p2_coltab		x,id_1_c
+
+	pl_hpadd		x
+
+
+	s_copy_alvar2alvar	W,x,al_childx,x,al_worldx
+	s_copy_alvar2alvar	W,x,al_childy,x,al_worldy
+	s_copy_alvar2alvar	W,x,al_childz,x,al_worldz
+
+	s_copy_alvar2alvar	B,x,al_childrotx,x,al_rotx 
+	s_copy_alvar2alvar	B,x,al_childroty,x,al_roty
+	s_copy_alvar2alvar	B,x,al_childrotz,x,al_rotz
+
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+; now to calculate position in real world
+; childx, childy, and childz is the player's position in virtual space.
+; ie. relative to the current object it is standing on.
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+	toheap	y,x
+
+;--------
+; are we definitely on a slope? NB: slopeptr is set even if we are not
+; physically touching the slope.
+
+	s_jmp_alsflag	x,ontheground,.dontclrlast
+
+	a16
+	lda	#0
+	sta	d_lastslopeptr,y	; clear last ptr
+	bra	.norotate		; and 'world' = mother
+
+.dontclrlast
+
+	a16
+	lda	al_slopeptr,x
+	beq	.norotate	; if zero then 'world' is mother
+
+	cmp	d_lastslopeptr,y
+	beq	.nochange	; different to last frame?
+
+;--------
+; if we are on a different slope to the last frame then set up 'virtual'
+; position relative to new slope
+
+	tay
+	lda	al_worldx,x
+	sec
+	sbc.w	al_worldx,y
+	sta	al_childx,x
+
+	lda	al_worldy,x
+	sec
+	sbc.w	al_worldy,y
+	sta	al_childy,x
+
+	lda	al_worldz,x
+	sec
+	sbc.w	al_worldz,y
+	sta	al_childz,x
+
+	blink
+
+	a8
+	lda     al_roty,x
+	sec
+	sbc.w   al_roty,y
+	sta     al_childroty,x
+
+	lda.w   al_roty,y
+	sta     y1
+
+	toheap  y,x
+
+	lda     y1
+	sta     d_negativeroty,y
+
+
+;--------
+; now to create worldx,y,z and rotx,y,z from the relative values in
+; childx,y,z and childrotx,y,z
+
+.nochange
+
+.norotate
+	a8
+
+	s_rotpos_allchildren	x	;MACRO	motherobj
+
+	s_end_strat
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+;	INCLUDE FILE
+
+	incfile	tplayer.asm
+
+;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+	strats_end
+             

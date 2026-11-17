@@ -1,6 +1,6 @@
 ; mario data tables
 
-	incpublics	mdata.ext
+	incpub	mdata
 
 
 
@@ -18,6 +18,8 @@ deflogb	macro
 
 mwinbase
 
+
+	IFEQ	1
 mscramwipe
 val1	=	96
 val2	=	96
@@ -247,7 +249,7 @@ valy4	=	valy4+kdy
 	endr
 	dw	-1
 
-
+	ENDC
 
 
 
@@ -272,7 +274,7 @@ star_cols
 
 
 snow_cols
-	db	14,14,14,14,14,14,14,14,8,8,8,8,8,8,8,8
+	db	14,14,13,12,11,10,9,9,9,8,8,8,8,8,8,8
 
 partfadetab
 ;	db	14,4,14,4,13,2,12,2,11,1,10,1,10,10,9,9
@@ -944,6 +946,7 @@ mscalechars
 	mchar	%0011111111100000
 
 ;' '
+.space
 	mchar	%0000000000000000
 	mchar	%0000000000000000
 	mchar	%0000000000000000
@@ -956,13 +959,14 @@ mscalechars
 	mchar	%0000000000000000
 	mchar	%0000000000000000
 	mchar	%0000000000000000
+
 
 	ENDC
 
 msgtmp	macro
 	defs	1,"[1]\1"
 
-	IFS	1,1," "
+	IFS	1,0," "
 	defs	1,"h"
 	ENDC
 
@@ -980,10 +984,11 @@ mariomsg	macro
 	UPPER	2
 
 	REPT	30
-	IFNS	2,1,";"
+	IFNS	2,0,";"
 	run	" msgtmp <%$2>"
 	run	' db 1+"%$1"-"A"'
-	rols	2,1
+
+	SUBSTR	1,,2
 	ENDC
 	ENDR
 	db	0
@@ -991,6 +996,7 @@ mariomsg	macro
 
 
 mariomsgs
+
 msg_starfox
 	db	41,42,43,44,45,46,47,48,0
 
@@ -1148,6 +1154,17 @@ msg_rick
 msg_jondean
 	mariomsg	<JON DEAN>
 
+msg_ces
+	mariomsg	<CES DEMO>
+msg_demo
+	mariomsg	<VERSION>
+
+msg_deutscher
+	mariomsg	<GERMAN TEXT>
+
+msg_claude
+	mariomsg	<CLAUDE MOYSE>
+
 msg_0	mariomsg	<0>
 msg_1	mariomsg	<1>
 msg_2	mariomsg	<2>
@@ -1266,6 +1283,55 @@ msg_total mariomsg	<TOTAL SCORE>
 msg_ave	mariomsg	<AVERAGE SCORE>
 msg_stage mariomsg	<STAGE>
 
+msg_score1000	mariomsg	<1000>
+msg_score500	mariomsg	<500>
+msg_score100	mariomsg	<100>
 
 
+;컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴�
+; sprite tables for stardust
 
+dusttable_kusa
+	db	118
+	db	118
+	db	118
+	db	117	; ground sprite
+
+	db	116
+	db	116
+	db	119
+	db	116	; raining/bubble/hoka sprite
+dusttable_maguma
+	db	119
+	db	119
+	db	119
+	db	119
+dusttable_asteroid
+	db	117
+	db	117
+	db	117 
+	db	117
+dusttable_awa
+	db	101
+	db	101
+	db	101
+	db	101
+
+	db	116
+	db	116
+	db	116
+	db	116
+
+
+dusttable_rain
+	db	119
+	db	119
+	db	119
+	db	119
+
+;컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴�
+
+
+
+
+

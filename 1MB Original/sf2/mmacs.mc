@@ -508,7 +508,7 @@ mpop	macro
 
 mcalls	macro
 	link	#3
-	mbra	(\1)&$ffff
+	bra	\1
 	endm
 
 
@@ -1248,6 +1248,7 @@ readflags	macro
 ;
 ; c flag corrupt
 
+	IFEQ	1
 ldflags	macro
 	readflags
 	ibt	r0,#0
@@ -1264,7 +1265,7 @@ ldflags	macro
 	lsr
 	rol
 	endm
-
+	ENDC
 
 ; UNTESTED
 ;
@@ -1302,4 +1303,53 @@ clrflags	macro
 
 
 
+;
+; 
+; macro for decimal print routine
+;
 
+do_digit	MACRO	[unit]
+	IFNE	{unit}-1
+	iwt	r8,#{unit}
+	ibt	r5,#0
+.divlp\@
+	sub	r8
+	bcs	.divlp\@
+	inc	r5
+
+	add	r8
+
+	ELSEIF
+
+	move	r5,r0
+	inc	r5
+
+	ENDC
+
+	move	r8,r0		; store the number temporarily.
+
+	IFNE	{unit}-1
+	with	r10
+	add	r5
+	dec	r10
+
+	moves	r10,r10
+	beq	.noprint\@
+	nop
+	ENDC
+
+	ibt	r0,#"0"-1
+	add	r5
+
+	mcall	mprintascii	; "0"-"9" is actually r5=1-10
+	nop
+.noprint\@
+	move	r0,r8
+	ENDM
+; 
+;--------------------------------------------------------------
+
+
+
+
+

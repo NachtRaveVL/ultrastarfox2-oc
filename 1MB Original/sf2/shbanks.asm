@@ -1,62 +1,50 @@
 	include	header.inc
-	include	stratequ.inc
+	include	strathdr.inc
 
 	include	shmacs.inc
+	include	bgmacs.inc
+	include	marioi.inc
 
-	include	colboxes.ext
-	include	coltabs.ext
-
-	INCPUBLICS shbanks.ext
+	INCPUB shbanks
 
 do_hdr	=	0
 
 ;------------------------------------------------------------------
 	bank	12
-	incshapes	shapes.asm	
-	incshapes	kshapes.asm
-
-bgmm	incbinfile	snd\sgbgmm.bin
-bgmmlen	equ	*-bgmm
+	incshapes	shapes.asm
 	bankend	12
+;------------------------------------------------------------------
+	bank	13
+
+	incshapes	pshapes.asm
+
+	IFGT	(*&WM)-(bank13_split+$8000)	;$c000
+	error	<Bank 13 overflow>
+	ENDC
+
+	bankend	13
 
 ;------------------------------------------------------------------
 	bank	14
-	incshapes	shapes2.asm
-	inccru	bgmpcr,data\m.pcr
-bgm2	incbinfile	snd\sgbgm2.bin
-bgm2len	equ	*-bgm2
+	incshapes	eshapes2.asm
+	incshapes	pshapes3.asm
 	bankend	14
 
 ;------------------------------------------------------------------
 	bank	15
-	INCshapes	shapes3.asm
-
-bgmn	incbinfile	snd\sgbgmn.bin
-bgmnlen	equ	*-bgmn
+	incshapes	eshapes.asm
 	bankend	15
 
 ;------------------------------------------------------------------
 	bank	16
-	incshapes	shapes4.asm
-
-bgmj	incbinfile	snd\sgbgmj.bin
-bgmjlen	equ	*-bgmj
+	incshapes	bshapes.asm
+	incshapes	ushapes.asm
+	incshapes	wshapes.asm
 	bankend	16
-
 ;------------------------------------------------------------------
 	bank	17
-	incshapes	shapes5.asm
-	incshapes	ushapes.asm
-	incshapes	pshapes.asm
-
-	public	dogccr
-	inccru	dogccr,data\dog.ccr
-
-bgm7	incbinfile	snd\sgbgm7.bin
-bgm7len	equ	*-bgm7
-bgm3	incbinfile	snd\sgbgm3.bin
-bgm3len	equ	*-bgm3
-
+	incshapes	pshapes2.asm
+	incshapes	shapes2.asm
 	bankend	17
 
 

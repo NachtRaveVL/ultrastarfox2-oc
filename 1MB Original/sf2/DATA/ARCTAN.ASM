@@ -1,6 +1,6 @@
 * Arc Tangent table...
 
-	public	arctantab
+	INCPUB	arctan
 
 arctantab
 	dw	0<<4,2<<4,5<<4,7<<4,10<<4,12<<4,15<<4,17<<4

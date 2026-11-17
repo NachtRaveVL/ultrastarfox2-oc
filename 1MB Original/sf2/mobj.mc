@@ -7,13 +7,37 @@
 ;      	Copyright 1991
 ;		Argonaut Software Ltd.
 
+;
+; Update history:
+;
 
-; G'day Nishida!
+; 26/10/93	pete	Made fast project a subroutine call
 ;
-; Have fun!
-;	Cheers,
-;		Pete
+; mfastproj calls this (temp. while testing)
+; mprojpoly calls this (in mclip.mc)
+; Fixes Z clipped polys tears so that pnts are fast/slow proj instead
+; of always slow proj.
+
+; 22/11/93	pete	New BSP code added
 ;
+; bsp_init, bsp_node, bsp_faces, bsp_ret added
+; Old BSP code still supported
+
+; 15/2/94  giles  Max sprites limit change 
+;
+; Changed mface_do_colour and mdo_colour to use 
+; bit 13 instead of bit 8 of the coltext number
+; as the lo/hi nibble bit.
+; Also changed palette lookup. 23/2/94
+;
+
+; 6/4/94 Carl 
+; Plane clipping for Dylan
+
+PLANECLIP	equ	1
+
+;
+
 
 
 ; reg equates
@@ -33,28 +57,18 @@ mrot_pnts8		equ	1
 msmooth_shading	equ	0
 ;mario_stats3d		equ	1
 
+
+
 mshadowcolour	equ	$09
 
-
-	ifne	mario_stats3d
-
-	malc	m_shapes_notdrawn,2
-	malc	m_polys_drawn,2
-	malc	m_lines_drawn,2
-	malc	m_points_done,2
-	malc	m_visis_done,2
-	malc	m_polys_clip2d,2
-	malc	m_polys_clip3d,2
-
-	endc
 
 
 
 	ifne	1
 mleftclp	=	0		;80
-mrightclp	=	num_col*8-1	;223	;140
+mrightclp	=	bitmapwidth*8-1	;223	;140
 mtopclp    	=	0		;40
-mbotclp    	=	num_row*8-1	;127	;90
+mbotclp    	=	bitmapvheight*8-1	;127	;90
 mvanishx	=	mrightclp/2+1
 mvanishy	=	mbotclp/2+1
 	endc
@@ -63,6 +77,8 @@ mleftclp	=	80		; Test clip window
 mrightclp	=	140
 mtopclp    	=	40
 mbotclp    	=	90
+mvanishx	=	mrightclp/2+1
+mvanishy	=	mbotclp/2+1
 	endc
 
 ; objflags
@@ -89,7 +105,7 @@ mshape_rts	macro
 	to	pc
 	getb
 ;	move	pc,r0
-	inc	r14
+	 inc	r14
 	endm
 
 ;mshape_rts2	macro
@@ -97,7 +113,7 @@ mshape_rts	macro
 ;	inc	r14
 ;	getbh
 ;	move	pc,r0
-;	inc	r14
+;	 inc	r14
 ;	endm
 
 ;mshape_rts3	macro
@@ -106,7 +122,7 @@ mshape_rts	macro
 ;	add	r1
 ;	to	pc
 ;	ldw	[r0]
-;	inc	r14
+;	 inc	r14
 ;	endm
 
 
@@ -119,7 +135,7 @@ mshape_jsr	macro
 	to	pc
 	getb
 ;	move	pc,r0
-	inc	r14
+	 inc	r14
 	endm
 
 
@@ -136,7 +152,7 @@ mshape_jsr	macro
 ;	to	pc
 	getb
 	move	pc,r0
-	inc	r14
+	 inc	r14
 	endm
 
 	endc
@@ -372,6 +388,17 @@ mshowo
 
 ;************************************************
 
+ IFNE	mpolylist
+
+; init polylist ptr
+
+	miwt	r0,m_polylist
+	sms	[m_polylistptr],r0
+
+ ENDC
+
+;************************************************
+
 minit3dvars
 	ifne	msafeobj	; force reinit of clip window vars
 	miwt	r0,mvanishx
@@ -459,6 +486,7 @@ minit3dvars
 	add	r2
 
 .noff
+
 	lms	r1,[m_bigz]
 
 	sub	r0
@@ -509,6 +537,8 @@ minit3dvars
 
 	mcache
 ; calc shape scale value from shift value
+;- sf2 change
+;	lm	r1,[m_globalscale]
 
 	ibt	r0,#1
 	lms	r12,[m_shift]
@@ -520,6 +550,7 @@ minit3dvars
 	loop
 	add	r0
 mshow1
+;	mult	r1
 	sms	[m_scale],r0
 
 
@@ -807,6 +838,7 @@ initlight
 	sms	[m_rotlightz],r0
 	endc
 
+
 	ifne	1
 	miwt	r0,18917
 	sms	[m_lightx],r0
@@ -958,6 +990,7 @@ initlight
 ;	mlbra	mdrawsphere		; shaded sphere
 	mlbra	mdrawtsphere		; textured sphere
 	endc
+
 
 ;************************************************
 
@@ -1322,6 +1355,7 @@ rmmat32	equr	8
 
 
 msh_rotpoints16
+
 	mgetbi	r12
 	lms	r0,[m_numpnts]
 	add	r12
@@ -1980,6 +2014,19 @@ msh_endpoints
 
 	endc
 
+;------------------ 3D Plane Clipping 6/4/94 Carl
+ IFNE PLANECLIP
+	lm	r1,[m_clipplanes]	;- Clipping on this obj ?
+	mtest	r1
+	beq	.skip_pl
+	nop
+
+	mcall	mcalc_d_verts	;- calc dist from plane for all verts
+	nop
+	mlbeq	mshowobjexit
+.skip_pl
+ ENDC
+;------------------
 
 	ifeq	mfastproj
 
@@ -2013,7 +2060,292 @@ rbigz	equr	9
 
 
 
-	ifne	mfastproj
+	ifne	mfastproj		; pete 26/10/93
+
+;0	tmp
+;1	x
+;2	y
+;3	scale
+;4	mlo
+;5	mhi
+;6	z
+;7-9	bigx,y,z
+;10	rotptr
+;11	projptr
+
+;12	loop count
+;13	loop addr
+;14	romptr
+;15	pc
+
+rx	equr	1
+ry	equr	2
+;rscale	equr	3
+rmlo	equr	4
+rmhi	equr	5
+rz	equr	6
+rbigx	equr	3
+rbigy	equr	13
+rbigz	equr	9
+rrotptr	equr	7
+rprojptr	equr	8
+
+routcode	equr	4
+rxmax		equr	5
+rymax		equr	5
+
+; project points
+
+projectpnts
+;	lms	rscale,[m_scale]
+
+	lms	rbigx,[m_bigx]		; world x,y,z
+	lms	rbigy,[m_bigy]
+	lms	rbigz,[m_bigz]
+
+	ibt	r0,#ztab>>16
+	romb			      	; ztab rom bank
+
+	sub	r0
+	sms	[m_or_of_outcodes],r0	; outcode = 0
+
+	miwt	rrotptr,m_rotpnts
+	miwt	rprojptr,m_projpnts
+	sms	[m_shapeptr],rshapeptr	; save shapeptr
+	lms	r12,[m_numpnts]		; numpnts to project
+
+	mcache
+
+outprojploop
+	mldwi	rrotptr	; x
+;	mult	rscale
+	to	rx
+	add	rbigx		; add worldx
+
+	mldwi	rrotptr	; y
+;	mult	rscale
+	to	ry
+	add	rbigy		; add worldy
+
+	mldwi	rrotptr	; z
+;	mult	rscale
+	to	rz
+	add	rbigz		; add worldz
+
+;-			-
+;	mpush	rz
+;-			-
+
+	mcall	mfastproject
+	nop
+
+;-			-
+;	mpop	rz		;Mod outcode for z clip at 128
+;	with	rz
+;	add	rz
+;	with	rz
+;	hib
+;	bne	.1
+;	nop
+;	ibt	rz,#$10
+;	or	rz
+;.1
+;-			-
+
+	from	rx
+	mstwi	rprojptr	; output x
+	from	ry
+	mstwi	rprojptr	; output y
+	mstwi   rprojptr	; output outcode
+
+	lms rz,[m_or_of_outcodes]
+	or  rz
+	dec	r12
+	bne	outprojploop
+	sbk		 	     ; store back or_of_outcodes
+
+	lms r0,[m_shapebank]    ; rom bank = shapebank
+	romb
+	lms rshapeptr,[m_shapeptr]
+
+	mlbra   skipout
+
+
+
+
+mfastproject
+	ibt	routcode,#0
+
+
+;	lm	r0,[m_test1]
+;	fmult	
+;	add	r0
+;	with	rz
+;	add	r0
+;;	move	rz,r0
+
+
+	miwt	r0,maxztab
+	sub	rz
+	bpl	outproj1	; if z > maxztab then z = maxztab
+	nop
+	miwt	rz,maxztab-1
+outproj1
+
+	miwt	r0,256		; if z < 256 then outprojznear
+	sub	rz
+	mlbpl	outprojznear
+
+outprojznear1
+
+; look up 32768/z
+
+	with	rz
+	bic	#1
+
+	miwt	r0,ztab
+	to	r14
+	add	rz
+
+	to	rz		; z = 32768/z
+	getb
+	inc	r14
+	with	rz
+	getbh
+
+	move	r14,routcode	; save outcode
+
+; project x
+
+	from	rx		; x = (x * 32767/z) >> 15
+	fmult
+;	rol	      	; giles
+        
+;	ibt	rx,#mvanishx	; add vanishx
+	lms	rx,[m_vanishx]
+	add	rx
+	move	rx,r0
+;	mstwi	rprojptr	; output x
+
+; project y
+
+	from	ry		; y = (y * 32767/z) >> 15
+	fmult
+;	rol		; giles
+
+;	ibt	ry,#mvanishy	; add vanishy
+	lms	ry,[m_vanishy]
+	add	ry
+	move	ry,r0
+;	mstwi	rprojptr	; output y
+
+;	ibt	routcode,#0
+	move	routcode,r14	; restore outcode
+
+; outcode point
+
+	ifeq	0
+
+	moves	r0,rx
+	bmi	outproj2	; x < 0
+	nop
+	lms	rxmax,[m_xright]
+;	miwt	rxmax,mrightclp	; x > xmax-1
+	sub	rxmax
+	bmi	outproj3
+	nop
+	inc	routcode
+outproj2
+	inc	routcode
+outproj3
+	with	routcode
+	mult	#4
+
+	moves	r0,ry
+	bmi	outproj4	; y < 0
+	nop
+
+	lms	rymax,[m_ybot]
+;	miwt	rymax,mbotclp	; y > ymax-1
+	sub	rymax
+	bmi	outproj5
+	nop
+	inc	routcode
+
+outproj4
+	inc	routcode
+outproj5
+
+	endc
+
+	ibt r0,#31      ; store complemented outcode in high byte
+      
+	xor routcode
+	swap
+	or  routcode
+
+outprojznear2
+;	mstwi   rprojptr	; output outcode
+
+	jmp	r11
+	nop
+
+
+
+
+;   loop
+;   nop
+	
+;	dec	r12
+;	mlbne	outprojploop
+
+
+;    lms r0,[m_shapebank]    ; rom bank = shapebank
+;    romb
+;    lms rshapeptr,[m_shapeptr]
+
+;   mlbra   skipout
+
+
+
+outprojznear
+	move    r14,r12
+	move    r3,r6
+
+	mpush	r11
+	mcall   mprojectpnt     ; trashes r13 !!
+	nop
+	mpop	r11
+
+	move    r12,r14
+
+;	from    rx
+;	mstwi   rprojptr    ; x
+;	from    ry
+;	mstwi   rprojptr    ; y
+
+	lms rbigx,[m_bigx]      ; world x,y,z
+	lms rbigy,[m_bigy]
+	lms rbigz,[m_bigz]
+
+;	miwt    r13,outprojploop    ;*** OOPS! might need r13 still...
+
+	mlbra   outprojznear2
+
+
+
+skipout
+
+oprojsize	=	*-outprojploop
+;	?oprojsize
+
+	endc
+
+
+;****************************************************************
+
+
+	ifne	0		; old fastproject - pete 26/10/93
 
 ;0	tmp
 ;1	x
@@ -2087,6 +2419,15 @@ outprojploop
 	to	rz
 	add	rbigz		; add worldz
 
+
+;	lm	r0,[m_test1]
+;	fmult	
+;	add	r0
+;	with	rz
+;	add	r0
+;;	move	rz,r0
+
+
 	ibt	routcode,#0
 
 	miwt	r0,maxztab
@@ -2123,7 +2464,8 @@ outprojznear1
 
 	from	rx		; x = (x * 32767/z) >> 15
 	fmult
-	rol
+;	rol	      	; giles
+        
 ;	ibt	rx,#mvanishx	; add vanishx
 	lms	rx,[m_vanishx]
 	add	rx
@@ -2134,7 +2476,8 @@ outprojznear1
 
 	from	ry		; y = (y * 32767/z) >> 15
 	fmult
-	rol
+;	rol		; giles
+
 ;	ibt	ry,#mvanishy	; add vanishy
 	lms	ry,[m_vanishy]
 	add	ry
@@ -2180,101 +2523,59 @@ outproj5
 
 	endc
 
-	ibt	r0,#31		; store complemented outcode in high byte
-	xor	routcode
-	swap
-	or	routcode
-	mstwi	rprojptr	; output outcode
-
-	lms	rz,[m_or_of_outcodes]
-	or	rz
-	loop
-	sbk			; store back or_of_outcodes
-
-;qqq1	=	*-outprojploop
-;qqq1	=	*-mmatrotploop
-;	?qqq1
 
 
 
-	lms	r0,[m_shapebank]	; rom bank = shapebank
-	romb
-	lms	rshapeptr,[m_shapeptr]
+    ibt r0,#31      ; store complemented outcode in high byte
+      
+    xor routcode
+    swap
+    or  routcode
 
-	mlbra	skipout
+outprojznear2
+    mstwi   rprojptr    ; output outcode
+
+    lms rz,[m_or_of_outcodes]
+    or  rz
+    loop
+    sbk         ; store back or_of_outcodes
+
+;qqq1   =   *-outprojploop
+;qqq1   =   *-mmatrotploop
+;   ?qqq1
+
+
+
+    lms r0,[m_shapebank]    ; rom bank = shapebank
+    romb
+    lms rshapeptr,[m_shapeptr]
+
+    mlbra   skipout
 
 
 outprojznear
-	moves	r0,rz	
-	bpl	outprojz1
-	nop
-	ibt	routcode,#$10/4	; outcode -z
-	mneg	rx		; x = -x
-	mneg	ry		; y = -y
-	mneg	rz		; z = -z
-outprojz1
-	from	rz
-	add	rz
-	add	r0
-	add	r0
-	to	rz
-	add	r0
+    move    r14,r12
+    move    r3,r6
 
-maxprojXY	=	1024
+    mcall   mprojectpnt     ; trashes r13 !!
+    nop
 
-	moves	rx,rx
-	bmi	.negx
-	nop
-	iwt	r0,#maxprojXY
-	cmp	rx
-	bpl	.xok
-	nop
-	iwt	rx,#maxprojXY
-	bra	.xok
-	nop
-.negx
-	iwt	r0,#-maxprojXY
-	cmp	rx
-	bmi	.xok
-	nop
-	iwt	rx,#-maxprojXY
-.xok
+    move    r12,r14
 
-	moves	ry,ry
-	bmi	.negy
-	nop
-	iwt	r0,#maxprojXY
-	cmp	ry
-	bpl	.yok
-	nop
-	iwt	ry,#maxprojXY
-	bra	.yok
-	nop
-.negy
-	iwt	r0,#-maxprojXY
-	cmp	ry
-	bmi	.yok
-	nop
-	iwt	ry,#-maxprojXY
-.yok
+    from    rx
+    mstwi   rprojptr    ; x
+    from    ry
+    mstwi   rprojptr    ; y
+
+    lms rbigx,[m_bigx]      ; world x,y,z
+    lms rbigy,[m_bigy]
+    lms rbigz,[m_bigz]
+
+    miwt    r13,outprojploop    ;*** OOPS! might need r13 still...
+
+    mlbra   outprojznear2
 
 
-	from	rx
-	add	rx
-	add	r0
-	add	r0
-	to	rx
-	add	r0
-
-	from	ry
-	add	ry
-	add	r0
-	add	r0
-	to	ry
-	add	r0
-
-;	miwt	rz,256
-	mlbra	outprojznear1
 
 skipout
 
@@ -2282,7 +2583,6 @@ oprojsize	=	*-outprojploop
 ;	?oprojsize
 
 	endc
-
 
 
 
@@ -2327,6 +2627,8 @@ mtestoutcodes
 
 ;	mlbra	mshowobjend
 
+;	mlbra	msh_endshape		; draw projected points
+
 
 
 ;********************************************
@@ -2340,6 +2642,166 @@ mtestoutcodes
 	sms	[m_shapeptr],rshapeptr
 
 	mshape_rts
+
+;********************************************
+
+;------------------------------------------------
+; pete 22/11/93
+
+; new bsp
+
+;BSP_INIT continue
+;push continue
+;push bspout
+
+;BSP_NODE vis,front,back
+;if vis then
+; shjsr back
+; shjsr front
+; shrts
+;else
+; shjsr front 
+; shjsr back 
+; shrts
+
+;BSP_FACES skip
+;add2list
+;shjmp skip
+
+;BSP_RET
+;rts
+
+
+msh_bsp_init
+;	stop
+;	nop
+
+	miwt	r1,m_bsplist
+
+;	sub	r0
+;	mstwi	r1
+
+	sms	[m_bspptr],r1
+
+;	mgetwi	r0
+;	mpush	r0		; stack continue addr
+
+	miwt	r0,msh_bspout	; stack bspout addr
+	mpush	r0
+
+	mcache
+
+	mshape_rts
+
+
+msh_bsp_faces
+;	from	r14
+;	add	#2
+
+	dec	r14
+	inc	r14
+	move	r0,r14
+	inc	r0
+	inc	r0
+
+	lms	r1,[m_bspptr]
+	mstwi	r1		; add to bsp list
+	sms	[m_bspptr],r1
+
+	mgetw	r0
+	to	r14
+	add	r14
+
+	mshape_rts
+
+
+msh_bsp_ret
+	mpop	pc
+	nop
+
+
+
+;BSP_NODE vis,front,back
+;if vis then
+; shjsr back
+; shjsr front
+; shrts
+;else
+; shjsr front 
+; shjsr back 
+; shrts
+
+msh_bsp_node
+	mgetbi	r0		; get vis num
+	miwt	r1,m_vistab
+	add	r1
+	ldb	[r0]		; get vis
+	swap
+
+	mtest	r0		; test vis
+	bmi	.bspvis
+	nop
+
+; not vis
+	
+	mpush	r14		; save r14
+
+	mgetw	r0		; get front offset (#0)
+	to	r14
+	add	r14
+
+	mshape_jsr		; jsr front
+
+	mpop	r14
+	inc	r14
+	inc	r14
+	mpush	r14    		; save r14
+
+	mgetw	r0		; get back offset (#2)
+	to	r14
+	add	r14
+
+	mshape_jsr		; jsr back
+
+	mpop	r14		; continue (#4)
+	inc	r14
+	inc	r14
+	mshape_rts
+
+; vis
+
+.bspvis
+	mpush	r14		; save r14
+
+	inc	r14		; skip front offset
+	inc	r14
+
+	mgetw	r0		; get back offset (#2)
+	to	r14
+	add	r14
+
+	mshape_jsr		; jsr back
+
+	mpop	r14
+	dec	r14
+	inc	r14
+	mpush	r14		; save r14
+
+	mgetw	r0		; get front offset (#0)
+	to	r14
+	add	r14
+
+	mshape_jsr		; jsr front
+
+	mpop	r14		; continue (#4)
+	inc	r14
+	inc	r14
+	inc	r14
+	inc	r14
+	mshape_rts
+
+;------------------------------------------------
+
 
 ;********************************************
 
@@ -2595,6 +3057,7 @@ msh_bspout
 
 	mtest	r14		; terminate if 0
 	beq	.1
+	 nop			; bug fix - pete 17/1/94
 
 	mshape_jsr		; execute until quit
 
@@ -2626,11 +3089,12 @@ msh_bspout
 
 	mtest	r14		; terminate if 0
 	beq	.1
+	 nop			; bug fix - pete 17/1/94
 
 	mshape_jsr		; execute until quit
 
 	bra	.2
-	nop	
+	 nop	
 .1
 ;	mpop	r14		; get continue addr
 ;	mshape_rts
@@ -2880,6 +3344,8 @@ msh_s_sprite
 ;*************************************************
 
 
+ IFEQ	mpolylist			; IF mpolylist=0
+
 
 ; faces
 
@@ -2952,13 +3418,26 @@ mfaceloop
 	bmi	mfacesend
 	inc	r14
 
+;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+; Giles - skip polygon group number and don't draw colour 0 polygons.
+;	inc	r14		; skip polygon group number.
+;	inc	r14		; skip vis byte.
+;	with	r1
+;	getbs			; if colour = 0 then don't draw.
+;	moves	r1,r1
+;	beq	mgisnotvis	
+;	bne	mgisnotvis	
+;	dec	r14
+;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
 	ibt	r1,#$3f
 	to	r2
 	and	r1
 	sms	[m_fnumpnts],r2
 
 	dec	r2
-	dec	r2
+  	dec	r2
 	beq	misline
 	inc	r14
 
@@ -2998,7 +3477,15 @@ mvistest
 	bra	mfaceloop
 	add	r0		; add fnumpnts -2
 
-;**********************************************************
+;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+; Giles - polygon not visible.
+mgisnotvis
+;	add	#5		
+;	with	r14
+;	bra	mfaceloop	    
+;	add	r0
+;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 
 ; isvis
 misvis
@@ -3008,6 +3495,9 @@ misvis
 misline
 	mcall	mdo_colour
 	nop
+
+;	sub	r0			; turn off textures
+;	sms	[m_texturemap],r0
 
 ;*************************************************************
 
@@ -3111,7 +3601,8 @@ mcopypoly
 
 	sms	[m_shapeptr],rshapeptr
 
-	ibt	r0,#default_c>>16
+;- carl (default_c -> id_0_c)
+	ibt	r0,#id_0_c>>16
 	romb
 
 	lms	r14,[m_texptr]
@@ -3144,7 +3635,7 @@ moff_copypoly
 	miwt	rpolyptr,m_polybuf
 	ibt	routcode,#0
 	lms	r12,[m_fnumpnts]
-;	mcache
+	mcache
 	move	r13,pc
 
 	mgetbi	rpnt		; p1
@@ -3204,15 +3695,33 @@ moff_copypoly
 
 	sms	[m_shapeptr],rshapeptr
 
-	ibt	r0,#default_c>>16
+;- carl (default_c -> id_0_c)
+	ibt	r0,#id_0_c>>16
 	romb
 
 	lms	r14,[m_texptr]
+;-Carl change
+ IFNE 1
+
+	sub	r0
+	getbh	r0		; xp1
+	inc	r14
+	mstwi	rpolyptr
+	getbh	r0		; yp1
+	inc	r14
+	mstwi	rpolyptr
+	sms	[m_texptr],r14
+
+ ELSEIF
+
 	mgetbi	r0		; xp1
 	mstwi	rpolyptr
 	mgetbi	r0		; yp1
 	mstwi	rpolyptr
 	sms	[m_texptr],r14
+
+ ENDC
+;-
 
 	lms	r0,[m_shapebank]
 	romb
@@ -3244,21 +3753,50 @@ mchkpoly
 	mlbra	mfaceon
 .2
 	ifne	1
+	miwt	r1,$1000
+	from	r1
+	and	routcode
+	sub	r1	
+	mlbne	mfacenotvis		; skip if all points z clipped
+	nop
+
+;-Carl change	       -World clip texture maps-
+
+ IFNE 1
+
+	from	routcode		;- Clipped ?
+	lob
+	beq	.zoc
+	nop
+	lms	r0,[m_texturemap]	;- and a texture map ?
+	hib
+	beq	.zoc
+	nop
+	mcall	m3dcliptexturemap	;- oh dear!
+	nop
+;	bra	mcliptex
+;	bra	.exzclip
+	mtest	r0
+	bne	mfaceon
+	 nop
+	mlbra	mfacelabel2
+.zoc
+
+ ENDC
+
+;-------
+
 	ibt	r0,#$10
 	and	routcode
 	beq	.1			; skip if no points z clipped
 	nop
 
-	miwt	r1,$1000
-	from	r1
-	and	routcode
-	sub	r1	
-	bne	mfacenotvis		; skip if all points z clipped
-	nop
 
-	lms	r0,[m_texturemap]	; don't 3d clip texture maps!
-	hib
-	mlbne	mfacenotvis
+;-Carl Change
+;	lms	r0,[m_texturemap]	; don't 3d clip texture maps!
+;	hib
+;	mlbne	mfacenotvis
+;-
 
 ;	mlbra	mfacenotvis		; draw no z clipped polys
 
@@ -3270,12 +3808,20 @@ mchkpoly
 
 	mcall	mclippoly3d
 	nop
-
+.exzclip
 	mtest	r0
 	beq	mfacelabel2
 	nop
-	bra	mclppoly2d
+
+;-Carl change
+	lms	r1,[m_texturemap]	;- Check for 3D clipped texmap
+	with	r1
+	hib
+	
+	beq	mclppoly2d
 	nop
+	mlbra	mtxclppoly2d		;- 2D clip output texmap
+;-
 .1
 	endc
 
@@ -3358,6 +3904,932 @@ mfacenotvis
 	mlbra	mfaceloop
 
 
+ ENDC					; ENDC mpolylist=0
+
+
+
+
+
+
+
+ IFNE	mpolylist			; IF mpolylist=1
+
+
+
+
+; 15	animated    )if both set
+; 14	textured    )then smooth shaded
+; 13..8	light source table 
+;  7..4	colour2
+;  3..0	colour1
+
+; animated	animtab7
+; textured	texture3
+; litesrcd	litetab15,colour9
+; 
+;
+
+
+
+
+mface_do_colour
+	move	r2,r14
+
+ IFNE 1
+	lms	r0,[m_objflags]
+	miwt	r1,drawshadow
+	to	r1
+	and	r1
+	beq	.noshadow
+	 nop
+
+	move	r1,#truecolourshadow
+	and	r1
+	bne	.noshadow
+	nop
+
+	sub	r0
+	sms	[m_texturemap],r0
+;	sms	[m_tcmodecol],r0
+
+	ibt	r0,#2	;8		; dithering on
+	cmode
+
+	iwt	r0,#mshadowcolour
+;	colour
+
+	mlbra	.mdo_colour4
+
+.noshadow
+ ENDC
+
+
+	getb
+
+;;~~~~~~~~~~~~~~~~~~~~~~~
+;	iwt	r0,#89		;----< FORCE TEXTURE MAPPED >
+;;	iwt	r1,#205
+;;	with	r1
+;;	sub	r0
+;;	bne	.clok
+;;	nop
+;;	iwt	r0,#192
+;;.clok
+;;~~~~~~~~~~~~~~~~~~~~~~~
+	add	r0
+
+
+;- carl (default_c -> id_0_c)
+	ibt	r1,#id_0_c>>16
+	from	r1
+	romb			; mario data table bank
+
+	lms	r1,[m_colourptr]
+	to	r14
+	add	r1
+
+.getwordagain
+	mgetw	r3		; r3 = colourptr[colourbyte<<1]
+
+	mtest	r3
+	bpl	.2
+	nop
+
+	from	r3
+	add	r3
+	bpl	.7		; test texture map bit 14
+	nop
+	 
+; smooth shaded
+
+	ifne	1
+	miwt	r0,smoothshade
+	sms	[m_texturemap],r0	; m_texturemap=smoothshade
+
+	from	r3
+	hib
+	and	#15	 	; set colour palette to use
+	add	r0
+	add	r0
+	add	r0
+	add	r0
+	swap			
+	or	#8		; set cmode 8
+	swap
+	sms	[m_tcmodecol],r0	; set texture map colour and cmode
+
+	ibt	r0,#-2			; colour = smooth shaded
+	mlbra	.mdo_colour4
+	endc
+.7
+
+; animated
+
+;;	miwt	r0,$1fff	; get 14 bit offset ; giles 15/2/94 ($3fff->$1fff)
+	miwt	r0,$3fff
+	to	r14
+	and	r3
+	
+	lms	r0,[m_colframe]	; get the frame counter
+	to	r3
+	getb			; read the number of frames
+	dec	r3
+	and	r3
+	add	r0
+	inc	r0
+	to	r14
+	bra	.getwordagain
+	add	r14		; initiate another read
+
+; textured
+
+.2
+	sub	r0
+	sms	[m_tcmodecol],r0
+
+	from	r3
+	add	r3
+	bpl	.6			; test texture map (bit 14)
+	sub	r0
+	dec	r0	
+.6
+;	sub	r0
+	sms	[m_texturemap],r0	; if bit set then m_texturemap=-1
+
+;	bra	.3
+	beq	.3
+	nop
+
+	from	r3
+	lob
+	bpl	.lo			; test hi nibble mode (bit 13)
+	nop
+
+	iwt	r0,#1<<(2+8)		; cmode bit 2 (hi nibble mode)
+	sms	[m_tcmodecol],r0
+.lo
+	from	r3
+	lob
+
+	umult	#3
+	miwt	r1,textureaddrtab
+	to	r14
+	add	r1
+	mgetwi	r0
+	sms	[m_sprdata],r0		; = textureaddrtab[(colour&255)*3]
+	getb
+	sms	[m_sprbank],r0		; texture ROM bank
+
+	from	r3
+	hib
+	ibt	r1,#$3f
+	and	r1	
+	add	r0
+	miwt	r1,texturexytab
+	to	r14
+	add	r1 			; = texturexytab[((colour>>8)&63)*2]
+	mgetw	r0
+	move	r14,r0
+	mgetw	r1
+	sms	[m_sprmask],r1
+	inc	r0
+	inc	r0			; skip x,y size
+	sms	[m_texptr],r0		; texture x,y ptr
+
+	ibt	r0,#-1			; colour = texture map
+	mlbra	.mdo_colour4
+	
+
+
+.3
+
+; light sourced
+ 
+	ibt	r1,#$3f
+	from	r3
+	hib
+	inc	r0
+	and	r1
+	beq	.mdo_colour5	; 63 = fixed
+	 nop
+
+	inc	r0
+	and	r1
+	bne	.mdo_colourl	; 62 = depth
+	 nop
+	
+; depth cued
+
+	from	r3
+	lob
+	lms	r3,[m_depthsptr] ; depth cued table addr
+	to	r14		; r14 = m_depthstab[colour & 255]
+	add	r3
+	getb			; colour
+	bra	.mdo_colour4
+	 colour
+
+.mdo_colourl
+	dec	r0
+	dec	r0
+	and	r1
+	move	r3,r0		; litesrc table number
+ IFNE 1	;might not be needed
+	lms	r0,[m_objflags]	; litesrc on?
+	hib
+	bpl	.mdo_colour5
+     	 nop
+ ENDC
+	lms	r0,[m_shadestab] ; depth cued shade table addr
+	add	r3
+	to	r14		; r14 = m_shadestab[litesrctab<<1]
+	add	r3
+	mgetw	r6		; get shadetab addr
+
+
+	lms	r0,[m_shapebank]
+	romb
+
+	move	r14,r2
+
+; light source
+
+rt		equr	4
+rdotprod	equr	5
+rshadeptr	equr	6
+
+	inc	rshapeptr
+
+	mgetbi	r0		; nx*lx
+	lms	rt,[m_rotlightx]
+	to	rdotprod
+	mult	rt
+
+	mgetbi	r0		; +ny*ly
+	lms	rt,[m_rotlighty]
+	mult	rt
+	to	rdotprod
+	add	rdotprod
+
+	getb			; +nz*lz
+	lms	rt,[m_rotlightz]
+	mult	rt
+	add	rdotprod
+	asr
+	asr
+	hib
+	sex
+
+	ibt	rt,#6		; shade >=6
+	cmp	rt
+	bge	.lightsrc1
+	 nop
+	ibt	r0,#6
+	bra	.lightsrc2
+	 nop
+.lightsrc1
+
+	ibt	rt,#16		; shade <16
+	cmp	rt
+	blt	.lightsrc2
+	 nop
+	ibt	r0,#15
+.lightsrc2
+	to	r1
+	sub	#6
+
+; get light source colour
+
+;- carl (default_c -> id_0_c)
+	ibt	r0,#id_0_c>>16
+	romb			; mario data table bank
+
+	from	rshadeptr
+	to	r14
+	add	r1		; add intensity
+	getb			; set light sourced colour
+	bra	.mdo_colour4
+	 colour
+	
+.mdo_colour5
+	from	r3
+	lob
+	colour
+
+.mdo_colour4
+	lms	r1,[m_shapebank]
+	from	r1
+	romb
+
+	move	r14,r2
+
+.mdo_colour_rts
+	jmp	r11
+	 nop
+
+
+
+
+
+; faces
+
+;	db	vis,fnumpnts,colour,p1,p2,...pn
+;	db	fnumpnts,colour,nx,ny,nz,p1,p2,...pn
+
+;	db	vis,fnumpnts,colour,normal,p1,p2,...pn
+
+;poly	db	colour,vis,p4...pn
+;fendq	db	255
+;fend	db	254
+;line	db	253,colour,p1,p2
+
+; mat					romsin	angles		mat
+; rot	to rotpnts			rompnt	mat		rot
+; proj	from rotpnts to projpnts	romztab	rot		proj
+
+; vis	from projpnts to vistab		romvis	proj		vis
+; lite	from vnormals to inttab		romvnor	vnorm		int
+; lite	from normals to litetab		romnorm	norm		lite
+; bsp	to bsplist			rombsp	vis		bsp
+; copy	from bsplist to drawlist	romface	vis,proj,colr	draw
+; draw	from drawlist			romgrad	draw		screen
+
+;
+; faces
+;  vis	 p1,p2,p3
+;   lite nx,ny,nz
+;   copy p1...pn
+;   outc p1...pn
+;   clip p1...pn
+;   draw p1...pn
+
+
+; expfaces
+;
+; colour
+; rot and scale normal vector
+; add vector to each rot point and project
+; copy
+; draw
+
+
+
+
+
+
+;**********************************************
+
+mexpcnt	equ	0
+
+rx		equr	1
+ry		equr	2
+rnpnts		equr	2
+rcolour	equr	3
+rpnt		equr	4
+routcode	equr	5
+rpolyptr	equr	6
+rpolybuf	equr	7
+rprojbuf	equr	9
+
+
+mfacesend
+;	mlbra	mdrawpolylist
+
+	inc	r0		; if numpts = -1 then fend
+	lob
+	beq	.2
+	nop
+
+	mshape_rts
+
+.2
+	mpop	pc		; else quit
+	nop
+
+
+; num, vis, col, nx, ny, nz, p1, p2, p3
+
+msh_faces
+
+mfaces
+mfaceloop
+ 	mcache
+
+	getb			; numpts
+	lob
+	bmi	mfacesend
+	 inc	r14		; r14 -> vis
+
+
+	move	rnpnts,r0
+	sub	#2
+	beq	misline
+	 getb			; vis num
+
+;************************************************
+
+mfaceloop1
+	miwt	r1,m_vistab	; get vis
+	add	r1
+	ldb	[r0]
+	
+mvistest
+	lob
+;	bra	misvis		; always vis
+	bmi	misvis
+	 inc	rshapeptr	; r14 -> colour
+
+;************************************************
+
+; isnotvis
+
+misnotvis
+	ifne	mexpcnt
+	lms	r0,[m_expcnt]
+	mtest	r0
+	mlbne	mexpfacesnvis
+	endc
+
+	with	rnpnts
+	add	#4
+	with	rshapeptr
+	bra	mfaceloop
+	 add	rnpnts		; add fnumpnts + 4
+
+;**********************************************************
+
+misline
+	inc	rshapeptr
+
+; isvis
+
+misvis				; r14 -> colour
+	sms	[m_fnumpnts],rnpnts
+
+	ifne	1			; polylist overflow check
+	miwt	r0,(m_polylistend-256)	; 256 bytes left?
+;	miwt	rpolyptr,m_polybuf
+	lms	rpolyptr,[m_polylistptr]
+	sub	rpolyptr
+;	bra	.ok
+	bpl	.ok
+	 nop
+
+	mpush	r14
+
+	mcall	mdrawpolylist		; flush list
+	 nop
+
+	mpop	r14
+	lms	rpolyptr,[m_polylistptr]
+;	move	rpolyptr,r1
+.ok
+	endc
+
+
+; set face colour
+
+	mcall	mface_do_colour
+	 nop
+
+	lms	rpolyptr,[m_polylistptr]
+
+;	getb
+
+;	add	r0
+;	lsr
+
+	move	rcolour,r0
+	
+;	sub	r0
+;	sms	[m_texturemap],r0
+
+;*************************************************************
+
+	with	rshapeptr
+	add	#4
+
+	ifne	0
+	lms	r0,[m_fnumpnts]
+	with	rshapeptr		; start of next poly
+	add	r0
+	mlbra	mfacenotvis		; draw no polys
+	endc
+
+	ifne	mexpcnt
+	lms	r0,[m_expcnt]
+	mtest	r0
+	mlbne	mexpfacesvis
+	endc
+
+; copy poly pnts to polybuf
+
+mcopypoly
+
+; off screen version
+
+
+	ifne	0			; polylist overflow check
+;	miwt	rpolyptr,m_polybuf
+	lms	rpolyptr,[m_polylistptr]
+	miwt	r0,(m_polylistend-256)	; 256 bytes left?
+	sub	rpolyptr
+;	bra	.ok
+	bpl	.ok
+	 nop
+
+	mpush	r14
+	mpush	rcolour
+
+	mcall	mdrawpolylist		; flush list
+	 nop
+
+	mpop	rcolour
+	mpop	r14
+	lms	rpolyptr,[m_polylistptr]
+
+.ok
+	endc
+
+	lms	r12,[m_fnumpnts]
+	from	rcolour			; output npnts, colour
+	lob
+	swap
+	or	r12
+
+	mtest	rcolour
+;	bra	.plain1
+	bpl	.plain1			; check for texture map poly
+	 nop
+
+	from	r12			; output ~npnts, spritebank
+	not
+	to	r1
+	lob					
+
+	lms	r0,[m_sprbank]
+	lob
+	swap
+	or	r1
+	mstwi	rpolyptr
+
+	lms	r0,[m_tcmodecol]	; output texture map header
+	mstwi	rpolyptr
+	lms	r0,[m_sprdata]
+	mstwi	rpolyptr
+	lms	r0,[m_sprmask]
+;	mstwi	rpolyptr
+
+.plain1
+	mstwi	rpolyptr
+
+	move	rpolybuf,rpolyptr	; save polybuf start
+
+	miwt	rprojbuf,m_projpnts
+	ibt	routcode,#0
+	move	r13,pc
+
+	mgetbi	rpnt		; p1
+	from	rpnt
+	umult	#6		; p1*6
+	to	rprojptr
+	add	rprojbuf
+
+	ldw	[rprojptr]	; output x1
+	mstwi	rpolyptr
+	inc	rprojptr
+	inc	rprojptr
+	ldw	[rprojptr]	; output y1
+	mstwi	rpolyptr
+	inc	rprojptr
+	inc	rprojptr
+	ldw	[rprojptr]	; outcode
+	to	routcode
+	or	routcode	; or of all poly point outcodes
+
+
+	ifne	1
+
+	mtest	rcolour
+;	bra	.plain2
+	bpl	.plain2
+      	 nop
+
+; copy texture map coords
+
+ IFNE	msmooth_shading
+	
+	inc	rcolour			; smooth shaded?
+	beq	.1
+	 dec	rcolour
+
+	miwt	r0,m_intpnts
+	add	rpnt
+	ldb	[r0]
+	mstwi	rpolyptr
+	stw	[rpolyptr]
+	inc	rpolyptr
+	bra	.2
+	 inc	rpolyptr
+.1
+ ENDC
+
+	sms	[m_shapeptr],rshapeptr
+;- carl (default_c -> id_0_c)
+	ibt	r0,#id_0_c>>16
+	romb
+	lms	rshapeptr,[m_texptr]
+	mgetbi	r0			; xp1
+	swap
+	mstwi	rpolyptr
+	mgetbi	r0			; yp1
+	swap
+	mstwi	rpolyptr
+	lms	r0,[m_shapebank]
+	sms	[m_texptr],rshapeptr
+	romb
+	lms	rshapeptr,[m_shapeptr]
+.2
+	endc
+
+.plain2
+	loop
+	 nop
+
+
+mchkpoly
+;- Carl 6/4/94
+;------------------
+ IFNE PLANECLIP
+
+	sub	r0
+	sm	[m_xyz_avail],r0
+
+	miwt	r1,$1f00
+	from	r1
+	and	routcode
+	sub	r1	
+	mlbne	mfacenotvis		; skip if all clipped off one edge
+
+	lm	r1,[m_clipplanes]	;- flag set by drawlist per object
+	mtest	r1
+	beq	.skip_pl
+	 nop
+
+	mpush	routcode	;- save old out code for now
+
+	mcall	mplane_check	;- check verts against clip plane
+	nop
+
+	mpop	routcode
+
+	mtest	r0		;- Poly wrong side of plane ?
+	mlbeq	mfacenotvis
+
+	lm	r0,[m_cl_face]	;- Need plane clipping ?
+	mtest	r0
+	bne	.skip_pl
+	nop
+
+	mcall	m3d_planeclip
+	 nop
+
+	mtest	r0
+	mlbeq	mfacenotvis
+.skip_pl
+ ENDC
+;------------------
+
+	from	routcode
+	lob
+	bne	.offscreen			; draw poly if not clipped
+	 nop
+
+	sms	[m_polylistptr],rpolyptr
+	mlbra	mfaceloop
+
+	printf	"faces cache = ",*-mface_do_colour,"%n"
+
+.offscreen
+;	mtest	rcolour
+;	mlbmi	mfaceloop			;don't draw clipped texpolys
+;	mlbra	mfaceloop			;don't draw any clipped polys
+
+
+
+;**********************************************
+
+; check poly outcodes
+
+
+;mchkpoly
+;------------------
+ IFEQ PLANECLIP
+	miwt	r1,$1f00
+	from	r1
+	and	routcode
+	sub	r1	
+	mlbne	mfacenotvis		; skip if all clipped off one edge
+	 nop
+ ENDC
+;------------------
+
+	sms	[m_shapeptr],rshapeptr
+	
+	sms	[m_polybufptr],rpolybuf
+
+	ifne	1
+;	miwt	r1,$1000
+;	from	r1
+;	and	routcode
+;	sub	r1	
+;	bne	mfacenotvis		; skip if all points z clipped
+;	 nop
+
+;-Carl change	       -World clip texture maps-
+
+ IFNE 1
+
+	from	routcode		;- Clipped ?
+	lob
+	beq	.zoc
+	 nop
+
+	lms	r0,[m_texturemap]	;- and a texture map ?
+	hib
+	beq	.zoc
+	 nop
+
+	mcall	m3dcliptexturemap	;- oh dear!
+	 nop
+
+;	bra	mcliptex
+;	bra	.exzclip
+	mtest	r0
+	bne	mfaceon
+	 nop
+	mlbra	mfacelabel2
+.zoc	
+
+ ENDC
+
+;-------
+
+	ibt	r0,#$10
+	and	routcode
+	beq	.1			; skip if no points z clipped
+	 nop
+
+
+;-Carl Change
+;	lms	r0,[m_texturemap]	; don't 3d clip texture maps!
+;	hib
+;	mlbne	mfacenotvis
+;-
+
+;	mlbra	mfacenotvis		; draw no z clipped polys
+
+	lms	r0,[m_fnumpnts]
+	with	rshapeptr		; reset to start of poly points
+	sub	r0
+
+;	mlbra	mclippoly3d		; 3d clip poly if any point z clipped
+
+	mcall	mclippoly3d
+	 nop
+.exzclip
+	mtest	r0
+	beq	mfacelabel2
+	 nop
+
+;-Carl change
+	lms	r1,[m_texturemap]	;- Check for 3D clipped texmap
+	with	r1
+	hib
+	
+	beq	mclppoly2d
+	 nop
+	mlbra	mtxclppoly2d		;- 2D clip output texmap
+;-
+.1
+	endc
+
+	ifne	0
+	lms	r0,[m_texturemap]
+	hib
+	beq	mskiptex2
+	 nop
+
+	ibt	r0,#$1f
+	and	routcode
+	bne	mfacenotvis		; skip texture maps if any point clipped
+	 nop
+mskiptex2
+	endc
+
+;	from	routcode		; call clip poly if clipped
+;	lob
+;	beq	mfaceon
+;	 nop
+
+	lms	r0,[m_texturemap]
+	hib
+	bne	mcliptex
+	 nop
+
+	lms	r0,[m_fnumpnts]
+;	mlbra	mclp_poly	  	; draw clipped poly
+
+mclppoly2d
+;	mcall	mclp_poly		; Carl clip 2d 
+	mcall	mtclippoly2d		; Pete clip 2d
+	 nop
+
+	mtest	r0
+	beq	mfacelabel2
+	 nop
+
+	bra	mfaceon
+	 nop
+
+mcliptex
+;	mlbra	mfacelabel2
+
+	lms	r0,[m_fnumpnts]
+;	mlbra	mclp_poly	  	; draw clipped poly
+
+mtxclppoly2d
+	mcall	mtxclippoly2d
+	 nop
+
+	mtest	r0
+	beq	mfacelabel2
+	 nop
+
+mfaceon
+;	sms	[m_clip2drsp],rsp
+
+;	ibt	r1,#0
+;	from	r1
+;	romb
+
+;	mlbra	mdrawpoly		; draw unclipped poly, tpoly, line
+
+	lms	rcolour,[m_texturemap]
+	lms	rpolyptr,[m_polybufptr]
+	move	r2,r0
+
+	mtest	rcolour			; texture map?
+	bpl	.1
+	 add	r0
+
+	add	r0
+	add	r0
+	add	rpolyptr		; update polylist ptr
+	sms	[m_polylistptr],r0
+
+	with	rpolyptr
+	sub	#8
+	
+	from	r2
+	not
+	stb	[rpolyptr]
+	bra	.2
+	 nop
+
+.1
+	add	r0
+	add	rpolyptr		; update polylist ptr
+	sms	[m_polylistptr],r0
+
+	with	rpolyptr
+	sub	#2
+	
+	from	r2
+	stb	[rpolyptr]
+.2
+
+mfacelabel
+	lms	r0,[m_shapebank]
+	romb
+
+;	lms	rsp,[m_clip2drsp]
+
+mfacelabel2
+	lms	rshapeptr,[m_shapeptr]
+
+; next face
+
+mfacenotvis
+	mlbra	mfaceloop
+
+
+ ENDC					; ENDC mpolylist=1
+
+
+
+
+
 
 ; circle 8	       0,colour,x1,y1,radius
 ; dot	 4	       1,colour,x1,y1
@@ -3377,6 +4849,12 @@ mfacenotvis
 ;************************************************
 
 
+	ifne	1		; pete 22/11/93
+mexpfacesvis
+mexpfacesnvis
+	endc
+
+
 msh_endshape
 
 mshowobjend
@@ -3384,7 +4862,7 @@ mshowobjend
 ;	?mshowobjend-mfacesend
 
 
-	ifne	0
+	ifne	0		; draw projected points
 
 ; draw all points
 
@@ -3422,14 +4900,23 @@ misoffscreen
 	endc
 
 
+;**********************************************
+
+
+ IFNE	mpolylist
+
+	mcall	mdrawpolylist
+	 nop
+
+ ENDC
+
 
 ;**********************************************
 
 
 mshowobjexit
 
-;	mlbra	mcopy
-
+ IFEQ	mpolylist
 
 ; flush plot buffer
 
@@ -3439,13 +4926,11 @@ mshowobjexit
 	nop
 	nop
 
-;	mlbra	mdrawsphere
+ ENDC
 
 	mpop	pc
 	nop
 
-	stop
-	nop
 
 
 
@@ -3525,8 +5010,7 @@ mshowobjsize	=	mshowobjend-mshowobj
 ;**********************************************
 
 
-
-	ifne	1
+	ifne	0			; pete 22/11/93
 
 rx	equr	1
 ry	equr	2
@@ -3585,7 +5069,8 @@ mexpfacesvis
 	beq	.skiptex2
 	nop
 
-	ibt	r0,#default_c>>16
+;- carl (default_c -> id_0_c)
+	ibt	r0,#id_0_c>>16
 	romb
 
 	sms	[m_shapeptr],rshapeptr
@@ -3676,7 +5161,8 @@ mexpfacesnvis
 	beq	.skiptex2
 	nop
 
-	ibt	r0,#default_c>>16
+;- carl (default_c -> id_0_c)
+	ibt	r0,#id_0_c>>16
 	romb
 
 	sms	[m_shapeptr],rshapeptr
@@ -3869,7 +5355,8 @@ mdo_colour
 	bne	.noshadow
 	nop
 
-	ibt	r0,#2	;8		; dithering on
+	sub	r0	; 	test
+;	ibt	r0,#2	;8		; dithering on
 	cmode
 
 	mibt	r0,mshadowcolour
@@ -3885,12 +5372,14 @@ mdo_colour
 .noshadow
 	endc
 
-
 	getb
+;	miwt	r0,190		;Force Texture mapping all poly
+;	miwt	r0,182		;Force Texture mapping all poly
 mdo_colour_ng
 	add	r0
 
-	ibt	r1,#default_c>>16
+;- carl (default_c -> id_0_c)
+	ibt	r1,#id_0_c>>16
 	from	r1
 	romb
 
@@ -3931,6 +5420,7 @@ mdo_colour_ng
 	sms	[m_tcmodecol],r0	; set texture map colour and cmode
 	mlbra	mdo_colour4
 
+
 .7
 
 ; animated
@@ -3950,7 +5440,7 @@ mdo_colour_ng
 
 ;	mgetw	r3		; get animated colour word value
 
-	miwt	r0,$3fff	; get 14 bit offset
+	miwt	r0,$3fff
 	to	r14
 	and	r3
 	
@@ -4003,9 +5493,7 @@ mdo_colour_ng
 	sms	[m_tcmodecol],r0
 .lo
 	from	r3
-	add	r3
 	lob
-	lsr				; clear the hi bit
 					; sprite no. in lo 7 bits
 	umult	#3
 	miwt	r1,textureaddrtab
@@ -4133,7 +5621,8 @@ lightsrc2
 ;	sub	r0
 ;	romb			; mario data table bank
 
-	ibt	r0,#default_c>>16
+;- carl (default_c -> id_0_c)
+	ibt	r0,#id_0_c>>16
 	romb
 
 	from	rshadeptr
@@ -4267,6 +5756,13 @@ msh_vizis
 	xor	ry3		; xor bit15 with z bit 
 	hib
 	stb	[rvisptr]
+
+;------------------------
+; giles - 29/10/93
+;	inc	r14
+;	inc	r14
+;------------------------
+
 	loop
 	inc	rvisptr
 	
@@ -4347,6 +5843,13 @@ mshon_vizis
 
 	hib
 	stb	[rvisptr]
+;---------------------------------
+; giles 10/29/93
+;	inc	r14
+;	inc	r14
+;---------------------------------
+
+
 	loop
 	inc	rvisptr
 	
@@ -4600,8 +6103,10 @@ lightsrc2
 
 ; get light source colour
 
-	ibt	r0,#2	;8		; dithering on
+	sub	r0	;test   ibt	r0,#2	;8   
+			; dithering on
 	cmode
+
 
 	move	rt,rshapeptr	; save shapeptr
 	move	r14,rshadeptr
@@ -4632,10 +6137,12 @@ routcode	equr	5
 
 mprojectstart
 
+
 	ifne	1
 
 mprojectpnt
 	mpush	r11
+
 
 	mtest	rz
 	mlbmi	.zn
@@ -5110,6 +6617,18 @@ mdo_outcode
 	inc	routcode
 mdo_outcodeleft
 	inc	routcode
+
+	ifne	1
+	miwt	r0,$10/4		; if z<0 then flip outcodes
+	and	routcode
+	beq	.zp
+	 nop
+
+	with	routcode
+	xor	#3
+.zp
+	endc
+
 mdo_outcodex
 
 	with	routcode		; shift outcode left 2 bits
@@ -5127,7 +6646,33 @@ mdo_outcodex
 	inc	routcode
 mdo_outcodetop
 	inc	routcode
+
+	ifne	1
+	miwt	r0,$10			; if z<0 then flip outcodes
+	and	routcode
+	beq	.zp2
+	 nop
+
+	with	routcode
+	xor	#3
+.zp2
+	endc
+
 mdo_outcodey
+
+	ifne	0
+	miwt	r0,$10			; if z<0 then flip outcodes
+	and	routcode
+	beq	.zp
+	 nop
+
+	miwt	r0,(moutcode_fliptab-$10)
+	to	r14
+	add	routcode
+	to	routcode
+	getb
+.zp
+	endc
 
 	ibt	r0,#31			; set high byte of outcode
 	xor	routcode		; to low byte of outcode XOR 31
@@ -5136,6 +6681,7 @@ mdo_outcodey
 
 	mpop	pc
 	nop
+
 
 
 ; Project point x,y,z
@@ -5157,6 +6703,16 @@ mdo_projectexg
 mdo_project
 	mpush	r11
 
+;;	with	rz	; giles
+;;	add	rz
+;	with	rz
+;	add	rz
+
+	with	rx	; no overflow this way! - pete 31/1/94
+	asr
+	with	ry
+	asr
+			
 	from	rx
 	lob
 	to	r4
@@ -5183,8 +6739,10 @@ mdo_project
 	lob
 	to	r4
 	swap	  		; r4 = (y * 256).lo
+	
 	from	ry
 	hib			; r0 = (y * 256).hi
+
 
 	move	r6,rz
 	mcall	mpdivu3216	; ry = ry * 256 / rz
@@ -6236,7 +7794,11 @@ f3
 
 
 
-
-
-
-
+
+
+
+
+
+
+
+

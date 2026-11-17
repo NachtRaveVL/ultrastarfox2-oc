@@ -7,10 +7,24 @@
 ;	Copyright 1991
 ;
 
+;
+; Update history:
+;
+
+; 26/10/93	pete	Made poly Z clip project call mfastproject (mobj.mc)
+;			(depending on mfastproj flag)
+;
+; Fixes Z clipped polys tears so that pnts are fast/slow proj instead
+; of always slow proj.
+
 
 ;mprintword
 ;mprintspace
 ;mprintnewline
+
+
+;;;;	include	mtxtclp.mc	;was here
+
 
 
 rx1	equr	1
@@ -21,21 +35,21 @@ ry2	equr	5
 rz2	equr	6
 
 
-	ifeq	1
-mtestclip3dline
-	miwt	rx2,40
-	miwt	ry2,40
-	miwt	rz2,20
-	miwt	rx1,0
-	miwt	ry1,0
-	miwt	rz1,-60
-
-	mcall	mclip3dline
-	nop
-
-	stop
-	nop
-	endc
+;	ifeq	1
+;mtestclip3dline
+;	miwt	rx2,40
+;	miwt	ry2,40
+;	miwt	rz2,20
+;	miwt	rx1,0
+;	miwt	ry1,0
+;	miwt	rz1,-60
+;
+;	mcall	mclip3dline
+;	nop
+;
+;	stop
+;	nop
+;	endc
 
 
 mclip3dline
@@ -212,7 +226,48 @@ mclippoly3d
 	lms	rbigx,[m_bigx]
 	lms	rbigy,[m_bigy]
 	lms	rbigz,[m_bigz]
+;-------------------------------------------------------
+; Carl
+ IFNE PLANECLIP
+	lm	r0,[m_xyz_avail]	;- Flag from plane clipper
+	mtest	r0		;- Does xyz version exist ?
+	beq	createxyz
+	 nop
+
+;- Use world xyz version of poly created by plane clipper
+
+	miwt	rrotptr,m_clippolybuf	;- copy from clipbuf to polbuf
 	miwt	rpolyptr,m_polybuf
+
+	to	r12
+	from	rnumpnts
+	umult	#3
+;	inc	r12
+	move	r13,pc
+
+	mldwi	rrotptr
+	mstwi	rpolyptr
+
+	loop
+	 nop
+
+	with	rshapeptr
+	add	rnumpnts	
+
+	mlbra	clip3dxyzpoly
+
+createxyz
+ ENDC
+;-------------------------------------------------------
+
+
+;- Carl - use temp in m_polybuf
+;- IFEQ	mpolylist
+	miwt	rpolyptr,m_polybuf
+;- ELSEIF
+;-	lms	rpolyptr,[m_polybufptr]
+;- ENDC
+;-      -
 	move	r12,rnumpnts
 	move	r13,pc
 
@@ -226,17 +281,14 @@ mclippoly3d
 	add	r0		; rrotptr = m_rotpnts + p1*6
 
 	mldwi	rrotptr	; x
-;	mult	rscale
 	add	rbigx
 	mstwi	rpolyptr
 
 	mldwi	rrotptr	; y
-;	mult	rscale
 	add	rbigy
 	mstwi	rpolyptr
 
 	ldw	[rrotptr]	; z
-;	mult	rscale
 	add	rbigz
 	stw	[rpolyptr]
 
@@ -253,7 +305,15 @@ mclippoly3d
 	nop
 
 	mtabxy	0,0
+
+; Carl - use temp in m_polybuf
+; IFEQ	mpolylist
 	miwt	r3,m_polybuf
+; ELSEIF
+;	lms	r3,[m_polybufptr]
+; ENDC
+;      -
+
 	move	r0,rnumpnts
 	mcall	mprintn3
 	nop
@@ -275,12 +335,19 @@ rnumptsin	equr	9
 
 
 ; 3d clip poly
+clip3dxyzpoly
 
 	move	rnumptsin,rnumpnts
 	sub	r0
 	sms	[m_cnt],r0
-
+; Carl - use temp in m_polybuf
+; IFEQ	mpolylist
 	miwt	rcpolyptr,m_polybuf
+; ELSEIF
+;	lms	rcpolyptr,[m_polybufptr]
+; ENDC
+;      -
+
 	miwt	rpolyptr,m_clippolybuf
 ;	miwt	rsp,m_stack
 
@@ -341,7 +408,15 @@ mclip3dloop
 	dec	r0
 	bne	.nowrap
 	nop
+
+; Carl - use temp in m_polybuf
+; IFEQ	mpolylist
 	miwt	rcpolyptr,m_polybuf
+; ELSEIF
+;	lms	rcpolyptr,[m_polybufptr]
+; ENDC
+;      -
+
 .nowrap
 
 	to	rx2		; get p2
@@ -441,59 +516,157 @@ mclip3doff
 	endc
 
 
+;************************************************
+
+	ifne	mfastproj		; pete 26/10/93
+
+; fast project poly points
+
+rx	equr	1
+ry	equr	2
+;rscale	equr	3
+rmlo	equr	4
+rmhi	equr	5
+rz	equr	6
+rbigx	equr	3
+rbigy	equr	13
+rbigz	equr	9
+rrotptr	equr	7
+rprojptr	equr	8
+
+routcode	equr	4
+rxmax		equr	5
+rymax		equr	5
+
+; project points
+
+mprojectpoly
+	lms	rbigx,[m_bigx]		; world x,y,z
+	lms	rbigy,[m_bigy]
+	lms	rbigz,[m_bigz]
+
+	ibt	r0,#ztab>>16
+	romb			      	; ztab rom bank
+
+	sub	r0
+	sms	[m_or_of_outcodes],r0	; outcode = 0
+
+;	miwt	rrotptr,m_rotpnts
+;	miwt	rprojptr,m_projpnts
+	sms	[m_shapeptr],rshapeptr	; save shapeptr
+;	lms	r12,[m_numpnts]		; numpnts to project
+
+	lms	r12,[m_cnt]
+	miwt	rrotptr,m_clippolybuf
+
+ IFEQ	mpolylist
+	miwt	rprojptr,m_polybuf
+ ELSEIF
+	lms	rprojptr,[m_polybufptr]
+ ENDC
+
+
+.projloop
+	to	rx
+	mldwi	rrotptr	; x
+
+	to	ry
+	mldwi	rrotptr	; y
+
+	to	rz
+	mldwi	rrotptr	; z
+
+	mcall	mfastproject
+	nop
+
+	from	rx
+	mstwi	rprojptr	; output x
+	from	ry
+	mstwi	rprojptr	; output y
+;	mstwi   rprojptr	; output outcode
+
+	lms	rz,[m_or_of_outcodes]
+	or	rz
+	dec	r12
+	bne	.projloop
+	sbk				; store back or_of_outcodes
+
+	lms	r0,[m_shapebank]	; rom bank = shapebank
+	romb
+	lms	rshapeptr,[m_shapeptr]
+
+	endc
 
 
 ;************************************************
 
+;	ifeq	mfastproj		; pete 26/10/93
+;
+;; slow project poly points
+;
+;
+;rx	equr	1
+;ry	equr	2
+;rz	equr	3
+;rrotptr	equr	7
+;rprojptr	equr	8
+;rnumpnts	equr	9
+;
+;mprojectpoly
+;	lms	r0,[m_cnt]
+;	move	rnumpnts,r0
+;
+;	sub	r0
+;	sms	[m_or_of_outcodes],r0
+;
+;	miwt	rrotptr,m_clippolybuf
+;
+; IFEQ	mpolylist
+;	miwt	rprojptr,m_polybuf
+; ELSEIF
+;	lms	rprojptr,[m_polybufptr]
+; ENDC
+;
+;
+;.projloop
+;	to	rx
+;	mldwi	rrotptr		; x
+;	to	ry
+;	mldwi	rrotptr		; y
+;	to	rz
+;	mldwi	rrotptr		; z
+;
+;	mcall	mprojectpnt
+;	nop
+;
+;	from	rx
+;	mstwi	rprojptr		; x
+;	from	ry
+;	mstwi	rprojptr		; y
+;
+;	lms	rz,[m_or_of_outcodes]
+;	or	rz
+;	sbk
+;
+;	dec	rnumpnts
+;	bne	.projloop
+;	nop
+;
+;	endc
+;
+;
 
-; project poly points
-
-
-
-rx	equr	1
-ry	equr	2
-rz	equr	3
-rrotptr	equr	7
-rprojptr	equr	8
-rnumpnts	equr	9
-
-mprojectpoly
-	lms	r0,[m_cnt]
-	move	rnumpnts,r0
-
-	sub	r0
-	sms	[m_or_of_outcodes],r0
-
-	miwt	rrotptr,m_clippolybuf
-	miwt	rprojptr,m_polybuf
-
-.projloop
-	to	rx
-	mldwi	rrotptr		; x
-	to	ry
-	mldwi	rrotptr		; y
-	to	rz
-	mldwi	rrotptr		; z
-
-	mcall	mprojectpnt
-	nop
-
-	from	rx
-	mstwi	rprojptr		; x
-	from	ry
-	mstwi	rprojptr		; y
-
-	lms	rz,[m_or_of_outcodes]
-	or	rz
-	sbk
-
-	dec	rnumpnts
-	bne	.projloop
-	nop
+;************************************************
 
 
 ;	mtabxy	0,8
-;	miwt	r3,m_polybuf
+
+ IFEQ	mpolylist
+	miwt	r3,m_polybuf
+ ELSEIF
+	lms	r3,[m_polybufptr]
+ ENDC
+
 ;	lms	r0,[m_cnt]
 ;	mcall	mprintn2
 ;	nop
@@ -535,230 +708,230 @@ mclip3dexit
 ;************************************************
 
 
-	ifeq	1
-
-
-; clip a polygon whose verticies list is pointed
-; at by a0. No. of points is
-; passed in d0.
-
-
-templist
-	ds.w	maxpolypts*2
-point_list
-	ds.w	maxpolypts*2
-
-
-newclip
-;;	lea	point_list(pc),a0
-	move.w	d0,d7
-
-;************************************************
-
-	move.w	d7,a5		;no. pnts.
-	subq.w	#1,d7		;loop index.
-	add.w	d0,d0
-	add.w	d0,d0
-	move.l	(a0),(a0,d0.w)	;copy 1st pnt to end of list.
-
-	move.w	clipleft(a6),d6
-	lea	templist(pc),a1
-	lea	lrp(pc),a4
-clplp1
-	movem.w	(a0),d0-d3	;get 1st edge.
-	addq.w	#4,a0		;move to next edge.
-	move.w	d0,d5
-	sub.w	d6,d5
-	bmi	p1outleft
-	move.w	d2,d5
-	sub.w	d6,d5
-	bmi	cliplinevertiadd	;add point if edge on way out.
-	move.w	d0,(a1)+		;copy point to temp list.
-	move.w	d1,(a1)+
-lrp
-	dbra	d7,clplp1
-
-	lea	templist(pc),a0
-	move.w	a5,d7
-;	bmi	end_clip
-	ble	end_clip
-
-;************************************************
-
-	move.w	a5,d0	
-	subq.w	#1,d7		;loop index.
-	add.w	d0,d0
-	add.w	d0,d0
-	move.l	(a0),(a0,d0.w)	;copy 1st pnt to end of list.
-
-	move.w	cliprite(a6),d6
-	lea	point_list(pc),a1
-	lea	lrp2(pc),a4
-clplp2
-	movem.w	(a0),d0-d3	;get 1st edge.
-	addq.w	#4,a0		;move to next edge.
-	move.w	d0,d5
-	sub.w	d6,d5
-	bgt	p1outright
-	move.w	d2,d5
-	sub.w	d6,d5
-	bgt	cliplinevertiadd
-	move.w	d0,(a1)+		;copy point to temp list.
-	move.w	d1,(a1)+
-lrp2
-	dbra	d7,clplp2
-
-	lea	point_list(pc),a0
-	move.w	a5,d7
-;	bmi	end_clip
-	ble	end_clip
-
-;************************************************
-
-	subq.w	#1,d7
-	move.w	a5,d0
-	add.w	d0,d0
-	add.w	d0,d0
-	move.l	(a0),(a0,d0.w)	;copy 1st pnt to end of list.
-
-	move.w	clipup(a6),d6
-	lea	templist(pc),a1
-	lea	lrp3(pc),a4
-clplp3
-	movem.w	(a0),d0-d3	;get 1st edge.
-	addq.w	#4,a0		;move to next edge.
-	move.w	d1,d5
-	sub.w	d6,d5
-	bmi	p1outtop
-	move.w	d3,d5
-	sub.w	d6,d5
-	bmi	cliplinehoriadd	;add point if edge on way out.
-	move.w	d0,(a1)+		;copy point to temp list.
-	move.w	d1,(a1)+
-lrp3
-	dbra	d7,clplp3	 
-
-	lea	templist(pc),a0
-	move.w	a5,d7
-;	bmi	end_clip
-	ble	end_clip
-
-;************************************************
-
-	subq.w	#1,d7
-	move.w	a5,d0
-	add.w	d0,d0
-	add.w	d0,d0
-	move.l	(a0),(a0,d0.w)	;copy 1st pnt to end of list.
-
-	move.w	clipdown(a6),d6
-	lea	point_list(pc),a1
-	lea	lrp4(pc),a4
-clplp4
-	movem.w	(a0),d0-d3	;get 1st edge.
-	addq.w	#4,a0		;move to next edge.
-	move.w	d1,d5
-	sub.w	d6,d5
-	bgt	p1outbottom
-	move.w	d3,d5
-	sub.w	d6,d5
-	bgt	cliplinehoriadd	;add point if edge on way out.
-	move.w	d0,(a1)+		;copy point to temp list.
-	move.w	d1,(a1)+
-lrp4
-	dbra	d7,clplp4
-
-
-	move.w	#-1,(a1)
-end_clip
-	rts
-
-
-;************************************************
-
-p1outleft
-	move.w	d2,d5
-	sub.w	d6,d5
-	bpl	cliplineverti	;add point if edge on way in.
-	subq.w	#1,a5		;decrement no. pnts.
-	jmp	(a4)
-
-;************************************************
-
-p1outtop
-	move.w	d3,d5
-	sub.w	d6,d5
-	bpl	cliplinehori			
-	subq.w	#1,a5		;decrement no. pnts.
-	jmp	(a4)
-
-;************************************************
-
-p1outright
-	move.w	d2,d5
-	sub.w	d6,d5
-	bmi	cliplineverti	
-	subq.w	#1,a5		;decrement no. pnts.
-	jmp	(a4)
-
-;************************************************
-
-p1outbottom
-	move.w	d3,d5
-	sub.w	d6,d5
-	bmi	cliplinehori			
-	subq.w	#1,a5		;decrement no. pnts.
-	jmp	(a4)
-
-;************************************************
-
-cliplinevertiadd		;called if p1 in and p2 out.
-	addq.w	#1,a5
-	move.w	d0,(a1)+
-	move.w	d1,(a1)+
-
-; x = clipx
-; y = y1 + (clipx-x1)*(y1-y2)/(x1-x2)
-
-
-; x = clipx
-; y = y1 + (clipx-x1)*(y2-y1)/(x2-x1)
-
-cliplineverti	
-	sub.w	d0,d2		;dx = x2 - x1
-	sub.w	d1,d3		;dy = y2 - y1
-	move.w	d6,d5		;get boundry value.
-	sub.w	d0,d5		;x = clipx - x1
-	muls	d3,d5		;x*dy
-	divs	d2,d5		;x*dy/dx
-	add.w	d1,d5		;x*dy/dx+y1
-	move.w	d6,(a1)+	;store clipped point.
-	move.w	d5,(a1)+
-	jmp	(a4)
-
-;************************************************
-	
-; x  = x1 + (clipy-y1)*(x2-x1)/(y2-y1)
-; y  = clipy
-
-cliplinehoriadd
-	addq.w	#1,a5
-	move.w	d0,(a1)+
-	move.w	d1,(a1)+
-
-cliplinehori
-	sub.w	d0,d2		;dx = x2 - x1
-	sub.w	d1,d3		;dy = y2 - y1
-	move.w	d6,d5		;
-	sub.w	d1,d5		; y = clipy - y1
-	muls	d2,d5		; y*dx
-	divs	d3,d5		; y*dx/dy
-	add.w	d0,d5		; y*dx/dy+x1
-	move.w	d5,(a1)+
-	move.w	d6,(a1)+
-	jmp	(a4)
-
-	endc
+;	ifeq	1
+;
+;
+;; clip a polygon whose verticies list is pointed
+;; at by a0. No. of points is
+;; passed in d0.
+;
+;
+;templist
+;	ds.w	maxpolypts*2
+;point_list
+;	ds.w	maxpolypts*2
+;
+;
+;newclip
+;;;	lea	point_list(pc),a0
+;	move.w	d0,d7
+;
+;;************************************************
+;
+;	move.w	d7,a5		;no. pnts.
+;	subq.w	#1,d7		;loop index.
+;	add.w	d0,d0
+;	add.w	d0,d0
+;	move.l	(a0),(a0,d0.w)	;copy 1st pnt to end of list.
+;
+;	move.w	clipleft(a6),d6
+;	lea	templist(pc),a1
+;	lea	lrp(pc),a4
+;clplp1
+;	movem.w	(a0),d0-d3	;get 1st edge.
+;	addq.w	#4,a0		;move to next edge.
+;	move.w	d0,d5
+;	sub.w	d6,d5
+;	bmi	p1outleft
+;	move.w	d2,d5
+;	sub.w	d6,d5
+;	bmi	cliplinevertiadd	;add point if edge on way out.
+;	move.w	d0,(a1)+		;copy point to temp list.
+;	move.w	d1,(a1)+
+;lrp
+;	dbra	d7,clplp1
+;
+;	lea	templist(pc),a0
+;	move.w	a5,d7
+;;	bmi	end_clip
+;	ble	end_clip
+;
+;;************************************************
+;
+;	move.w	a5,d0	
+;	subq.w	#1,d7		;loop index.
+;	add.w	d0,d0
+;	add.w	d0,d0
+;	move.l	(a0),(a0,d0.w)	;copy 1st pnt to end of list.
+;
+;	move.w	cliprite(a6),d6
+;	lea	point_list(pc),a1
+;	lea	lrp2(pc),a4
+;clplp2
+;	movem.w	(a0),d0-d3	;get 1st edge.
+;	addq.w	#4,a0		;move to next edge.
+;	move.w	d0,d5
+;	sub.w	d6,d5
+;	bgt	p1outright
+;	move.w	d2,d5
+;	sub.w	d6,d5
+;	bgt	cliplinevertiadd
+;	move.w	d0,(a1)+		;copy point to temp list.
+;	move.w	d1,(a1)+
+;lrp2
+;	dbra	d7,clplp2
+;
+;	lea	point_list(pc),a0
+;	move.w	a5,d7
+;;	bmi	end_clip
+;	ble	end_clip
+;
+;;************************************************
+;
+;	subq.w	#1,d7
+;	move.w	a5,d0
+;	add.w	d0,d0
+;	add.w	d0,d0
+;	move.l	(a0),(a0,d0.w)	;copy 1st pnt to end of list.
+;
+;	move.w	clipup(a6),d6
+;	lea	templist(pc),a1
+;	lea	lrp3(pc),a4
+;clplp3
+;	movem.w	(a0),d0-d3	;get 1st edge.
+;	addq.w	#4,a0		;move to next edge.
+;	move.w	d1,d5
+;	sub.w	d6,d5
+;	bmi	p1outtop
+;	move.w	d3,d5
+;	sub.w	d6,d5
+;	bmi	cliplinehoriadd	;add point if edge on way out.
+;	move.w	d0,(a1)+		;copy point to temp list.
+;	move.w	d1,(a1)+
+;lrp3
+;	dbra	d7,clplp3	 
+;
+;	lea	templist(pc),a0
+;	move.w	a5,d7
+;;	bmi	end_clip
+;	ble	end_clip
+;
+;;************************************************
+;
+;	subq.w	#1,d7
+;	move.w	a5,d0
+;	add.w	d0,d0
+;	add.w	d0,d0
+;	move.l	(a0),(a0,d0.w)	;copy 1st pnt to end of list.
+;
+;	move.w	clipdown(a6),d6
+;	lea	point_list(pc),a1
+;	lea	lrp4(pc),a4
+;clplp4
+;	movem.w	(a0),d0-d3	;get 1st edge.
+;	addq.w	#4,a0		;move to next edge.
+;	move.w	d1,d5
+;	sub.w	d6,d5
+;	bgt	p1outbottom
+;	move.w	d3,d5
+;	sub.w	d6,d5
+;	bgt	cliplinehoriadd	;add point if edge on way out.
+;	move.w	d0,(a1)+		;copy point to temp list.
+;	move.w	d1,(a1)+
+;lrp4
+;	dbra	d7,clplp4
+;
+;
+;	move.w	#-1,(a1)
+;end_clip
+;	rts
+;
+;
+;;************************************************
+;
+;p1outleft
+;	move.w	d2,d5
+;	sub.w	d6,d5
+;	bpl	cliplineverti	;add point if edge on way in.
+;	subq.w	#1,a5		;decrement no. pnts.
+;	jmp	(a4)
+;
+;;************************************************
+;
+;p1outtop
+;	move.w	d3,d5
+;	sub.w	d6,d5
+;	bpl	cliplinehori			
+;	subq.w	#1,a5		;decrement no. pnts.
+;	jmp	(a4)
+;
+;;************************************************
+;
+;p1outright
+;	move.w	d2,d5
+;	sub.w	d6,d5
+;	bmi	cliplineverti	
+;	subq.w	#1,a5		;decrement no. pnts.
+;	jmp	(a4)
+;
+;;************************************************
+;
+;p1outbottom
+;	move.w	d3,d5
+;	sub.w	d6,d5
+;	bmi	cliplinehori			
+;	subq.w	#1,a5		;decrement no. pnts.
+;	jmp	(a4)
+;
+;;************************************************
+;
+;cliplinevertiadd		;called if p1 in and p2 out.
+;	addq.w	#1,a5
+;	move.w	d0,(a1)+
+;	move.w	d1,(a1)+
+;
+;; x = clipx
+;; y = y1 + (clipx-x1)*(y1-y2)/(x1-x2)
+;
+;
+;; x = clipx
+;; y = y1 + (clipx-x1)*(y2-y1)/(x2-x1)
+;
+;cliplineverti	
+;	sub.w	d0,d2		;dx = x2 - x1
+;	sub.w	d1,d3		;dy = y2 - y1
+;	move.w	d6,d5		;get boundry value.
+;	sub.w	d0,d5		;x = clipx - x1
+;	muls	d3,d5		;x*dy
+;	divs	d2,d5		;x*dy/dx
+;	add.w	d1,d5		;x*dy/dx+y1
+;	move.w	d6,(a1)+	;store clipped point.
+;	move.w	d5,(a1)+
+;	jmp	(a4)
+;
+;;************************************************
+;	
+;; x  = x1 + (clipy-y1)*(x2-x1)/(y2-y1)
+;; y  = clipy
+;
+;cliplinehoriadd
+;	addq.w	#1,a5
+;	move.w	d0,(a1)+
+;	move.w	d1,(a1)+
+;
+;cliplinehori
+;	sub.w	d0,d2		;dx = x2 - x1
+;	sub.w	d1,d3		;dy = y2 - y1
+;	move.w	d6,d5		;
+;	sub.w	d1,d5		; y = clipy - y1
+;	muls	d2,d5		; y*dx
+;	divs	d3,d5		; y*dx/dy
+;	add.w	d0,d5		; y*dx/dy+x1
+;	move.w	d5,(a1)+
+;	move.w	d6,(a1)+
+;	jmp	(a4)
+;
+;	endc
 
 ;************************************************
 
@@ -965,7 +1138,7 @@ mtxcopytolast	macro
 	with	rinptr
 	sub	#6
 	lms	r0,[m_cnt]
-	mult	#8
+	umult	#8
 	add	rinptr
 
 	from	rx1
@@ -1020,7 +1193,12 @@ mtxclippoly2d
 mtxclip2d_left
 	sms	[m_cnt],r0
 
+ IFEQ	mpolylist
 	miwt	rinptr,m_polybuf
+ ELSEIF
+	lms	rinptr,[m_polybufptr]
+ ENDC
+
 	miwt	routptr,m_clippolybuf
 	mtxcopytolast
 
@@ -1070,7 +1248,13 @@ mtxclip2d_left
 mtxclip2d_right
 	sms	[m_cnt],r0
 	miwt	rinptr,m_clippolybuf
+
+ IFEQ	mpolylist
 	miwt	routptr,m_polybuf
+ ELSEIF
+	lms	routptr,[m_polybufptr]
+ ENDC
+
 	mtxcopytolast
 .3
   	mtxinx1y1x2y2
@@ -1117,7 +1301,13 @@ mtxclip2d_right
 
 mtxclip2d_top
 	sms	[m_cnt],r0
+
+ IFEQ	mpolylist
 	miwt	rinptr,m_polybuf
+ ELSEIF
+	lms	rinptr,[m_polybufptr]
+ ENDC
+
 	miwt	routptr,m_clippolybuf
 	mtxcopytolast
 .3
@@ -1161,7 +1351,13 @@ mtxclip2d_top
 mtxclip2d_bot
 	sms	[m_cnt],r0
 	miwt	rinptr,m_clippolybuf
+
+ IFEQ	mpolylist
 	miwt	routptr,m_polybuf
+ ELSEIF
+	lms	routptr,[m_polybufptr]
+ ENDC
+
 	mtxcopytolast
 .3
   	mtxinx1y1x2y2
@@ -1211,8 +1407,14 @@ mtxclip2d_bot
 	sub	r0
 	sms	[m_texturemap],r0	; make normal poly
 
+ IFEQ	mpolylist
 	miwt	rinptr,m_polybuf
 	miwt	routptr,m_polybuf
+ ELSEIF
+	lms	rinptr,[m_polybufptr]
+	move	rouptr,rinptr
+ ENDC
+
 	
 	move	r13,pc
 
@@ -1238,7 +1440,12 @@ mtxclippolynorm
 	sub	r0
 	sms	[m_texturemap],r0	; make normal poly
 
+ IFEQ	mpolylist
 	miwt	rinptr,m_polybuf
+ ELSEIF
+	lms	rinptr,[m_polybufptr]
+ ENDC
+
 	miwt	routptr,m_clippolybuf
 	
 	move	r13,pc
@@ -1260,7 +1467,12 @@ mtxclippolynorm
 	move	r12,r0
 
 	miwt	rinptr,m_clippolybuf
+
+ IFEQ	mpolylist
 	miwt	routptr,m_polybuf
+ ELSEIF
+	lms	routptr,[m_polybufptr]
+ ENDC
 	
 	move	r13,pc
 
@@ -1326,6 +1538,34 @@ mcliphori	macro
 	from	r6
 	mstwi	routptr	; out y = \1
 	endm
+
+mcliphoriF	macro			; Extra fudge for Dylan
+	with	rx2   		; dx = x2 - x1
+	sub	rx1
+	with	ry2		; dy = y2 - y1
+	sub	ry1
+	mexg	rx2,ry2,r0	; swap dx,dy
+	lms	r0,[\1]		; r0 = \1 - y1
+	dec	r0		;- extra fudge for Dylan
+	sub	ry1
+	to	r5
+	lmult			; r5:r4 = r0 * dx
+	move	r6,rx2
+
+	mcall	mdivs3216	; r4 = r5:r4 / r6 uses r7,r12,r13
+	nop
+
+	from	r4		; r0 = r4 + x1
+	add	rx1
+	lms	r6,[\1]
+	dec	r6 		;- extra fudge for Dylan
+	mstwi	routptr	; out x = r0	
+	from	r6
+	mstwi	routptr	; out y = \1
+	endm
+
+
+
 
 mcliphori2	macro
 	mexg	rx1,rx2,r0
@@ -1417,7 +1657,7 @@ mcopytolast	macro
 	with	rinptr
 	sub	#2
 	lms	r0,[m_cnt]
-	mult	#4
+	umult	#4
 	add	rinptr
 	from	rx1
 	mstwi	r0	; out x1
@@ -1456,11 +1696,26 @@ mtclipline2d
 
 mtlclip2d_left
 	sms	[m_cnt],r0
+
+
+
+ IFEQ	mpolylist
 	miwt	rinptr,m_polybuf
+ ELSEIF
+	lms	rinptr,[m_polybufptr]
+ ENDC
+
 	miwt	routptr,m_clippolybuf
 	mcopytolast
+
+
 .3
 	minx1y1x2y2
+; iwt rx1,#500
+; iwt rx2,#500
+; iwt ry1,#500
+; iwt ry2,#500
+
 	lms	r0,[m_xleft]
 	from	rx1
 	sub	r0
@@ -1501,7 +1756,13 @@ mtlclip2d_left
 mtlclip2d_right
 	sms	[m_cnt],r0
 	miwt	rinptr,m_clippolybuf
+
+ IFEQ	mpolylist
 	miwt	routptr,m_polybuf
+ ELSEIF
+	lms	routptr,[m_polybufptr]
+ ENDC
+
 	mcopytolast
 .3
   	minx1y1x2y2
@@ -1547,7 +1808,13 @@ mtlclip2d_right
 
 mtlclip2d_top
 	sms	[m_cnt],r0
+
+ IFEQ	mpolylist
 	miwt	rinptr,m_polybuf
+ ELSEIF
+	lms	rinptr,[m_polybufptr]
+ ENDC
+
 	miwt	routptr,m_clippolybuf
 	mcopytolast
 .3
@@ -1591,20 +1858,26 @@ mtlclip2d_top
 mtlclip2d_bot
 	sms	[m_cnt],r0
 	miwt	rinptr,m_clippolybuf
+
+ IFEQ	mpolylist
 	miwt	routptr,m_polybuf
+ ELSEIF
+	lms	routptr,[m_polybufptr]
+ ENDC
+
 	mcopytolast
 .3
   	minx1y1x2y2
 	lms	r0,[m_ybot]
 	from	ry1
 	sub	r0
-	sub	#1
+	sub	#2	;- Fudge for Dylan
 	mlblt	.2
 
 	lms	r0,[m_ybot]
 	from	ry2
 	sub	r0
-	sub	#1
+	sub	#2	;- Fudge for Dylan
 	mlblt	.5
 
 	mdecm	m_clippnts
@@ -1613,13 +1886,13 @@ mtlclip2d_bot
 	lms	r0,[m_ybot]
 	from	ry2
 	sub	r0
-	sub	#1
+	sub	#2	;- Fudge for Dylan
 	mlblt	.4
 
 	mincm	m_clippnts
 	moutx1y1
 .5
-	mcliphori	m_ybot
+	mcliphoriF	m_ybot	;- Even more Fudge for Dylan
 	mlbra	.1
 .4
 	moutx1y1
@@ -1653,7 +1926,13 @@ mtclippoly2d
 	ifeq	0
 mtclip2d_left
 	sms	[m_cnt],r0
+
+ IFEQ	mpolylist
 	miwt	rinptr,m_polybuf
+ ELSEIF
+	lms	rinptr,[m_polybufptr]
+ ENDC
+
 	miwt	routptr,m_clippolybuf
 	mcopytolast
 
@@ -1708,7 +1987,13 @@ mtclip2d_left
 mtclip2d_right
 	sms	[m_cnt],r0
 	miwt	rinptr,m_clippolybuf
+
+ IFEQ	mpolylist
 	miwt	routptr,m_polybuf
+ ELSEIF
+	lms	routptr,[m_polybufptr]
+ ENDC
+
 	mcopytolast
 .3
   	minx1y1x2y2
@@ -1761,7 +2046,13 @@ mtclip2d_right
 
 mtclip2d_top
 	sms	[m_cnt],r0
+
+ IFEQ	mpolylist
 	miwt	rinptr,m_polybuf
+ ELSEIF
+	lms	rinptr,[m_polybufptr]
+ ENDC
+
 	miwt	routptr,m_clippolybuf
 	mcopytolast
 .3
@@ -1805,7 +2096,13 @@ mtclip2d_top
 mtclip2d_bot
 	sms	[m_cnt],r0
 	miwt	rinptr,m_clippolybuf
+
+ IFEQ	mpolylist
 	miwt	routptr,m_polybuf
+ ELSEIF
+	lms	routptr,[m_polybufptr]
+ ENDC
+
 	mcopytolast
 .3
   	minx1y1x2y2
@@ -1931,3 +2228,5 @@ mprintn2
 
 
 	endc
+
+

@@ -10,25 +10,6 @@
 fonthgt		equ	12
 spacewid	equ	5
 
-m_lastspace	equ	m_spra
-m_lastlen	equ	m_sprb
-m_lastnumchars equ	m_sprc
-m_lasttrans	equ	m_sprd
-m_lastwidth	equ	m_sprxmin
-
-m_linewrap	equ	m_sprbank
-m_linetrn	equ	m_sprxmax
-m_linewid	equ	m_sprymin
-
-m_txtdata	equ	m_sprymax
-
-m_textrightclip	equ	m_sprx
-
-m_widthst	equ	m_rotpnts
-m_transst	equ	m_rotpnts+512
-m_totalchars	equ	m_sprxscale
-m_lastchar	equ	m_spryscale
-
 
 rnumchars	equr	10	;vars used by both routines
 
@@ -48,6 +29,8 @@ rspare2	equr	8
 rxbak	equr	9
 
 msprintstr
+	IFEQ	1
+
 	ibt	r0,#fontdata>>16
 	romb
 	sub	r0
@@ -65,7 +48,10 @@ msprintstr
 	bra	mprintstrin2
 	nop
 
+	ENDC
+
 mgprintstr
+	IFEQ	1
 	ibt	r0,#fontdata>>16
 	romb
 	sub	r0
@@ -88,8 +74,9 @@ mgprintstr
 	bra	mprintstrin3
 	nop
 
-
+	ENDC
 mfprintstr
+	IFEQ	1
 	ibt	r0,#fontdata>>16
 	romb
 	sub	r0
@@ -104,7 +91,11 @@ mfprintstr
 	bra	mprintstrin
 	nop
 
+	ENDC
+
 mprintclippedstr
+	IFEQ	1
+
 	ibt	r0,#fontdata>>16
 	romb
 	sub	r0
@@ -114,8 +105,9 @@ mprintclippedstr
 	bra	mprintstrin
 	nop
 
-
+	ENDC
 mprintstr
+	IFEQ	1
 	ibt	r0,#fontdata>>16
 	romb
 	sub	r0
@@ -125,10 +117,14 @@ mprintstr
 	iwt	r0,#224
 	sms	[m_textrightclip],r0
 
+	ENDC
 mprintstrin
+	IFEQ	1
 	lms	r14,[m_txtdata]	;1st byte is colour
 	getb
+	ENDC
 mprintstrin2
+	IFEQ	1
 	inc	r14
 	lob
 	colour
@@ -136,8 +132,10 @@ mprintstrin2
 	ibt	r0,#-1
 	sms	[m_totalchars],r0
 
+	ENDC
 mprintstrin3
  
+	IFEQ	1
 	lms	r2,[m_y1]		;set initial y
 
 	sub	r0
@@ -247,13 +245,14 @@ mprintstrin3
 	stop
 	nop
 
-
+	ENDC
 
 
 
 ;* Copy line of text from ROM to mario ram, storing widths and trans values.
 ;* Also detect for line wrap etc.
 mgetlinelen
+	IFEQ	1
 	lms	r14,[m_lastspace]
 	lms	rtransptr,[m_lasttrans]
 	lms	rwidthptr,[m_lastwidth]
@@ -320,11 +319,12 @@ mgetlinelen
 	iwt	r15,#.copy&WM
 	nop
 
-
+	ENDC
 
 ;---------------------------------------------------------------------------------------------------------------------
 ;X1,Y1=position    XP2=VALUE
 mshowpercgraph
+	IFEQ	1
 	ibt	r0,#14
 	lms	r1,[m_x1]
 	lms	r2,[m_y1]
@@ -350,9 +350,11 @@ mshowpercgraph
 	stop
 	nop
 
+	ENDC
 
 ;calculates the percentage of m_x1 to m_y1 and stops with result in m_x1
 mcalcperc
+	IFEQ	1
 	lms	r0,[m_x1]
 	ibt	r2,#100
 	to	r4
@@ -364,8 +366,10 @@ mcalcperc
 	sms	[m_x1],r4
 	stop
 	nop
+	ENDC
 
 mkrisdivu3115
+	IFEQ	1
 	sub	r0
 	lms	r4,[m_x1]
 	lms	r6,[m_y1]
@@ -375,9 +379,12 @@ mkrisdivu3115
 	stop
 	nop
 
+	ENDC
 
 ;nearly the same as prtdec, but does an x justify
 mprtperc
+	IFEQ	1
+
 	lms	r4,[m_z1]
 
 	ibt	r3,#100
@@ -406,23 +413,31 @@ mprtperc
 	stop
 	nop
 
-
+	ENDC
 
 ;calls mprtdec and then stops
 mprtdecstop
+	IFEQ	1
+
 	mcall	mprtdec
 	nop
 	stop
 	nop
 
+	ENDC
+
 ;prints a decimal number in m_z1 at m_x1,m_y1 and returns
 mprtdec
+	IFEQ	1
 	move	r10,r11
 	sub	r0
 	cmode
 	ibt	r0,#14
 	colour
 	mcache
+
+	ibt	r0,#fontdata>>16
+	romb
 
 	sub	r0
 	lms	r3,[m_z1]
@@ -475,8 +490,11 @@ mprtdec
 	jmp	r10
 	nop
 
+	ENDC
 
 mprt2zeros
+	IFEQ	1
+
 	sub	r0
 	call	mprtnum
 	nop
@@ -486,8 +504,12 @@ mprt2zeros
 	stop
 	nop
 
+	ENDC
+
 ;print one digit in r0
 mprtnum
+	IFEQ	1
+
 	miwt	r14,font0fon&WM
 	mult	#12
 	add	r0
@@ -526,8 +548,11 @@ mprtnum
 	jmp	r11
 	nop
 
+	ENDC
 
 mshowteammate
+	IFEQ	1
+
 	lms	r0,[m_z1]
 	lob
 	beq	.dead
@@ -561,8 +586,11 @@ mshowteammate
 	stop
 	nop
 
+	ENDC
 
 mshowteammate2
+
+	IFEQ	1
 
 	sub	r0
 	cmode
@@ -596,10 +624,11 @@ mshowteammate2
 	stop
 	nop
 
+	ENDC
 
 
 
 
 
-
-
+
+

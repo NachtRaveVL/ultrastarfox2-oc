@@ -14,7 +14,7 @@
 ;---------------------------------------------------------------------------
 	alc	slowstars,1
 	alc	hudrot,2
-	alc	tpa,2
+	zalc	tpa,2
 	alc	pweptemp,2
 	alc	strat_valid,1
 	alc	fobj,2
@@ -44,14 +44,6 @@ gf2_ingame		equ	8
 	alc	stratflags,1
 sf_nofiring	equ	1	
 
-
-;---------------------------------------------------------------------------
-	alc	bossflags,1
-bf_flag1	equ	1
-bf_flag2	equ	2
-bf_flag3	equ	4
-bf_easymode	equ	8
-bf_dying	equ	16
 
 ;---------------------------------------------------------------------------
 ; giles strat vars.
@@ -316,7 +308,7 @@ kf_LRkeydown	equ	2
 	alc	trotx,1
 	alc	troty,1
 		      
-
-
-
-
+
+
+
+
