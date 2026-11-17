@@ -31,7 +31,6 @@ Go [here](#building) to jump straight to the build instructions.
 
 - Separate source trees make the physical-cartridge and folderized build targets easier to identify.
 - PAL version support in the folderized tree (StarWing 2 logo by Josete2k, edited by Sunlit).
-- Kando was involved.
 
 ### Miscellaneous
 
