@@ -1248,6 +1248,8 @@ gamepause_mission
 	lda	#iv_pauseirq
 	sta	trans_flag		;irq pointer
 	waittrans			;irq wait
+	a8
+	stz	framec			;discard paused video frames
 	plb
 	rts
 
@@ -1913,6 +1915,41 @@ check_missionseq_l
 
 .skipa
 
+; Count elapsed video frames at the measured NTSC/PAL mission cadence.
+	lda	framer
+	and	#$00ff
+	IFEQ	PAL
+	sta	kx_oc_ticks
+	asl	a
+	clc
+	adc	kx_oc_ticks
+	adc	kx_oc_subframe
+	stz	kx_oc_ticks
+.tickloop	cmp	#10
+	bcc	.tickdone
+	sec
+	sbc	#10
+	inc	kx_oc_ticks
+	bra	.tickloop
+	ELSEIF
+	sta	kx_oc_ticks
+	asl	a
+	asl	a
+	asl	a
+	sec
+	sbc	kx_oc_ticks
+	clc
+	adc	kx_oc_subframe
+	stz	kx_oc_ticks
+.tickloop	cmp	#20
+	bcc	.tickdone
+	sec
+	sbc	#20
+	inc	kx_oc_ticks
+	bra	.tickloop
+	ENDC
+.tickdone	sta	kx_oc_subframe
+
 ;---------------------------------
 ;* '95/2/11 :chart.asm (kawagoe's) ni check idou !! *
 ;* enemy ga subete nigetaka CHECK *
@@ -1928,29 +1965,53 @@ check_missionseq_l
 	longi
 .check_StratTimer
 	km_clrmissionflag enemymove	;parallel routine call disable
-	dec	kx_EnStratTm
-	bne	.check_GameTimer
-	km_setval	kx_EnStratTm,enstrattm
+	lda	kx_EnStratTm
+	sec
+	sbc	kx_oc_ticks
+	bmi	.enstratwrap
+	beq	.enstratwrap
+	sta	kx_EnStratTm
+	bra	.check_GameTimer
+.enstratwrap	clc
+	adc	#enstrattm
+	bmi	.enstratwrap
+	beq	.enstratwrap
+	sta	kx_EnStratTm
 	km_setmissionflag enemymove	;parallel routine call enable
 ;---------------------------------
 	longa
 	longi
 .check_GameTimer
+	lda	kx_oc_ticks
+	beq	.hpdone
+.hptick	pha
 	jsl	DecCorneriaHP_mission_l
+	pla
+	dec	a
+	bne	.hptick
+.hpdone
 
 	km_bitcheckmissionflag	timemax
 	bne	.notTimeChange
 
-	inc	kx_GameTmAdd
- 	dec	kx_GameTmSub
-	bne	.notTimeChange
+	lda	kx_GameTmAdd
+	clc
+	adc	kx_oc_ticks
+	sta	kx_GameTmAdd
+	lda	kx_GameTmSub
+	sec
+	sbc	kx_oc_ticks
+	beq	.secondelapsed
+	bcs	.notTimeChangeStore
+.secondelapsed	clc
+	adc	#missgftm
+	sta	kx_GameTmSub
 
 	lda	kw_GameTimer
 	cmp	#gametimemax_mission
 	beq	.maxtime
 
 	km_setval	kx_GameTmAdd,0
-	km_setval	kx_GameTmSub,missgftm	;(25*20)
 
 	inc	kw_GameTimer
 
@@ -1961,6 +2022,8 @@ check_missionseq_l
 	sta	kx_TOTALTIME
 .notTimeChange
 	brl	.exit
+.notTimeChangeStore	sta	kx_GameTmSub
+	brl	.exit
 .maxtime
 	km_setval	kx_GameTmAdd,missgftm-1
 	km_setmissionflag	timemax	
@@ -1968,10 +2031,19 @@ check_missionseq_l
 ;---------------------------------------------------------------------------
 	longa
 .mission_wait
-	dec	kw_miswaittm
-	bne	..skip1
+	lda	framer
+	and	#$00ff
+	sta	kx_oc_ticks
+	lda	kw_miswaittm
+	sec
+	sbc	kx_oc_ticks
+	beq	..waitdone
+	bcc	..waitdone
+	sta	kw_miswaittm
+	brl	.exit
+..waitdone
+	stz	kw_miswaittm
 	km_setvar	kw_MissionSyori,kw_nextmissionsyori
-..skip1
 	brl	.exit
 ;---------------------------------------------------------------------------
 .mission_enemyrunawaytrig
@@ -1979,7 +2051,7 @@ check_missionseq_l
 	km_setmissionflag	transsprcgx 
 	km_setgameflag		keydisable
  	km_setval	kw_NEXTmissionsyori,msy_enemyrunaway
- 	km_setval	kw_miswaittm,4*15
+	km_setval	kw_miswaittm,(7*videosecond)/2
 	km_setval	gameobjstruct,idx_demo_enemygone
 	km_setmissionsyori	wait
 	km_setsndflag	port2stop
@@ -2463,7 +2535,7 @@ check_battleseq_l
 
 	lda	SecondTimer
 	km_bne	.exit
-	lda	#second
+	lda	#videosecond
 	sta	SecondTimer	;1sec counter reset
 	a16
 	dec	kw_GameTimer
@@ -5263,3 +5335,37 @@ timebonustbl
 	db	10
 	db	10
 	ENDC
+
+; Scale signed Arwing vectors by 31/32 outside the full player bank.
+OC_scalevecs_l
+	a16
+	lda	exal_vx,y
+	jsr	.scale
+	sta	exal_vx,y
+	lda	exal_vy,y
+	jsr	.scale
+	sta	exal_vy,y
+	lda	exal_vz,y
+	jsr	.scale
+	sta	exal_vz,y
+	rtl
+.scale	sta	x1
+	bpl	.oc_abs
+	eor	#$ffff
+	inc	a
+.oc_abs	clc
+	adc	#16
+	lsr	a
+	lsr	a
+	lsr	a
+	lsr	a
+	lsr	a
+	sta	x2
+	lda	x1
+	bpl	.oc_positive
+	clc
+	adc	x2
+	rts
+.oc_positive	sec
+	sbc	x2
+	rts

@@ -2658,7 +2658,7 @@ KcopyRdScChr_sub
 ;======== BG change Check =======
 	lda.l	SecondTimer
 	beq	.NoFlash	;if 1 second past
-	cmp	#second/2
+	cmp	#videosecond/2
 	beq	.SetFlash	;if half second past
 	jmp	.TimerSetEnd
 ;======== Timer Flashing ========
@@ -2666,7 +2666,7 @@ KcopyRdScChr_sub
 	KcopyBitMapFixChr	RSmcolFl,BmTmsemcol,32
 	jmp	.TimerSetEnd
 .NoFlash
-	lda	#second
+	lda	#videosecond
 	sta.l	SecondTimer	;1sec counter reset
 	KcopyBitMapFixChr	RSmcolNoFl,BmTmsemcol,32
 ;======= Time Change ============
@@ -2735,7 +2735,7 @@ KcopyRdScChr_sub
 ;------- Player 1 x,y,rot y ---------
 	lda.l	SecondTimer
 	beq	.SetTimer	;if 1 second past
-	cmp	#second/2
+	cmp	#videosecond/2
 	bne	.skip		;if not half second past
 
 ;======== Timer Flashing ========
@@ -2747,7 +2747,7 @@ KcopyRdScChr_sub
 	jmp	.TimerSetEnd
 .SetTimer
 	shorta
-	lda	#second
+	lda	#videosecond
 	sta.l	SecondTimer	;counter reset
 ;-------- timer flashing ---------
 	a16

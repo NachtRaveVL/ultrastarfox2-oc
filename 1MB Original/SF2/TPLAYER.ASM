@@ -6,6 +6,7 @@
 ;ศอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
 
 	INCPUB	tplayer
+	INCEXT	intro
 
 AMCTL	EQU	1	; 0:left right turn    1: tleft tright turn)
 
@@ -2779,6 +2780,7 @@ aav_wz	equ	work4
 	adc	exal_vz,y
 	sta	exal_vz,y
 
+	jsl	OC_scalevecs_l
 
 ; Room mode?
 
@@ -2863,6 +2865,8 @@ aav_wz	equ	work4
 
 
 	rts
+
+
 
 
 

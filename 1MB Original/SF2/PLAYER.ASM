@@ -1955,11 +1955,15 @@ decnohit_srou_l
 .noflash
 	lda		exal_nohit,y
 	pha
-	and		#exal_nohit_mask^-1
-	sta		exal_nohit,y
+	and		#exal_nohit_mask
+	sec
+	sbc		framer
+	bcs		..positive
+	lda		#0
+..positive	sta		tpx
 	pla
-	dec		a
-	ora		exal_nohit,y
+	and		#exal_nohit_mask^-1
+	ora		tpx
 	sta		exal_nohit,y
 	beq		.skip
 

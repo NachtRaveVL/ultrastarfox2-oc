@@ -24,9 +24,10 @@ enterendy	equ	-500
 ;³palyer ga damage wo uketa tokino muteki jikan³
 ;ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
 
-plnohitfrm		equ	10
+; Original 1 MB protection lasts 36/15 NTSC video frames.
+plnohitfrm		equ	(3*videosecond)/5
 plscrflashfrm	equ	8	;4
-plnohitfrm_s		equ	4
+plnohitfrm_s		equ	videosecond/4
 plscrflashfrm_s	equ	2
 
 ;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
