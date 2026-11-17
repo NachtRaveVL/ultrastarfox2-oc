@@ -1,4 +1,0 @@
-	global	heap_runmarioStart_l
-	global	heap_runmarioEnd_l
-
-	global	convHextoDecimal

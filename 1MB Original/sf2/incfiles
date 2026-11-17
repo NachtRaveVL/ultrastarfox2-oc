@@ -1,0 +1,12 @@
+
+ Volume in drive C is IBMDOS_J5V    Serial number is 18FE:8F49
+ Directory of  c:\sg\*.inc
+
+alcs.inc        asmvars.inc     bgmacs.inc      bgmacs2.inc     dalcs.inc    
+ealcs.inc       gamemsgs.inc    gamsmsgs.inc    gilesal.inc     gilesalc.inc 
+gilesalx.inc    gridvars.inc    header.inc      istrats.inc     kalcs.inc    
+macros.inc      mapmacs.inc     mapstruc.inc    marioi.inc      sfxregs.inc  
+shmacs.inc      soundequ.inc    stratequ.inc    strathdr.inc    stratlib.inc 
+stratmac.inc    structs.inc     tail.inc        vars.inc        weapons.inc  
+     436,540 bytes in 30 file(s)       473,088 bytes allocated
+  71,884,800 bytes free

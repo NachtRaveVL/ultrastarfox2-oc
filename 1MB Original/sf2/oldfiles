@@ -1,0 +1,10 @@
+
+ Volume in drive C is IBMDOS_J5V    Serial number is 18FE:8F49
+ Directory of  c:\sg\*.old
+
+bank2.old       colboxes.old    d2strats.old    endseq.old      gstrats2.old 
+irq.old         istrats.old     main.old        mapmacs.old     mdsprite.old 
+pshapes.old     sgrom.old       shapes.old      shapes2.old     shapes5.old  
+stratrou.old    ushapes.old     
+   1,867,472 bytes in 17 file(s)     1,888,256 bytes allocated
+  71,872,512 bytes free

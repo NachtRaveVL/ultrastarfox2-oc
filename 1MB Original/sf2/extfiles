@@ -1,0 +1,16 @@
+
+ Volume in drive C is IBMDOS_J5V    Serial number is 18FE:8F49
+ Directory of  c:\sg\*.ext
+
+bgs.ext         blink.ext       bootnmi.ext     colboxes.ext    coltabs.ext  
+continue.ext    d2strats.ext    d3strats.ext    draw.ext        dstrats.ext  
+endseq.ext      expstrat.ext    fontdata.ext    ga2strat.ext    ga3strat.ext 
+game.ext        gastrats.ext    gb2strat.ext    gb3strat.ext    gbstrats.ext 
+gcstrats.ext    gistrats.ext    gstrats.ext     incbins.ext     irq.ext      
+kstrats.ext     main.ext        mario.ext       mdata.ext       mem.ext      
+mhofs.ext       mother.ext      paths.ext       pcstrats.ext    pistrats.ext 
+planets.ext     pstrats.ext     ramstuff.ext    sgdata.ext      sgtabs.ext   
+shapes.ext      shbanks.ext     sound.ext       sprites.ext     stratrou.ext 
+trans.ext       windows.ext     world.ext       
+      44,527 bytes in 48 file(s)       118,784 bytes allocated
+  71,876,608 bytes free

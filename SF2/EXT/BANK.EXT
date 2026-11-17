@@ -1,6 +1,0 @@
-	IFNE	janglish
-	global	e7_ccr
-	global	b4_ccr
-	global	e6_ccr
-	global	e8_ccr
-	ENDC

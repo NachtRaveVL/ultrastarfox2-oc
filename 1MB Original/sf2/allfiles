@@ -1,0 +1,68 @@
+
+ Volume in drive C is IBMDOS_J5V    Serial number is 18FE:8F49
+ Directory of  c:\sg\*.*
+
+.               ..              DATA            MAPS            MSPRITES     
+SND             1               alcs.inc        allfiles        alter.exe    
+alvars.txt      asmfiles        asmvars.inc     bank0.asm       bank0.sob    
+bank0.sym       bank1.as        bank1.asm       bank1.sob       bank1.sym    
+bank2.asm       bank2.old       bank2.sob       bank2.sym       bank4.asd    
+bank4.asm       bank4.sob       bank4.sym       bank5.asm       bank5.sob    
+bank5.sym       bank6.asm       bank6.sob       bank6.sym       bank7.asm    
+bank7.sob       bank7.sym       bank8.asm       bank8.sob       bank8.sym    
+bank9.asm       bank9.sob       bank9.sym       bank10.asm      bank10.sob   
+bank10.sym      bank11.asm      bank11.sob      bank11.sym      bank13.asm   
+bgmacs.add      bgmacs.inc      bgmacs2.inc     bgs.add         bgs.asm      
+bgs.ext         bin.lzh         blink.asm       blink.ext       bolox        
+bootnmi.asm     bootnmi.ext     colboxes.asm    colboxes.egu    colboxes.ext 
+colboxes.old    coldet.asm      coltab.asm      coltabs.asm     coltabs.ext  
+cont.asm        cont2.asm       continue.asm    continue.egu    continue.ext 
+copysnd.bat     d2strats.asm    d2strats.ext    d2strats.old    d3strats.asm 
+d3strats.ext    dalcs.inc       debug.asm       defspr.asm      dog.asm      
+draw.asm        draw.ext        dsg.lzh         dstr            dstrats.am   
+dstrats.asm     dstrats.ext     ealcs.inc       egu.doc         egu2.doc     
+egusg.zip       endseq.asm      endseq.ext      endseq.old      error        
+esg.lzh         expstrat.asm    expstrat.ext    files.log       finished.sg  
+flist           fontdata.asm    fontdata.ext    font_d.asm      font_e.asm   
+font_h.asm      font_n.asm      font_t.asm      ga2strat.asm    ga2strat.ext 
+ga3strat.asm    ga3strat.ext    game.asm        game.ext        gamemsgs.egu 
+gamemsgs.inc    gametext.asm    gamsmsgs.inc    gastrats.asm    gastrats.ext 
+gb2strat.asm    gb2strat.ext    gb3strat.asm    gb3strat.ext    gbstrats.asm 
+gbstrats.ext    gcstrats.asm    gcstrats.ext    gilesal.inc     gilesalc.inc 
+gilesalx.inc    gistrats.asm    gistrats.ext    gridvars.inc    gstrats.add  
+gstrats.asm     gstrats.ext     gstrats2.old    hdmatabs.asm    header.inc   
+ifcold.asm      incbins.asm     incbins.ext     incbins.sob     incbins.sym  
+incfiles        info.doc        invalid.edt     irq.am          irq.asm      
+irq.ext         irq.old         istrats.asm     istrats.egu     istrats.gsg  
+istrats.inc     istrats.old     japsg.rom       kalcs.inc       kshapes.asm  
+kstrats.asm     kstrats.ext     lastasm.tmp     light.asm       m.bak        
+m.bat           macros.inc      main.asm        main.ext        main.old     
+makefile        mand.gsg        mapm            mapmacs.inc     mapmacs.old  
+mapstruc.inc    mario.ext       marioi.inc      mbox.mc         mbumwipe.mc  
+mcfiles         mcircle.mc      mclip.mc        mdata.ext       mdata.mc     
+mdecru.mc       mdrawc.mc       mdrawlis.mc     mdrawp.mc       mdsprite.mc  
+mdsprite.ol2    mdsprite.old    mem.asm         mem.ext         mgdots.mc    
+mhofs.ext       mhofs.mc        mhud.mc         mmacs.mc        mmaths.mc    
+mobj.mc         mold            mother.asm      mother.ext      mpart.mc     
+mplanet.mc      mprint.mc       msgs.txt        mshtab.mc       msprite.mc   
+mtxtprt.mc      mvars.mc        mwcrot.mc       mwrot.mc        nmi.asm      
+noasg.rom       obj.asm         pathmacs.asm    paths.asm       paths.ext    
+pcstrats.asm    pcstrats.ext    pistrats.asm    pistrats.ext    planets.asm  
+planets.ext     pshapes.asm     pshapes.old     pstrats.asm     pstrats.ext  
+pstratss        ramstuff.asm    ramstuff.ext    sfxregs.inc     sg.egu       
+sg.lzh          sg.rom          sg.sym          sg2.rom         sg3.rom      
+sgdata.asm      sgdata.ext      sgg.egu         sgrom.old       sgtabs.asm   
+sgtabs.ext      shapes.aeg      shapes.asm      shapes.eeg      shapes.egu   
+shapes.ext      shapes.gsg      shapes.old      shapes.olf      shapes2.aeg  
+shapes2.asm     shapes2.old     shapes3.add     shapes3.asm     shapes4.asm  
+shapes5.asm     shapes5.old     shbank.asm      shbanks.asm     shbanks.ext  
+shbanks.sob     shbanks.sym     shmacs.inc      sound.asm       sound.ext    
+soundequ.inc    sprites.asm     sprites.ext     state.rst       status.doc   
+stdfiles.log    stratequ.inc    strathdr.inc    stratlib.inc    stratmac.inc 
+stratrou.asm    stratrou.ext    stratrou.old    structs.inc     sym.lzh      
+symson.mak      tail.inc        test.tst        tmp.sym         totaladd.asm 
+training.asm    trans.asm       trans.ext       ushapes.asm     ushapes.egu  
+ushapes.old     vars.inc        weapons.inc     windows.asm     windows.ext  
+world.asm       world.ext       
+  22,467,778 bytes in 307 file(s)    22,824,960 bytes allocated
+  71,882,752 bytes free

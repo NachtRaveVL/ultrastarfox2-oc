@@ -1,0 +1,11 @@
+	global	mwhichside
+	global	MWithinPoly
+	global	MRotatePoint
+	global	mscalexz_a
+	global	MClosestLine
+	global	mscalexz_s
+	global	mrevec
+	global	mdividevecs
+	global	mslopeheight
+	global	mslopebounce
+	global	mveclen

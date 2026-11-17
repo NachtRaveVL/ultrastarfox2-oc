@@ -3,6 +3,7 @@
 *.smc
 *.SFC
 *.SMC
+*.srm
 *.ram
 
 #MSU stuff
@@ -19,6 +20,9 @@
 *.BPS
 *.ips
 *.IPS
+
+#Releases
+*/releases/*
 
 #backups
 *.bak
@@ -45,8 +49,8 @@
 */.vscode/*
 
 # Files generated during assembly
-*.CCR
-*.PCR
+/2MB\ Folderized/**/*.CCR
+/2MB\ Folderized/**/*.PCR
 SF2/DATA/COL/*.PAC
 SF2/DATA/COL/ALLCOLS.COL
 

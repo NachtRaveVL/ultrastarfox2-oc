@@ -1,8 +1,0 @@
-	global	screensetup_l
-	global	setscreentype_l
-	global	st_normalscr
-	global	st_twoplayerscr
-	global	st_threedeescr
-	global	st_typeselectscr
-	global	st_trainingscr
-	global	st_demoscr

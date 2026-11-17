@@ -1,4 +1,0 @@
-	GLOBAL	DisplayFriendMessage_l
-	GLOBAL	DisplayMessages_l
-	GLOBAL	FriendMessage_l
-	GLOBAL	showtechdata_l
