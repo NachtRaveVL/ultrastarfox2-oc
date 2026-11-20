@@ -750,6 +750,7 @@ kxsworkend	equ	kxswork+63
 	km_worklabel	W,tiw_sprmode
 	km_worklabel	W,tiw_gamemode
 	km_worklabel	W,tiw_returndemo
+	km_worklabel	W,tiw_overclocked
 
 ;---------------------------------------------------------------------
 ;*								*

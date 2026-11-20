@@ -255,6 +255,7 @@ keyscr_l	incfile	ASM\keyscr.asm
 
 	inccru	a1_pcr,data\a1.pcr
 	inccru	a12_pcr,data\a12.pcr
+	inccru	b16_pcr,data\b16_a.pcr
 	bankend	24
 
 	bank	25
@@ -279,7 +280,6 @@ keyscr_l	incfile	ASM\keyscr.asm
 	inccru	b13_pcr,data\b13_a.pcr
 	inccru	b14_pcr,data\b14_a.pcr
 	inccru	b15_pcr,data\b15_a.pcr
-	inccru	b16_pcr,data\b16_a.pcr
 
 	incfile	MARIO\mdata.mc
 	bankend	25

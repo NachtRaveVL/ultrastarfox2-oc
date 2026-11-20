@@ -329,6 +329,9 @@ testirq
 ;*		Title no IRQ Routine				*
 ;*********************************************************************
 	SHORTA
+title_overclocked_map
+	dw	3400h,344ah,344eh,3460h,34cah,34cch,34ceh,34eeh
+
 	SHORTI
 titleirq
 	a8i16
@@ -1376,7 +1379,54 @@ gameirq4
 ;*			Color Data Transfer			*
 ;* BG & OBJ Colour Data Transfer					*
 ;---------------------------------------------------------------------
+;* Use the StarFox lettering colors from the animated title palette.
+	km_cmpcheckgamemode	title
+	bne	.no_overclocked_palette
+	lda	tiw_overclocked
+	beq	.no_overclocked_palette
+	a16
+	lda.l	kx_palette+10
+	sta.l	kx_palette+5*32+2
+	sta.l	kx_palette+5*32+8
+	sta.l	kx_palette+5*32+14
+	lda.l	kx_palette+2
+	sta.l	kx_palette+5*32+4
+	sta.l	kx_palette+5*32+10
+	sta.l	kx_palette+5*32+16
+	lda.l	kx_palette+4
+	sta.l	kx_palette+5*32+6
+	sta.l	kx_palette+5*32+12
+	sta.l	kx_palette+5*32+18
+	a8
+.no_overclocked_palette
 	km_IRQdmaRAMtoCGRAM	kx_palette,0,512
+
+;* Overclocked title lettering appears with the finished logo.
+	km_cmpcheckgamemode	title
+	bne	.no_overclocked
+	lda	tiw_overclocked
+	cmp	#1
+	bne	.no_overclocked
+	inc	tiw_overclocked
+	lda	#$80
+	sta	vmainc
+	ldx	#$6194		; BG1 second screen, row 12, column 20
+	stx	vmaddl
+	a16
+	lda	#3400h
+	sta	vmdatal
+	ldx	#$61b4		; row 13, columns 20-26
+	stx	vmaddl
+	ldx	#2
+.overclocked_loop
+	lda.l	title_overclocked_map,x
+	sta	vmdatal
+	inx
+	inx
+	cpx	#16
+	bne	.overclocked_loop
+	a8
+.no_overclocked
 
 ;---------------------------------------------------------------------
 ;*		Screen Data Transfer	(Yajima's)		*

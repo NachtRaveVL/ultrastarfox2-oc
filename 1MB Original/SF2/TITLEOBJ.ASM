@@ -166,6 +166,7 @@ Init_titleobj_l
 	ai16
 
 	stz	titlerogo_flag
+	stz	tiw_overclocked
 
 	lda	#0
 	sta.l	titlestarcolor_fade
@@ -433,7 +434,10 @@ titleobj_facemove
 ;	TitleROGO Color Animarion
 ;---------------------------------------------------------------------
 titleobj_rogoset
-	jmp	set_titlecolor
+	lda	tiw_overclocked
+	bne	.ready
+	inc	tiw_overclocked
+.ready	jmp	set_titlecolor
 
 ;---------------------------------------------------------------------
 ;	nintendo(c) init
