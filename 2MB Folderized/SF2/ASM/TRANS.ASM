@@ -44,6 +44,23 @@ transfer_l
 	lda	framec
 	sta	framer
 	stz	framec
+	a16
+	lda	framer
+	and	#$00ff
+	clc
+	adc.l	kx_oc_displayrem
+.oc_displaytick	cmp	#gmframe
+	bcc	.oc_displaydone
+	sec
+	sbc	#gmframe
+	pha
+	lda.l	kx_oc_displayframe
+	inc	a
+	sta.l	kx_oc_displayframe
+	pla
+	bra	.oc_displaytick
+.oc_displaydone	sta.l	kx_oc_displayrem
+	a8
 .notfinished
 	lda	trans_flag
 	bne	.notfinished
