@@ -65,7 +65,7 @@ user_yajima		equ	8
 ;  ศัออออออออออออออออออออผณ
 ;   ภฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤู
 
-oc_vel_step	equ	(oc_hz-26000000)/7000000+1	; 26MHz: 1/32, 33MHz: 2/32
+arwing_vel_step	equ	(oc_hz-26000000)/7000000+1	; 26MHz: 1/32, 33MHz: 2/32
 
 	STRING	version[80]
 

@@ -48,18 +48,18 @@ transfer_l
 	lda	framer
 	and	#$00ff
 	clc
-	adc.l	kx_oc_displayrem
-.oc_displaytick	cmp	#gmframe
-	bcc	.oc_displaydone
+	adc.l	kx_VisualFrameRem
+.visualtick	cmp	#gmframe
+	bcc	.visualdone
 	sec
 	sbc	#gmframe
 	pha
-	lda.l	kx_oc_displayframe
+	lda.l	kx_VisualFrame
 	inc	a
-	sta.l	kx_oc_displayframe
+	sta.l	kx_VisualFrame
 	pla
-	bra	.oc_displaytick
-.oc_displaydone	sta.l	kx_oc_displayrem
+	bra	.visualtick
+.visualdone	sta.l	kx_VisualFrameRem
 	a8
 .notfinished
 	lda	trans_flag

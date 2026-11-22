@@ -1948,7 +1948,7 @@ decnohit_srou_l
 	and		#exal_nohit_mask
 	beq		.skip
 
-	lda.l	kx_oc_displayframe
+	lda.l	kx_VisualFrame
 	and	#3
 	beq	.noflash
 

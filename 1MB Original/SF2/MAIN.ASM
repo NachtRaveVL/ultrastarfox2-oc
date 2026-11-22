@@ -151,10 +151,10 @@ initgame_l
 	km_setval	kx_radarscale,scale_ground	;1dot = 128 (gamelist.inc)
 ;* Game Timer *
 	km_setval	kx_GameTmAdd,0
-	km_setval	kx_oc_subframe,0
-	km_setval	kx_oc_ticks,0
-	km_setval	kx_oc_displayframe,0
-	km_setval	kx_oc_displayrem,0
+	km_setval	kx_MissionTickRem,0
+	km_setval	kx_MissionTicks,0
+	km_setval	kx_VisualFrame,0
+	km_setval	kx_VisualFrameRem,0
 	km_setval	kx_GameTmSub,missgftm	;1 hour time = 10 second
 	km_setval	kx_EnStratTm,enstrattm	;enemy stratage timer
 	km_setval	kw_Gametimer,0		;Game ni kakatta time

@@ -2895,37 +2895,37 @@ aav_wz	equ	work4
 
 
 
-; Scale a signed vector by (32-oc_vel_step)/32 without delaying the frame transfer.
+; Scale a signed vector by (32-arwing_vel_step)/32 without delaying the frame transfer.
 OC_scalevel_srou
 	a16
 	sta	x1
-	bpl	.oc_abs
+	bpl	.vel_abs
 	eor	#$ffff
 	inc	a
-.oc_abs	clc
+.vel_abs	clc
 	adc	#16
 	lsr	a
 	lsr	a
 	lsr	a
 	lsr	a
 	lsr	a
-	IFGT	oc_vel_step-1
+	IFGT	arwing_vel_step-1
 	sta	x2
-	REPT	oc_vel_step-1
+	REPT	arwing_vel_step-1
 	clc
 	adc	x2
 	ENDR
 	ENDC
-	IFLT	oc_vel_step-1
+	IFLT	arwing_vel_step-1
 	lda	#0
 	ENDC
 	sta	x2
 	lda	x1
-	bpl	.oc_positive
+	bpl	.vel_positive
 	clc
 	adc	x2
 	rts
-.oc_positive	sec
+.vel_positive	sec
 	sbc	x2
 	rts
 

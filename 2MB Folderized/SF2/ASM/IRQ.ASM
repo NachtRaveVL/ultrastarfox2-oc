@@ -2745,7 +2745,7 @@ setinidisp
 	stz	fadedir
 	stz	fade
 	bra	.done
-.sfadedown	lda	gameframe
+.sfadedown	lda.l	kx_VisualFrame
 	and	#1
 	beq	.fade1
 	rts

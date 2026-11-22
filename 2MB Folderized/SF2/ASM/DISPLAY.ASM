@@ -175,7 +175,7 @@ set_player_cursor_P2_l	; for player 2
 	lda	TPZ	; cursor flash flag
 	bne	.inn
 
-	lda.l	kx_oc_displayframe
+	lda.l	kx_VisualFrame
 	and	#1
 	bne	.dark
 
@@ -713,7 +713,7 @@ set_player_cursor_P2_l	; for player 2
 	lda	#2	; 15 green
 	sta.l	m_hudcolour
 
-	lda.l	kx_oc_displayframe
+	lda.l	kx_VisualFrame
 	bit	#%100
 	bne	.finish
 
@@ -1533,7 +1533,7 @@ set_enemy_cursor_P2_l	; for screen #2
 ; set turn colour
 
 	phx
-	lda.l	kx_oc_displayframe
+	lda.l	kx_VisualFrame
 	and	#3
 	asl	a
 	tax
@@ -2552,7 +2552,7 @@ aeai_z	equ	work6
 
 ;----------------------------------------------------------------------------------
 
-	lda.l	kx_oc_displayframe
+	lda.l	kx_VisualFrame
 	bit	#31
 	rlbne	.addElist
 

@@ -1168,10 +1168,10 @@ demof_all	equ	-1
 	xalc	kx_TotalTimeBak,2
 	xalc	kx_TotalSubTime,2	;1 second timer
 	alc	kw_Gametimer,2		;Game ni kakatta time
-	xalc	kx_oc_subframe,2		;video-frame remainder for NTSC/PAL mission ticks
-	xalc	kx_oc_ticks,2		;mission ticks elapsed during the current transfer
-	xalc	kx_oc_displayframe,2	;visual timing at the nominal game-frame cadence
-	xalc	kx_oc_displayrem,2	;video-frame remainder
+	xalc	kx_MissionTickRem,2		;video-frame remainder for NTSC/PAL mission ticks
+	xalc	kx_MissionTicks,2		;mission ticks elapsed during the current transfer
+	xalc	kx_VisualFrame,2	;visual timing at the nominal game-frame cadence
+	xalc	kx_VisualFrameRem,2	;video-frame remainder
 	xalc	kx_GameTmSub,2		;1 second timer
 	xalc	kx_GameTmAdd,2		;1 second timer
 	xalc	kx_YJGameTm,2		;decimal time

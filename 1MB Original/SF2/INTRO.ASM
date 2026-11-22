@@ -1919,36 +1919,36 @@ check_missionseq_l
 	lda	framer
 	and	#$00ff
 	IFEQ	PAL
-	sta	kx_oc_ticks
+	sta	kx_MissionTicks
 	asl	a
 	clc
-	adc	kx_oc_ticks
-	adc	kx_oc_subframe
-	stz	kx_oc_ticks
+	adc	kx_MissionTicks
+	adc	kx_MissionTickRem
+	stz	kx_MissionTicks
 .tickloop	cmp	#10
 	bcc	.tickdone
 	sec
 	sbc	#10
-	inc	kx_oc_ticks
+	inc	kx_MissionTicks
 	bra	.tickloop
 	ELSEIF
-	sta	kx_oc_ticks
+	sta	kx_MissionTicks
 	asl	a
 	asl	a
 	asl	a
 	sec
-	sbc	kx_oc_ticks
+	sbc	kx_MissionTicks
 	clc
-	adc	kx_oc_subframe
-	stz	kx_oc_ticks
+	adc	kx_MissionTickRem
+	stz	kx_MissionTicks
 .tickloop	cmp	#20
 	bcc	.tickdone
 	sec
 	sbc	#20
-	inc	kx_oc_ticks
+	inc	kx_MissionTicks
 	bra	.tickloop
 	ENDC
-.tickdone	sta	kx_oc_subframe
+.tickdone	sta	kx_MissionTickRem
 
 ;---------------------------------
 ;* '95/2/11 :chart.asm (kawagoe's) ni check idou !! *
@@ -1967,7 +1967,7 @@ check_missionseq_l
 	km_clrmissionflag enemymove	;parallel routine call disable
 	lda	kx_EnStratTm
 	sec
-	sbc	kx_oc_ticks
+	sbc	kx_MissionTicks
 	bmi	.enstratwrap
 	beq	.enstratwrap
 	sta	kx_EnStratTm
@@ -1982,7 +1982,7 @@ check_missionseq_l
 	longa
 	longi
 .check_GameTimer
-	lda	kx_oc_ticks
+	lda	kx_MissionTicks
 	beq	.hpdone
 .hptick	pha
 	jsl	DecCorneriaHP_mission_l
@@ -1996,11 +1996,11 @@ check_missionseq_l
 
 	lda	kx_GameTmAdd
 	clc
-	adc	kx_oc_ticks
+	adc	kx_MissionTicks
 	sta	kx_GameTmAdd
 	lda	kx_GameTmSub
 	sec
-	sbc	kx_oc_ticks
+	sbc	kx_MissionTicks
 	beq	.secondelapsed
 	bcs	.notTimeChangeStore
 .secondelapsed	clc
@@ -2033,10 +2033,10 @@ check_missionseq_l
 .mission_wait
 	lda	framer
 	and	#$00ff
-	sta	kx_oc_ticks
+	sta	kx_MissionTicks
 	lda	kw_miswaittm
 	sec
-	sbc	kx_oc_ticks
+	sbc	kx_MissionTicks
 	beq	..waitdone
 	bcc	..waitdone
 	sta	kw_miswaittm
@@ -5336,7 +5336,7 @@ timebonustbl
 	db	10
 	ENDC
 
-; Scale signed Arwing vectors by (32-oc_vel_step)/32 outside the full player bank.
+; Scale signed Arwing vectors by (32-arwing_vel_step)/32 outside the full player bank.
 OC_scalevecs_l
 	a16
 	lda	exal_vx,y
@@ -5350,32 +5350,32 @@ OC_scalevecs_l
 	sta	exal_vz,y
 	rtl
 .scale	sta	x1
-	bpl	.oc_abs
+	bpl	.vel_abs
 	eor	#$ffff
 	inc	a
-.oc_abs	clc
+.vel_abs	clc
 	adc	#16
 	lsr	a
 	lsr	a
 	lsr	a
 	lsr	a
 	lsr	a
-	IFGT	oc_vel_step-1
+	IFGT	arwing_vel_step-1
 	sta	x2
-	REPT	oc_vel_step-1
+	REPT	arwing_vel_step-1
 	clc
 	adc	x2
 	ENDR
 	ENDC
-	IFLT	oc_vel_step-1
+	IFLT	arwing_vel_step-1
 	lda	#0
 	ENDC
 	sta	x2
 	lda	x1
-	bpl	.oc_positive
+	bpl	.vel_positive
 	clc
 	adc	x2
 	rts
-.oc_positive	sec
+.vel_positive	sec
 	sbc	x2
 	rts
