@@ -1948,7 +1948,9 @@ decnohit_srou_l
 	and		#exal_nohit_mask
 	beq		.skip
 
-	s_jmpNOT_varAND	B,gameframe,#3,.noflash
+	lda.l	kx_oc_displayframe
+	and	#3
+	beq	.noflash
 
 	s_set_alsflag	x,hitflash
 
