@@ -2143,11 +2143,7 @@ ARWING_altcheck_HIGH
 
 	jsr		calc_pulluprotx_srou
 
-	lda		gameframe
-	and		#1
-	beq		.exit
-
-	s_Fchase_alvar	B,y,exal_rotxoffset,work1,1
+	jsl	chase_rotxoffset_l
 	bra		.exit
 
 .exit_high	a8
@@ -2430,10 +2426,7 @@ ARWING_altcheck_LOWEX
 
 .chaserxofs	LOCAL
 
-	lda		gameframe
-	and		#1
-	beq		.exit
-	s_Fchase_alvar	B,y,exal_rotxoffset,work1,1
+	jsl	chase_rotxoffset_l
 	bra		.exit
 
 

@@ -160,6 +160,7 @@ initgame_l
 	km_setval	kx_VisualFrame,0
 	km_setval	kx_VisualFrameRem,0
 	km_setval	kx_VisualStep2,0
+	km_setval	kx_VisualStepOdd,0
 	km_setval	kx_VisualStep8,0
 	km_setval	kx_FadeStep,$ffff
 	km_setval	kx_GameTmSub,missgftm	;1 hour time = 10 second
@@ -1542,3 +1543,17 @@ decrement_brake_timer_l
 	ora	tpx
 	sta	exal_brake,y
 	rtl
+
+; Chase Arwing pitch once per elapsed odd visual frame.
+chase_rotxoffset_l
+	a8
+	lda.l	kx_VisualStepOdd
+	beq	.done
+	pha
+.loop	s_Fchase_alvar	B,y,exal_rotxoffset,twork+2,1
+	pla
+	dec	a
+	beq	.done
+	pha
+	bra	.loop
+.done	rtl
