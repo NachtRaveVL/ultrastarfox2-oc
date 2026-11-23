@@ -436,7 +436,7 @@ chkcoll
 	beq	.firstframe
 	bra	.intoanim
 .normanim	lda	x1
-	and	gameframe
+	and.l	kx_VisualFrame
 	beq	.firstframe
 .intoanim	a16
 	and	#127
@@ -771,7 +771,7 @@ nxtbox
 	bra	.intoanim
 .normanim	plx
 	lda	x1
-	and	gameframe
+	and.l	kx_VisualFrame
 	beq	.firstframe
 .intoanim	a16
 	and	#127
