@@ -248,14 +248,14 @@ showview_ram_l
 ; copy the animation and colour animation frames over
 	lda.w	al_animframe,y
 	bmi	.standardframe
-	lda	gameframe
+	lda.l	kx_VisualFrame
 .standardframe
 	and	#127
 	sta.w	dl_animframe&WM,x
 
 	lda.w	al_colframe,y
 	bmi	.standardframe2
-	lda	gameframe
+	lda.l	kx_VisualFrame
 .standardframe2
 	and	#127
 	sta.w	dl_colframe&WM,x
@@ -279,7 +279,7 @@ showview_ram_l
 	cpy	alientemp
 	bne	.normcoltab
 
-	lda	gameframe
+	lda.l	kx_VisualFrame
 	and	#7
 	cmp	#4
 	bcc	.onecol
