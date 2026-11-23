@@ -1,5 +1,6 @@
 	global	kill_list_l
 	global	setpal_l
+	global	decrement_shield_timer_l,decrement_brake_timer_l
 	global	initialise_l,initgame_l
 	global	clearhvofs_l,initgame3d_l
 	global	screenoff_l

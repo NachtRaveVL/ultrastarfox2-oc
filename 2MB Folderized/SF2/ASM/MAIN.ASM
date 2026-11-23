@@ -92,6 +92,10 @@ initgame_l
 	sta	inidisp
 	stz	fadedir
 	stz	fade
+	a16
+	lda	#$ffff
+	sta.l	kx_FadeStep
+	a8
 	lda	#0
 	sta.l	cockpit_transferred
 
@@ -155,6 +159,9 @@ initgame_l
 	km_setval	kx_MissionTicks,0
 	km_setval	kx_VisualFrame,0
 	km_setval	kx_VisualFrameRem,0
+	km_setval	kx_VisualStep2,0
+	km_setval	kx_VisualStep8,0
+	km_setval	kx_FadeStep,$ffff
 	km_setval	kx_GameTmSub,missgftm	;1 hour time = 10 second
 	km_setval	kx_EnStratTm,enstrattm	;enemy stratage timer
 	km_setval	kw_Gametimer,0		;Game ni kakatta time
@@ -831,14 +838,14 @@ marioshowview
 ; copy the animation and colour animation frames over
 	lda.w	al_animframe,y
 	bmi	.standardframe
-	lda	gameframe
+	lda.l	kx_VisualFrame
 .standardframe
 	and	#127
 	sta.l	dl_animframe,x
 
 	lda.w	al_colframe,y
 	bmi	.standardframe2
-	lda	gameframe
+	lda.l	kx_VisualFrame
 .standardframe2
 	and	#127
 	sta.l	dl_colframe,x
@@ -858,7 +865,7 @@ marioshowview
 	cpy	alientemp
 	bne	.normcoltab
 
-	lda	gameframe
+	lda.l	kx_VisualFrame
 	and	#7
 	cmp	#4
 	bcc	.onecol
@@ -1317,13 +1324,13 @@ walktree
 	lda.l	alx_animframe,x
 	bit	#128
 	bne	.standardframe
-	lda	gameframe
+	lda.l	kx_VisualFrame
 .standardframe
 	sta	animframe
 	lda.l	alx_colframe,x
 	bit	#128
 	bne	.standardframe2
-	lda	gameframe
+	lda.l	kx_VisualFrame
 .standardframe2
 	sta	colframe
 
@@ -1338,7 +1345,7 @@ walktree
 	a16
 	cpx	alientemp
 	bne	.normcoltab
-	lda	gameframe
+	lda.l	kx_VisualFrame
 	and	#7
 	cmp	#4
 	bcc	.onecol
@@ -1499,3 +1506,39 @@ name_runner	db	"TAL KONG",0
 name_crusher	db	"SPACE BLADE",0
 name_dodora	db	"KING DODORA",0
 
+; Player timers advanced by elapsed nominal visual frames.
+decrement_shield_timer_l
+	a8
+	sta	tpx
+	lda	exal_shield,y
+	and	#exal_shield_mask
+	cmp	tpx
+	bcs	.sub
+	lda	#0
+	bra	.set
+.sub	sec
+	sbc	tpx
+.set	sta	tpx
+	lda	exal_shield,y
+	and	#~exal_shield_mask
+	ora	tpx
+	sta	exal_shield,y
+	rtl
+
+decrement_brake_timer_l
+	a8
+	sta	tpx
+	lda	exal_brake,y
+	and	#exal_brake_timer
+	cmp	tpx
+	bcs	.sub
+	lda	#0
+	bra	.set
+.sub	sec
+	sbc	tpx
+.set	sta	tpx
+	lda	exal_brake,y
+	and	#~exal_brake_timer
+	ora	tpx
+	sta	exal_brake,y
+	rtl

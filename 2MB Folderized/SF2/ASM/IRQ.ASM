@@ -2745,9 +2745,15 @@ setinidisp
 	stz	fadedir
 	stz	fade
 	bra	.done
-.sfadedown	lda.l	kx_VisualFrame
-	and	#1
-	beq	.fade1
+.sfadedown	a16
+	lda.l	kx_VisualFrame
+	lsr	a
+	cmp.l	kx_FadeStep
+	beq	.sfadehold
+	sta.l	kx_FadeStep
+	a8
+	bra	.fade1
+.sfadehold	a8
 	rts
 .qfadedown	lda	fade
 	beq	.off

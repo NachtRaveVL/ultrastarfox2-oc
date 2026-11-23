@@ -45,6 +45,9 @@ transfer_l
 	sta	framer
 	stz	framec
 	a16
+	lda	#0
+	sta.l	kx_VisualStep2
+	sta.l	kx_VisualStep8
 	lda	framer
 	and	#$00ff
 	clc
@@ -57,7 +60,18 @@ transfer_l
 	lda.l	kx_VisualFrame
 	inc	a
 	sta.l	kx_VisualFrame
-	pla
+	and	#1
+	bne	.no_step2
+	lda.l	kx_VisualStep2
+	inc	a
+	sta.l	kx_VisualStep2
+.no_step2	lda.l	kx_VisualFrame
+	and	#7
+	bne	.no_step8
+	lda.l	kx_VisualStep8
+	inc	a
+	sta.l	kx_VisualStep8
+.no_step8	pla
 	bra	.visualtick
 .visualdone	sta.l	kx_VisualFrameRem
 	a8

@@ -4340,13 +4340,9 @@ player_end_strat
 	bit	#exal_shield_mask
 	beq	.sps_ck
 
-	lda	gameframe
-	and	#7
-	bne	.sps_ck
-
-	lda	exal_shield,y
-	dec	a
-	sta	exal_shield,y
+	lda.l	kx_VisualStep8
+	beq	.sps_ck
+	jsl	decrement_shield_timer_l
 .sps_ck
 
 ;컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴
@@ -5278,13 +5274,9 @@ tp_boostoff_srou_l
 	bit	#exal_brake_timer
 	beq	.exit
 
-	lda	gameframe
-	and	#1
-	bne	.exit
-
-	lda	exal_brake,y
-	dec	a
-	sta	exal_brake,y
+	lda.l	kx_VisualStep2
+	beq	.exit
+	jsl	decrement_brake_timer_l
 
 .exit	PULLYP
 
@@ -6106,7 +6098,7 @@ playercoltab_srou_l
 
 	s_set_alvar	B,y,exal_depthno,#80h
 
-	lda	gameframe
+	lda.l	kx_VisualFrame
 	bit	#%100
 	bne	.exit
 
