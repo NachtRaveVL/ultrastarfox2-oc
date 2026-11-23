@@ -1457,7 +1457,8 @@ makedamagespark_srou_l
 	pl_jmp_iftransform	x,.exit
 	sp_jmp_ifcockpit	x,.exit
 
-	s_jmp_notandframe	#1,.exit
+	lda.l	kx_VisualStep2
+	beq	.exit
 
 	s_make_childobj	#wallflash,0,path_istrat
 	cpy		#0
@@ -1646,11 +1647,14 @@ burntime	equ	100
 	bit	#exal_dmgeffect_burnning_ALL
 	beq	.noinc
 ; time out?
-	lda	exal_dmgfxcounter,y
-	inc	a
+	lda.l	kx_VisualStep2
+	clc
+	adc.l	kx_VisualStepOdd
+	clc
+	adc	exal_dmgfxcounter,y
 	sta	exal_dmgfxcounter,y
 	cmp	#burntime
-	beq	.firedown
+	bcs	.firedown
 
 ; rolling?
 
@@ -1666,9 +1670,8 @@ burntime	equ	100
 	bit	#exal_dmgeffect_burnning_ALL
 	beq	.cksmoke
 
-	lda	gameframe
-	and	#31
-	bne	.nodamage
+	lda.l	kx_VisualStep32
+	beq	.nodamage
 
 
 	lda	exal_nohit,y
@@ -1715,10 +1718,19 @@ burntime	equ	100
 	bit	#exal_dmgeffect_smokemask
 	beq	.nosmoke
 
-	dec	a
-	sta	exal_dmgeffect,y
+	sec
+	sbc.l	kx_VisualStep2
+	bcc	.smokezero
+	sec
+	sbc.l	kx_VisualStepOdd
+	bcc	.smokezero
+	bra	.smokestore
+.smokezero	lda	exal_dmgeffect,y
+	and	#~exal_dmgeffect_smokemask
+.smokestore	sta	exal_dmgeffect,y
 
-	s_jmp_andframe	#1,.nosmoke
+	lda.l	kx_VisualStepOdd
+	beq	.nosmoke
 
 	jsl	makeoverheat_srou_l
 
@@ -1730,19 +1742,22 @@ burntime	equ	100
 	sp_jmp_playertype	x,ROBOT,.Con
 
 .R
-	s_jmp_ANDframe		#1,.L
+	lda.l	kx_VisualStepOdd
+	beq	.L
 	s_jmpnot_alvarAND	B,y,exal_dmgeffect,#exal_dmgeffect_burnning_R,.L
 	s_set_var	W,tpx,#25
 	jsr	.make
 
 .L
-	s_jmp_notANDframe	#1,.C
+	lda.l	kx_VisualStep2
+	beq	.C
 	s_jmpnot_alvarAND	B,y,exal_dmgeffect,#exal_dmgeffect_burnning_L,.C
 	s_set_var	W,tpx,#-25
 	jsr	.make
 
 .C
-	s_jmp_notANDframe	#1,.exit
+	lda.l	kx_VisualStep2
+	beq	.exit
 	s_jmpnot_alvarAND	B,y,exal_dmgeffect,#exal_dmgeffect_burnning_C,.exit
 .Con	s_set_var	W,tpx,#0
 	jsr	.make
@@ -4891,7 +4906,8 @@ enterxofs	equ	work8
 	s_achase_alvar2alvar	W,x,al_worldz,y,exal_enterposz,1
 ;----------------------------------------------------------------------------
 ; attack gate
-	s_jmp_notandframe	#1,.nofire
+	lda.l	kx_VisualStep2
+	beq	.nofire
 	a16
 	lda	al_worldy,x
 	sec
@@ -6228,7 +6244,7 @@ cc_alart_l
 	bne	.off
 	bra	.exit
 
-.alart	lda	gameframe
+.alart	lda.l	kx_VisualFrame
 
 	bit	#16+8
 	bne	.off
@@ -8495,7 +8511,7 @@ copy_player_damage_l
 
 	s_set_alvar	B,x,al_pbyte1,#1
 
-	lda	gameframe
+	lda.l	kx_VisualFrame
 	bit	#%100
 	bne	.exit
 

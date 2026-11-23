@@ -3212,7 +3212,8 @@ awspeed_room_max	equ	work4+1
 
 ;-------------------------------------------------------------------
 ;LEFT or RIGHT wo oshiteiruto sokudo wo otosu you ni shiteiru....
-	s_jmp_ANDframe	#1,.exit
+	lda.l	kx_VisualStepOdd
+	beq	.exit
 	s_Fchase_alvar	B,x,al_vel,awspeedlr,1
 	s_set_var	B,awboostspeed,#0
 	bra		.exit
@@ -3799,7 +3800,9 @@ playerexplode_istrat
 	pl_jmp_timerLESS	x,#awflashtime0,.explode0
 	pl_jmp_timerLESS	x,#awflashtime1,.skip
 
-.flash	s_jmp_NOTANDframe	#1,.skip
+.flash	lda.l	kx_VisualFrame
+	and	#1
+	bne	.skip
 	s_set_alsflag		x,hitflash
 	bra			.skip
 

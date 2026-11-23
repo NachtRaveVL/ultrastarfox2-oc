@@ -645,7 +645,9 @@ set_player_cursor_P2_l	; for player 2
 	cmp.l	m_boostanim
 	bne	.setcol1
 
-	s_jmp_ANDframe		#1,.setcol1
+	lda.l	kx_VisualFrame
+	and	#1
+	beq	.setcol1
 
 	lda	#boostcol2
 	bra	.setcol2

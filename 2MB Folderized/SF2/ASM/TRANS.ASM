@@ -50,6 +50,7 @@ transfer_l
 	sta.l	kx_VisualStepOdd
 	sta.l	kx_VisualStep8
 	sta.l	kx_VisualStep16
+	sta.l	kx_VisualStep32
 	lda	framer
 	and	#$00ff
 	clc
@@ -83,7 +84,13 @@ transfer_l
 	lda.l	kx_VisualStep16
 	inc	a
 	sta.l	kx_VisualStep16
-.no_step16	pla
+.no_step16	lda.l	kx_VisualFrame
+	and	#31
+	bne	.no_step32
+	lda.l	kx_VisualStep32
+	inc	a
+	sta.l	kx_VisualStep32
+.no_step32	pla
 	bra	.visualtick
 .visualdone	sta.l	kx_VisualFrameRem
 	a8

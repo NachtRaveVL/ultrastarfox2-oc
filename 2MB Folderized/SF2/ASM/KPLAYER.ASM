@@ -2990,7 +2990,8 @@ animdush_num		equ	7	;(max7)
 
 	ldy		al_sword2,x
 
-	s_jmp_ANDframe	#1,.noincdc
+	lda.l	kx_VisualStepOdd
+	beq	.noincdc
 
 	lda		exal_animdush,y
 	and		#exal_animdush_Cmask!exal_animdush_Kmask
@@ -3545,9 +3546,8 @@ animdush_num		equ	7	;(max7)
 	rlbeq			.SEswim
 
 	pl_jmpnot_KAOinpool	x,.SEswim
-	lda		gameframe
-	and		#7
-	bne		.nosound
+	lda.l	kx_VisualStep8
+	beq		.nosound
 	kplsound	x,pool_swimming
 	bra		.nosound
 
@@ -4683,12 +4683,12 @@ vydivmax	equ	15
 	pl_jmpnot_ZENBUinpool	x,.pukapuka
 
 .yurayura	a16
-	lda	gameframe
+	lda.l	kx_VisualFrame
 	lsr	a
 	bra	.puka0
 
 .pukapuka	a16
-	lda	gameframe
+	lda.l	kx_VisualFrame
 .puka0	and	#15
 	tax
 	lda.l	.poolofsydat,x
@@ -4957,12 +4957,12 @@ makebodysplash_srou
 
 ;	s_jmp_notandframe	#48,.nobubble
 
-	lda		gameframe
-	and		#48
-	bne		.nobubble
+	lda.l	kx_VisualStep2
+	ora.l	kx_VisualStepOdd
+	beq		.nobubble
 
-	lda		gameframe
-	and		#4
+	lda.l	kx_VisualFrame
+	and		#48+4
 	bne		.nobubble
 
 	s_set_var	W,x1,#0

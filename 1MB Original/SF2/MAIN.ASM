@@ -163,6 +163,7 @@ initgame_l
 	km_setval	kx_VisualStepOdd,0
 	km_setval	kx_VisualStep8,0
 	km_setval	kx_VisualStep16,0
+	km_setval	kx_VisualStep32,0
 	km_setval	kx_FadeStep,$ffff
 	km_setval	kx_GameTmSub,missgftm	;1 hour time = 10 second
 	km_setval	kx_EnStratTm,enstrattm	;enemy stratage timer

@@ -1271,9 +1271,8 @@ HITREMOVE	p_force		.remove
 	p_goto		.loop0
 
 	P_START65816
-	lda	gameframe
-	and	#31
-	bne	.loopend
+	lda.l	kx_VisualStep32
+	beq	.loopend
 	P_END65816
 
 
