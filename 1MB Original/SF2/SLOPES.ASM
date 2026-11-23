@@ -174,11 +174,11 @@ getheight_l
 	jsr	SlopePollMario
 
 	lda.l	alx_animframe,x
-	bpl	.gameframe
+	bpl	.visualframe
 	and	#127
 	bra	.storit
-.gameframe
-	lda	gameframe
+.visualframe
+	lda.l	kx_VisualFrame
 	and	#255
 .storit
 	sta	tpz
