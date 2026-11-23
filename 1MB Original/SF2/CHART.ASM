@@ -2180,9 +2180,8 @@ CHARTROU
 	ora	exal_key_cont,y
 	sta	exal_key_cont,y
 
-	lda	gameframe
-	and	#15
-	bne	.s2cEND
+	lda.l	kx_VisualStep16
+	beq	.s2cEND
 
 	lda	#pad_Y
 	ora	exal_key_trig,y
@@ -3591,9 +3590,8 @@ CHARTROU
 
 	start_chartrou
 
-	lda	gameframe
-	and	#1
-	bne	.cbs
+	lda.l	kx_VisualStep2
+	beq	.cbs
 
 	jsl	cc_bakbuffer_l
 .cbs
