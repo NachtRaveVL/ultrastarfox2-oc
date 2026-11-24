@@ -686,7 +686,7 @@ wgmode_pulldown	equ	7
 	p_faceshape
 	p_objincone	30,.fire
 	p_igoto		.end
-.fire	p_andframegoto	7,.dofire
+.fire	p_visualtickgoto	7,.dofire
 	p_igoto		.end
 .dofire	p_fire
 	p_igoto		.end
@@ -2851,7 +2851,7 @@ dragon_warp_rou
 	p_igoto		.spd
 .spd2	p_accel		40,3
 .spd	p_faceshape
-	p_andframegoto	15,.incone
+	p_visualtickgoto	15,.incone
 	p_igoto		.exit
 .incone	p_objincone	30,.fire
 	p_igoto		.exit

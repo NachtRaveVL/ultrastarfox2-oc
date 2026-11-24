@@ -4410,6 +4410,16 @@ MYNARG	=	NARG
 	pathmac_end
 	ENDM
 ;--------------------------------------------------------------------
+P_VISUALTICKGOTO	MACRO	[var,addr]
+	pathmac_start
+MYNARG	=	NARG
+	PNARG	2
+	pathcode	andframegoto
+	db	{var}+128
+	PADDR	{addr}
+	pathmac_end
+	ENDM
+;--------------------------------------------------------------------
 P_CHAINPOS		MACRO	[var,loose]
 	pathmac_start
 MYNARG	=	NARG

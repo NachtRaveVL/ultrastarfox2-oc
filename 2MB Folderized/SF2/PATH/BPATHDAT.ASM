@@ -2072,7 +2072,7 @@ andorf_child_eyecube		equ	98
 .okwarp
 	P_IFZERO	pbyte1,.dosomewarping
 .nowarp
-	P_ANDFRAMEGOTO	1,.smokecheck
+	P_VISUALTICKGOTO	1,.smokecheck
 	P_GOTO		.lp
 
 ; --- warp mask out of view and into another dimension ---
@@ -2336,7 +2336,7 @@ andorf_child_eyecube		equ	98
 ;	P_GOSUB		.chk1
 ;	P_GOSUB		.chk2
 
-	P_ANDFRAMEGOTO	127,.doit
+	P_VISUALTICKGOTO	127,.doit
 	P_GOTO		.lp
 .doit
 	P_SPAWN		30<<andorf_scale,-40<<andorf_scale,45<<andorf_scale,0,-deg22,0,smallflame,zigzagger,10,boss_andorf_lasereye_ap,andorf_child_lasereye1
@@ -4227,7 +4227,7 @@ br_child_rightsupport equ	4
 	P_ACCEL		55,10
 	P_IGOTO		.checked
 .checked
-	P_ANDFRAMEGOTO	63,.chk			;eguchi change 127->63
+	P_VISUALTICKGOTO	63,.chk			;eguchi change 127->63
 	P_IGOTO		.nochk
 .chk
 	P_DISTMORE	1800,.nochk		;eguchi change 1500->1800
@@ -4238,7 +4238,7 @@ br_child_rightsupport equ	4
 
 .nochk
 
-	P_ANDFRAMEGOTO	31,.fire
+	P_VISUALTICKGOTO	31,.fire
 	P_IGOTO		.nofire
 .fire
 	P_PUSH		worldy
@@ -8132,7 +8132,7 @@ kd_walk
 
 	P_GOSUB		clippos
 
-	P_ANDFRAMEGOTO	31,.chkclip
+	P_VISUALTICKGOTO	31,.chkclip
 	P_IGOTO		.con342
 .chkclip
 ; --- check to see if 'trying' to walk out of the predefined area ---

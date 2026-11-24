@@ -1561,7 +1561,7 @@ es0_w	equ	0
 
 
 
-.always	p_andframegoto	15,.flash
+.always	p_visualtickgoto	15,.flash
 	p_igoto		.always3
 .flash	p_randomgoto	.always3
 
@@ -2929,7 +2929,7 @@ cds_cut1		equ	2
 
 .exp	LOCAL
 
-	p_andframegoto	1,.bom
+	p_visualtickgoto	1,.bom
 	p_return
 
 
@@ -3007,7 +3007,7 @@ cds_cut1		equ	2
 	p_Qspawn	explosion3,cds_explosions,1,3
 
 	p_do		30
-	p_andframegoto	3,.bom_l
+	p_visualtickgoto	3,.bom_l
 	p_igoto		.nobom
 .bom_l
 	p_Qspawn	explosion4,cds_explode,1,32
@@ -3020,7 +3020,7 @@ cds_cut1		equ	2
 
 
 .exp	LOCAL
-	p_andframegoto	1,.bom
+	p_visualtickgoto	1,.bom
 	p_return
 
 .bom	p_randomgoto		.SE
@@ -4915,7 +4915,7 @@ gd_cut1_time	equ	70
 	p_add	count,-8
 
 	p_do	count
-	p_andframegoto	3,.dofire
+	p_visualtickgoto	3,.dofire
 	p_igoto	.next
 .dofire	p_gosub	.fire
 .next	p_next
@@ -7433,7 +7433,7 @@ childno_scramble_arwing2	equ	85
 	p_add	childroty,-1
 	p_next
 
-.loop	p_andframegoto	3,.next0
+.loop	p_visualtickgoto	3,.next0
 	p_igoto	.next1
 .next0	p_add	childroty,-1
 .next1	p_goto	.loop
@@ -8304,7 +8304,7 @@ childno_destruct	equ	1
 	p_campandemoshape	1,1	;,immediate
 
 
-	p_andframegoto		7,.exp
+	p_visualtickgoto		7,.exp
 	p_igoto			.noexp
 
 .exp	p_spawn	600,500,600,0,0,0,explosion5,destruct_s_exp,1,1,16
@@ -8579,7 +8579,7 @@ childno_destruct	equ	1
 .noface	p_next
 
 	p_do		pbyte1
-	p_andframegoto	3,.fire
+	p_visualtickgoto	3,.fire
 	p_igoto		.notfire
 .fire	p_qspawn	laser_0,destruct_g_enemy_laser0,1,1
 
@@ -8616,7 +8616,7 @@ childno_destruct	equ	1
 	p_do		15
 	p_add		rotx,-2
 	p_add		roty,1
-	p_andframegoto	3,.fire
+	p_visualtickgoto	3,.fire
 	p_igoto		.notfire
 .fire	p_qspawn	laser_0,destruct_g_enemy_laser1,1,1
 

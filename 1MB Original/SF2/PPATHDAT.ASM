@@ -1163,7 +1163,7 @@ Eweap
 	p_do	count
 
 	p_distless	500,.noface
-	p_andframegoto	3,.face
+	p_visualtickgoto	3,.face
 	p_igoto		.noface
 .face	p_faceplayer
 .noface	P_HITSLOPE	.remove

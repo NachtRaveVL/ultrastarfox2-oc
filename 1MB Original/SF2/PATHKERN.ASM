@@ -7217,9 +7217,15 @@ visangle equ	$20
 
 	getparam	1
 
-	and	gameframe
+	bpl	.phase
+	and	#127
+	and.l	kx_VisualFrame
+	cmp.l	kx_VisualStep
+	bcc	.jump
+	bra	.afg0
+.phase	and	gameframe
 	bne	.afg0
-	jmp	_pjump2
+.jump	jmp	_pjump2
 
 .afg0	jmp	_padd4
 
