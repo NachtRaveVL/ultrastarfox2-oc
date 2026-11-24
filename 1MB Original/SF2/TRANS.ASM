@@ -46,6 +46,7 @@ transfer_l
 	stz	framec
 	a16
 	lda	#0
+	sta.l	kx_VisualStep
 	sta.l	kx_VisualStep2
 	sta.l	kx_VisualStepOdd
 	sta.l	kx_VisualStep8
@@ -63,6 +64,10 @@ transfer_l
 	lda.l	kx_VisualFrame
 	inc	a
 	sta.l	kx_VisualFrame
+	lda.l	kx_VisualStep
+	inc	a
+	sta.l	kx_VisualStep
+	lda.l	kx_VisualFrame
 	and	#1
 	beq	.step2
 	lda.l	kx_VisualStepOdd

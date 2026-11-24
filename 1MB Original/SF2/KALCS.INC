@@ -1172,6 +1172,7 @@ demof_all	equ	-1
 	xalc	kx_MissionTicks,2		;mission ticks elapsed during the current transfer
 	xalc	kx_VisualFrame,2	;visual timing at the nominal game-frame cadence
 	xalc	kx_VisualFrameRem,2	;video-frame remainder
+	xalc	kx_VisualStep,2	;visual frames elapsed during the transfer
 	xalc	kx_VisualStep2,2	;two-frame ticks elapsed during the transfer
 	xalc	kx_VisualStepOdd,2	;odd visual frames elapsed during the transfer
 	xalc	kx_VisualStep8,2	;eight-frame ticks elapsed during the transfer

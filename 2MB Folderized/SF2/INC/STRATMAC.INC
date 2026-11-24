@@ -6899,13 +6899,14 @@ s_jmp_notdelay		MACRO		#delay(1-8),label,[offset]
 	stratmac_start
 MYNARG	=	NARG
 	CHK_NARG	2,3
-	lda	gameframe
+	lda.l	kx_VisualFrame
 	IFEQ	NARG-3
 	clc
 	adc	\3
 	ENDC
 	and	#(1<<\1)-1
-	rlbne	\2
+	cmp.l	kx_VisualStep
+	rlbcs	\2
 		stratmac_end
 	ENDM
 ;-----------------------------------------------------------------------------
@@ -6913,13 +6914,14 @@ s_jmp_ifdelay		MACRO		#delay(1-8),label,[offset]
 	stratmac_start
 MYNARG	=	NARG
 	CHK_NARG	2,3
-	lda	gameframe
+	lda.l	kx_VisualFrame
 	IFEQ	NARG-3
 	clc
 	adc	\3
 	ENDC
 	and	#(1<<\1)-1
-	rlbeq	\2
+	cmp.l	kx_VisualStep
+	rlbcc	\2
 		stratmac_end
 	ENDM
 ;-----------------------------------------------------------------------------

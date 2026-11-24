@@ -2347,7 +2347,7 @@ brokenleg_istrat
 	s_init_anim		x,#8
 
 ;************
-	s_jmp_notANDframe	#3,.noexp
+	s_jmp_notdelay	2,.noexp
 	s_make_obj	#explosion,.exp0
 	s_copy_pos	y,x
 	s_set_alptrs	y,path_istrat,hit_istrat,explode_istrat

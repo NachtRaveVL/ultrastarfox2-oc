@@ -1238,7 +1238,8 @@ ROBO3dvecs_srou
 	s_jmp_varNE		B,R3VmotionNo,#m_brakeF,.endm_brakeF
 
 
-	s_jmp_notandframe	#1,.endm_brakeF
+	lda.l	kx_VisualStep2
+	beq	.endm_brakeF
 	s_jmpnot_alsflag	x,ontheground,.endm_brakeF
 
 	s_copy_alvar2var	W,y,x2,exal_jetLobjptr
@@ -2035,7 +2036,9 @@ RS_setwalkrot
 ;컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴�
 RS_setthrashrot
 
-	s_jmp_andframe	#4,.stfrD
+	lda.l	kx_VisualFrame
+	and	#4
+	beq	.stfrD
 .stfrU	lda		#-50
 	bra		.stfrUD
 .stfrD	lda		#50
@@ -3665,7 +3668,7 @@ animdush_num		equ	7	;(max7)
 
 	s_set_var	W,y1,#-5
 
-	lda	gameframe
+	lda.l	kx_VisualFrame
 	bit	#%100
 	rlbne	.achaseshake
 

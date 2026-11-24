@@ -3283,8 +3283,9 @@ smt_modenum	=	0
 	bra	.framestuff
 
 .framestuff
-	and	gameframe
-	beq	.gosubit
+	and.l	kx_VisualFrame
+	cmp.l	kx_VisualStep
+	bcc	.gosubit
 	bra	.dontgosubit
 .gosubit
 	plx

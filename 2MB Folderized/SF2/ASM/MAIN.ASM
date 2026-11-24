@@ -159,6 +159,7 @@ initgame_l
 	km_setval	kx_MissionTicks,0
 	km_setval	kx_VisualFrame,0
 	km_setval	kx_VisualFrameRem,0
+	km_setval	kx_VisualStep,0
 	km_setval	kx_VisualStep2,0
 	km_setval	kx_VisualStepOdd,0
 	km_setval	kx_VisualStep8,0
