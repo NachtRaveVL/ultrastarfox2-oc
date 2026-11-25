@@ -2192,7 +2192,7 @@ marker_set2
 ;;;	P_RETURN
 ;;;;----------------- ADDANIM 1,12
 anim_add_12
-	P_ADDANIM	1,12
+	P_VISUALADDANIM	1,12
 	P_RETURN
 ;;;;----------------- ADDANIM 1,11
 anim_add_11
@@ -2220,6 +2220,9 @@ sasori_sound
 ;;;	P_RETURN
 ;;;;----------------- ADDANIM	1,12&SOUND	FOR TEKUTEKU
 anim_add_12_teku
+	P_VISUALTICKGOTO	0,.anim_frame
+	P_RETURN
+.anim_frame
 	P_ADDANIM	1,12
 	P_IFSAME	animframe,-122,.sound_on
 	P_IFSAME	animframe,-128,.sound_on

@@ -1565,9 +1565,15 @@ smt_modenum	=	0
 	getparam	1
 	sta		pathx1
 	getparam	2
+	bpl		.plainanim
+	and		#127
 	sta		pathx2
-	s_add_anim	x,pathx1,pathx2
-	jmp		_padd3
+	lda.l	kx_VisualStep
+	beq		.animdone
+	bra		.advanceanim
+.plainanim	sta		pathx2
+.advanceanim	s_add_anim	x,pathx1,pathx2
+.animdone	jmp		_padd3
 
 ;**********
 .initcolanim	PATHCMD
@@ -1581,9 +1587,15 @@ smt_modenum	=	0
 	getparam	1
 	sta		pathx1
 	getparam	2
+	bpl		.plaincolanim
+	and		#127
 	sta		pathx2
-	s_add_colanim	x,pathx1,pathx2
-	jmp		_padd3
+	lda.l	kx_VisualStep
+	beq		.coldone
+	bra		.advancecol
+.plaincolanim	sta		pathx2
+.advancecol	s_add_colanim	x,pathx1,pathx2
+.coldone	jmp		_padd3
 
 ;**********
 .debris	PATHCMD
@@ -7972,9 +7984,12 @@ visangle equ	$20
 .wobble	LOCAL
 	PATHCMD
 
-	txa
+	lda.l	kx_VisualStep
+	bne	.calcwobble
+	jmp	_padd1
+.calcwobble	txa
 	clc
-	adc	gameframe
+	adc.l	kx_VisualFrame
 	a16
 	asl	a
 	and	#62
@@ -7993,7 +8008,7 @@ visangle equ	$20
 
 	tya
 	clc
-	adc	gameframe
+	adc.l	kx_VisualFrame
 	clc
 	adc	#7
 	asl	a

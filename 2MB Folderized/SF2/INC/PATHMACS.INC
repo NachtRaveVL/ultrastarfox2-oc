@@ -1689,6 +1689,15 @@ MYNARG	=	NARG
 	pathmac_end
 		ENDM
 ;--------------------------------------------------------------------
+P_VISUALADDANIM	MACRO	[rate,limit]
+	pathmac_start
+MYNARG	=	NARG
+	PNARG	2
+	pathcode	addanim
+	db	{rate},{limit}+128
+	pathmac_end
+	ENDM
+;--------------------------------------------------------------------
 P_ADDANIM		MACRO	[rate,limit]
 	pathmac_start
 MYNARG	=	NARG
@@ -3003,6 +3012,15 @@ MYNARG	=	NARG
 	pathmac_end
 		ENDM
 
+;--------------------------------------------------------------------
+P_VISUALADDCOLANIM	MACRO	[val,endval]
+	pathmac_start
+MYNARG	=	NARG
+	PNARG	2
+	pathcode	addcolanim
+	db	{val},{endval}+128
+	pathmac_end
+	ENDM
 ;--------------------------------------------------------------------
 P_ADDCOLANIM		MACRO	[val,endval]
 	pathmac_start

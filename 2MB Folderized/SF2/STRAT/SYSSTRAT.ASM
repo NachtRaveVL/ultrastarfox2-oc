@@ -202,6 +202,10 @@ explode_istrat
 ;---------------------------------
 explode_strat
 	s_start_strat
+	lda.l	kx_VisualStep
+	bne		.visualframe
+	rtl
+.visualframe
 
 	ldy	playpt1
 	sp_jmpnot_playertype	y,ARWING,.novecadd
@@ -240,6 +244,10 @@ explode_strat
 	s_set_strat	x,.here
 	s_set_alvar	B,x,al_count,#64
 .here	s_start_strat
+	lda.l	kx_VisualStep
+	bne		.particleframe
+	rtl
+.particleframe
 	s_beqdec_alvar	B,x,al_count,.noparticles
 	s_end_strat
 

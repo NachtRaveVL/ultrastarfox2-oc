@@ -652,7 +652,7 @@ makebubble_srou_l
 	s_end_strat
 
 
-.strat2	lda		gameframe
+.strat2	lda.l	kx_VisualFrame
 	clc
 	adc		al_pbyte1,x
 	and		#3

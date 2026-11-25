@@ -926,6 +926,9 @@ PLR_TRANSANIM_l
 	php
 	a8i16
 
+	lda.l	kx_VisualStep
+	rlbeq	.exit
+
 	toheap	y,x
 
 	km_jmpnotflag	exal_transflag,exal_transflag_transanm1_flag,.RoboAnm2,y

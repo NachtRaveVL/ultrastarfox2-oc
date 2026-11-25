@@ -1203,7 +1203,7 @@ andbox_ckebyte2
 
 	p_collisions	off
 
-.loop	p_addcolanim	1,2
+.loop	p_visualaddcolanim	1,2
 	p_goto		.loop
 
 
@@ -1240,7 +1240,7 @@ andbox_ckebyte2
 .skip	p_sprite	0,0
 
 .loop	p_zero		pbyte1
-	p_addcolanim	1,2
+	p_visualaddcolanim	1,2
 	p_goto		.loop
 
 
@@ -1274,7 +1274,7 @@ andbox_ckebyte2
 
 	p_sprite	0,0
 
-.loop	p_addcolanim	1,2
+.loop	p_visualaddcolanim	1,2
 	p_ifplayerbrake	.cnt
 	p_remove
 
@@ -2356,7 +2356,7 @@ sd_beam	; mode
 	p_return
 
 
-.magma	p_andframegoto	15,.ryousan
+.magma	p_visualtickgoto	15,.ryousan
 	p_Qspawn	magmaball,superdragon_magma,1,4
 	p_return
 

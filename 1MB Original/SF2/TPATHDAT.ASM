@@ -8355,7 +8355,9 @@ childno_destruct	equ	1
 
 
 .ground0
-	p_andframegoto	1,.noaccl
+	p_visualtickgoto	0,.checkaccl
+	p_igoto	.noaccl
+.checkaccl	p_andframegoto	1,.noaccl
 	p_accel		0,1
 .noaccl
 
@@ -8574,7 +8576,9 @@ childno_destruct	equ	1
 	p_set	ptr,viewblk1
 
 	p_do		count
-	p_andframegoto	1,.noface
+	p_visualtickgoto	0,.checkface
+	p_igoto	.noface
+.checkface	p_andframegoto	1,.noface
 	p_faceshape
 .noface	p_next
 
@@ -10558,7 +10562,9 @@ prou_player2dmg
 
 	p_ifzero	pbyte1,.exit
 
-	p_andframegoto	1,.exit
+	p_visualtickgoto	0,.checkdamageflash
+	p_igoto	.exit
+.checkdamageflash	p_andframegoto	1,.exit
 
 	p_spawn	0,0,0,0,0,0,wallflash,damagespark,1,1,99
 

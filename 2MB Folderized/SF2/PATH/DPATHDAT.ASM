@@ -1010,7 +1010,7 @@
 	P_UNBECOME
 	P_IGOTO		.no_arrow
 .kaifu_ani
-	P_ADDCOLANIM	1,3
+	P_VISUALADDCOLANIM	1,3
 	P_RETURN
 ;-----------
 	START_PATH	e_kai_demo

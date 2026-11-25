@@ -3371,7 +3371,7 @@ hou_c_dead
 
 .hae_anim
 	P_HITSLOPE	wakidashi_dead_no_sc
-	P_ADDANIM	1,6
+	P_VISUALADDANIM	1,6
 	P_RETURN
 
 ;;;	START_PATH	e_hae_0_target
@@ -13299,7 +13299,7 @@ youi_jump
 .loop
 	P_FACEVIEW	IMMEDIATE
 	P_ADJUSTROT
-	P_ADDANIM	1,6
+	P_VISUALADDANIM	1,6
 	P_GOTO		.loop
 ;;;;-----------
 	START_PATH	e_panel_flamethrower
@@ -13398,6 +13398,9 @@ youi_jump
 	P_END
 ;------------
 .item_anim
+	P_VISUALTICKGOTO	0,.item_frame
+	P_RETURN
+.item_frame
 	P_ADD		colframe,childroty
 	P_NEG		childroty
 	P_IFNOTSAME	pbyte2,childrotx,.cont
@@ -13768,8 +13771,12 @@ youi_jump
 	P_RETURN
 
 item_col_anim
+	P_VISUALTICKGOTO	0,.color_frame
+	P_IGOTO		.face_view
+.color_frame
 	P_ADD		colframe,pword1
 	P_NEG		pword1
+.face_view
 	P_FACEVIEW	IMMEDIATE
 ;	P_ZERO		rotx
 	P_ADJUSTROT
@@ -15245,7 +15252,7 @@ kep_w_hp = 20
 
 .hasami_c3_anim
 	P_BECOMECHILD	3
-	P_ADDANIM	1,8
+	P_VISUALADDANIM	1,8
 	P_UNBECOME
 	P_RETURN
 ;-------------
@@ -21615,6 +21622,9 @@ missile_fire_l
 	P_MSG		107
 	P_END
 .rot_slow
+	P_VISUALTICKGOTO	0,.rot_frame
+	P_RETURN
+.rot_frame
 	P_INC		roty
 	P_RETURN
 ;-----------
@@ -21805,6 +21815,9 @@ eiseidist_ck
 	P_EXPORT	emedal_4,pword1
 	P_RETURN
 .turn
+	P_VISUALTICKGOTO	0,.turn_frame
+	P_RETURN
+.turn_frame
 	P_ADD		roty,4
 	P_RETURN
 .read_medal_sw

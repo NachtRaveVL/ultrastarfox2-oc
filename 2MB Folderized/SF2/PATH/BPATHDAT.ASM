@@ -3686,7 +3686,7 @@ can_see
 	P_GOTO		.lp
 
 .anim
-	P_ADDANIM	1,15
+	P_VISUALADDANIM	1,15
 	P_RETURN
 .gakki_sound
 	P_SOUNDEFFECT	bs_androf_magic
@@ -3854,7 +3854,7 @@ can_see
 	P_GOTO		.lp
 
 .anim
-	P_ADDANIM	1,15
+	P_VISUALADDANIM	1,15
 	P_RETURN
 
 ;--- Magic ball ---
@@ -6641,7 +6641,7 @@ pi_rightanim
 	P_GOSUB		pi_hpcheck
 	P_IFBOSSFLAG	pf_righthit,ON,pi_outstretch
 pi_animatehand
-	P_ADDANIM	1,15
+	P_VISUALADDANIM	1,15
 pi_resetcnt
 	P_RETURN
 
@@ -7157,7 +7157,7 @@ pi_dosmoke
 
 ;��������������������������������������������������������������
 pi_handanim
-	P_ADDANIM	1,15
+	P_VISUALADDANIM	1,15
 	P_RETURN
 ;��������������������������������������������������������������
 ; now to rub the head into existance
@@ -8348,7 +8348,9 @@ kd_walk
 	P_SETCOLANIM	0
 
 .loopit
-	P_ANDFRAMEGOTO	1,.dontsetfire
+	P_VISUALTICKGOTO	1,.checkfire
+	P_IGOTO	.dontsetfire
+.checkfire
 
 	P_WITHINRADIUS	80,.setfire
 	P_IGOTO		.dontsetfire
@@ -8393,7 +8395,7 @@ kd_walk
 
 	P_IFBOSSFLAG	openmouth,ON,.openmouth
 	P_IFBOSSFLAG	firebreathing,OFF,.closemouth
-	P_ADDCOLANIM	1,8
+	P_VISUALADDCOLANIM	1,8
 	P_IFNOTSAME	colframe,128,.noset
 	P_SETCOLANIM	5
 .noset
@@ -8406,13 +8408,13 @@ kd_walk
 	P_INC		pword1
 .noinc
 	P_IFSAME	animframe,128+4,.con
-	P_ADDANIM	-1,8
+	P_VISUALADDANIM	-1,8
 	P_IGOTO		.con
 .closemouth
-	P_ADDCOLANIM	1,4
+	P_VISUALADDCOLANIM	1,4
 	P_SET		pword1,0
 	P_IFSAME	animframe,128,.con
-	P_ADDANIM	1,8
+	P_VISUALADDANIM	1,8
 .con
 
 ;;; if not swinging then don't swing (obvious really!)
@@ -8599,7 +8601,7 @@ bd_rottable	db	0
 	P_IFBOSSFLAG	flapping,ON,.setit
 	P_SET		pbyte2,0
 	P_IFSAME	animframe,128+12,.nochange
-	P_ADDANIM	1,16
+	P_VISUALADDANIM	1,16
 .nochange
 	P_GOTO		.again
 .setit
@@ -9513,7 +9515,7 @@ cs_faceshape
 	P_SETANIM	0
 	P_TRIGGER	.anim,ALWAYS
 	P_IGOTO		pcs_stationary
-.anim	P_ADDANIM	1,12
+.anim	P_VISUALADDANIM	1,12
 	P_RETURN
 ;--------------------------------------------------
 	START_PATH	cs_demo_senkan
@@ -9594,6 +9596,9 @@ offcheck_monkey
 	P_TRIGGER	.spin,ALWAYS
 	P_IGOTO		pcs_stationary
 .spin
+	P_VISUALTICKGOTO	0,.spin_frame
+	P_RETURN
+.spin_frame
 	P_ADD		roty,4
 	P_RETURN
 ;--------------------------------------------------
@@ -9617,7 +9622,7 @@ offcheck_monkey
 	P_TRIGGER	.anim,ALWAYS
 	P_TRIGGER	.check,ALWAYS
 	P_IGOTO		pcs_stationary
-.anim	P_ADDANIM	1,12
+.anim	P_VISUALADDANIM	1,12
 	P_RETURN
 .check	P_IMPORT	pbyte1,cseq_flag
 	P_IFZERO	pbyte1,.noflag
