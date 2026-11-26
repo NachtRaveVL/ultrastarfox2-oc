@@ -1373,7 +1373,7 @@ healposx	equ	40
 
 	p_do		healtime2
 	p_set		depthoffset,3
-	p_andframegoto	1,.d3
+	p_visualphasegoto	1,.d3
 	p_set		depthoffset,1
 .d3	p_next
 
@@ -2678,7 +2678,7 @@ superdragon_faceplayer
 superdragon_swim
 
 	P_PUSH	CHILDROTX
-	p_andframegoto	8,.xmi
+	p_visualphasegoto	8,.xmi
 .xpl	p_add	childrotx,20
 	p_igoto	.x
 .xmi	p_add	childrotx,-20
@@ -2692,7 +2692,7 @@ superdragon_swim
 	p_return
 
 .yoko	P_PUSH	CHILDROTY
-	p_andframegoto	16,.ymi
+	p_visualphasegoto	16,.ymi
 .ypl	p_add	childroty,20
 	p_igoto	.y
 .ymi	p_add	childroty,-20

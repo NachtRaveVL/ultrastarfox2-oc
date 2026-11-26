@@ -663,6 +663,7 @@ smt_modenum	=	0
 	s_mode_entry	p.tamehomon,ep_tamehomon
 	s_mode_entry	p.iftamehomon,ep_iftamehomon
 	s_mode_entry	.alwaysoff_all,ep_alwaysoff_all
+	s_mode_entry	p.visualphasegoto,ep_visualphasegoto
 
 	s_mode_table_end
 
@@ -7242,6 +7243,15 @@ visangle equ	$20
 .jump	jmp	_pjump2
 
 .afg0	jmp	_padd4
+
+;**********
+.visualphasegoto	LOCAL
+	PATHCMD
+	getparam	1
+	and.l	kx_VisualFrame
+	bne		.nojump
+	jmp	_pjump2
+.nojump	jmp	_padd4
 
 ;**********
 

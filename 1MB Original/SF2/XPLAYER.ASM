@@ -642,7 +642,7 @@ makebubble_srou_l
 	s_set_speed	y,#3
 	s_set_alvar	B,y,al_rotx,#0
 	s_add_rnd2pos	y,7,7,7
-	s_set_alvar	B,y,al_pbyte1,gameframe
+	s_set_alvar	B,y,al_pbyte1,kx_VisualFrame
 .badobj	PULLXYP
 	rtl
 

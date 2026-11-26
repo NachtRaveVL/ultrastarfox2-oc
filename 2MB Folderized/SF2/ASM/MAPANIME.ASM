@@ -156,6 +156,13 @@ yajirushi_animation
 	phx
 	sty	oam_pointer
 	ai16
+	lda	Winctimer
+	pha
+	sec
+	sbc	kx_MapArrowFrame
+	sta	kx_MapArrowStep
+	pla
+	sta	kx_MapArrowFrame
 
 ;;;;;;;;	jsr	test_animation		  ; debug program
 	jsr	set_yajirushiobj	  ; yajirushi object
@@ -257,6 +264,13 @@ enemyplanet	php
 	sty	oam_pointer
 
 	ai16
+	lda	Winctimer
+	pha
+	sec
+	sbc	kx_PlanetAnimFrame
+	sta	kx_PlanetAnimStep
+	pla
+	sta	kx_PlanetAnimFrame
 	jsr	call_enemyplanet
 
 	ldy	oam_pointer
@@ -267,7 +281,8 @@ enemyplanet	php
 call_enemyplanet
 
 	lda	enemyplanet_animecount
-	inc	a
+	clc
+	adc	kx_PlanetAnimStep
 	and	#001fh
 	sta	enemyplanet_animecount
 
@@ -288,11 +303,14 @@ call_enemyplanet
 	lda.w	mmx_dokuroanm,x
 	beq	.next
 	bmi	.over
-	inc	a
+	clc
+	adc	kx_PlanetAnimStep
+	bcs	.loopstart
 	cmp	#34
 	bcc	.skip
-	lda	#7fffh
-	bra	.over
+.loopstart	sec
+	sbc	#34
+	bra	.loopframe
 .skip	sta.w	mmx_dokuroanm,x
 	sta	oam_tcount
 
@@ -313,8 +331,10 @@ call_enemyplanet
 ;; normal loop
 ;-------------------------------------------
 
-.over	inc	a
-	and	#801fh
+.over	clc
+	adc	kx_PlanetAnimStep
+.loopframe	and	#001fh
+	ora	#8000h
 	sta.w	mmx_dokuroanm,x
 	and	#001fh
 	sta	oam_tcount
@@ -353,7 +373,8 @@ set_yajirushiobj
 	sta	oam_animeNo
 
 	lda	mapexp_objcount	; Set Animation Timer
-	inc	a
+	clc
+	adc	kx_MapArrowStep
 	sta	mapexp_objcount
 	and	#000fh
 	sta	oam_tcount
@@ -513,8 +534,11 @@ face_animation
 	lda	openface_count
 	beq	.exit
 	sta	oam_tcount
-	inc	a
-	cmp	#40h
+	clc
+	adc	kx_MapArrowStep
+	bcc	.openlimit
+	lda	#40h
+.openlimit	cmp	#40h
 	bcc	.set
 	lda	#40h
 .set	sta	openface_count
@@ -531,8 +555,11 @@ face_animation
 	lda	closeface_count
 	beq	.exit2
 	sta	oam_tcount
-	inc	a
-	cmp	#40h
+	clc
+	adc	kx_MapArrowStep
+	bcc	.closelimit
+	lda	#40h
+.closelimit	cmp	#40h
 	bcc	.set2
 	lda	#40h
 .set2	sta	closeface_count

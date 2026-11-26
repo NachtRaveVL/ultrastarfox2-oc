@@ -286,6 +286,16 @@ init_sprites_l
 ;=============== Initial CGX ,COL ============================
 	km_ldxspritemode
 	jsr	(.JmpSpriteTable,x)
+	a16
+	lda.l	Winctimer
+	sta.l	kx_SpriteVideoFrame
+	sta.l	kx_MapArrowFrame
+	sta.l	kx_PlanetAnimFrame
+	lda	#0
+	sta.l	kx_SpriteVideoStep
+	sta.l	kx_SpriteStep2
+	sta.l	kx_SpriteStep4
+	sta.l	kx_SpriteStep8
 
 	plb
 	plp
@@ -474,7 +484,36 @@ do_sprites_l
 ;*		Frame Timer				*
 ;-------------------------------------------------------------
 	a16
+	; Count elapsed video frames once for all sprite animation consumers.
 	lda	Winctimer
+	pha
+	sec
+	sbc	kx_SpriteVideoFrame
+	sta	kx_SpriteVideoStep
+	lda	kx_SpriteVideoFrame
+	and	#1
+	clc
+	adc	kx_SpriteVideoStep
+	ror	a
+	sta	kx_SpriteStep2
+	lda	kx_SpriteVideoFrame
+	and	#3
+	clc
+	adc	kx_SpriteVideoStep
+	ror	a
+	lsr	a
+	sta	kx_SpriteStep4
+	lda	kx_SpriteVideoFrame
+	and	#7
+	clc
+	adc	kx_SpriteVideoStep
+	ror	a
+	lsr	a
+	lsr	a
+	sta	kx_SpriteStep8
+	pla
+	sta	kx_SpriteVideoFrame
+	lda	kx_SpriteVideoFrame
 	and	#15
 	sta	kx_16FrameTm
 	and	#7
@@ -484,22 +523,29 @@ do_sprites_l
 	and	#1
 	sta	kx_2frameTm
 
-	lda	kx_16frameTm
-	bne	.skip16frame
-	inc	kx_16GframeTm
-.skip16frame
-	lda	kx_8frameTm
-	bne	.skip8frame
-	inc	kx_8GframeTm
-.skip8frame
-	lda	kx_4frameTm
-	bne	.skip4frame
-	inc	kx_4GframeTm
-.skip4frame
-	lda	kx_2frameTm
-	bne	.skip2frame
-	inc	kx_2GframeTm
-.skip2frame
+	; Derive animation phase from elapsed video frames, even across skipped draws.
+	lda	kx_SpriteVideoFrame
+	lsr	a
+	lsr	a
+	lsr	a
+	lsr	a
+	inc	a
+	sta	kx_16GframeTm
+	lda	kx_SpriteVideoFrame
+	lsr	a
+	lsr	a
+	lsr	a
+	inc	a
+	sta	kx_8GframeTm
+	lda	kx_SpriteVideoFrame
+	lsr	a
+	lsr	a
+	inc	a
+	sta	kx_4GframeTm
+	lda	kx_SpriteVideoFrame
+	lsr	a
+	inc	a
+	sta	kx_2GframeTm
 	a8
 ;-------------------------------------------------------------
 ;*		Sprites Display Check			*
@@ -1297,47 +1343,50 @@ Sprites_selectmissionmap_l
 ;----------------------------------------------
 ;* 2 frame oki 3 pattern *
 ;* enemy jet pointer (Zaco Enemy Jet Pointer) *
-	lda	kx_2frameTm
-	bne	.notbsjet
-
+	a16
 	lda	mmx_jetptr
-	inc	a
-	inc	a
-	cmp	#3*2
-	bne	.settm
-	lda	#0
-.settm	sta	mmx_jetptr	;0,2,4,0,2,4,....
+	lsr	a
+	clc
+	adc	kx_SpriteStep2
+.jetmod	cmp	#3
+	bcc	.jetdone
+	sec
+	sbc	#3
+	bra	.jetmod
+.jetdone	asl	a
+	sta	mmx_jetptr
 
 ;* 2 frame oki 4 pattern *
-	lda	mmx_expzacojetptr
-	inc	a
-	inc	a
-	and	#$7
-	sta	mmx_expzacojetptr	;0,2,4,6,0,2,4,6,....
-.notbsjet
+	lda	kx_SpriteStep2
+	asl	a
+	clc
+	adc	mmx_expzacojetptr
+	and	#7
+	sta	mmx_expzacojetptr
 ;----------------------------------------------
 ;(4 frame oki 3 pattern)
-	lda	kx_4frameTm
-	bne	.not4f3ptm
-
 	lda	mmw_4f3pptr
-	inc	a
-	cmp	#3
-	bne	.set4f3ptm
-	lda	#0
-.set4f3ptm	sta	mmw_4f3pptr	;0,1,2,0,1,2,...
-.not4f3ptm
+	clc
+	adc	kx_SpriteStep4
+.arrowmod	cmp	#3
+	bcc	.arrowdone
+	sec
+	sbc	#3
+	bra	.arrowmod
+.arrowdone	sta	mmw_4f3pptr
 ;----------------------------------------------
-;* clock animation pointer *	;(8 frame oki 4 pattern) 
+;* clock animation pointer * (8 frame oki 4 pattern)
+	a8
 	km_bitcheckmismapfzflag	timefreeze
 	bne	.nochange_submeter
-	lda	kx_8frameTm
-	bne	.nochange_submeter
-	lda	mmx_clocksubptr
-	inc	a
-	inc	a
+	a16
+	lda	kx_SpriteStep8
+	asl	a
+	clc
+	adc	mmx_clocksubptr
 	and	#7
 	sta	mmx_clocksubptr
+	a8
 .nochange_submeter
 ;----------------------------------------------
 ;----------------------------------------------

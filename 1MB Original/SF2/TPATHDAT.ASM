@@ -2440,7 +2440,7 @@ dc_cut1	equ	1
 	p_addrandom	worldx,1023
 	p_addrandom	worldz,1023
 
-	p_andframegoto	4,.up
+	p_visualphasegoto	4,.up
 	p_set		worldy,-150
 	p_unbecome
 
@@ -2941,7 +2941,7 @@ cds_cut1		equ	2
 	p_Qspawn	explosion4,cds_explode,1,2
 
 	p_become
-	p_andframegoto	4,.b
+	p_visualphasegoto	4,.b
 	p_set		shape,explosion3
 .b
 	p_addrandom	worldx,511
@@ -3031,7 +3031,7 @@ cds_cut1		equ	2
 .SE
 
 	p_Qspawn	explosion4,cds_explode,1,18
-	p_andframegoto	4,.b
+	p_visualphasegoto	4,.b
 	p_become
 	p_set		shape,explosion3
 	p_unbecome
@@ -8357,7 +8357,7 @@ childno_destruct	equ	1
 .ground0
 	p_visualtickgoto	0,.checkaccl
 	p_igoto	.noaccl
-.checkaccl	p_andframegoto	1,.noaccl
+.checkaccl	p_visualtickgoto	1,.noaccl
 	p_accel		0,1
 .noaccl
 
@@ -8578,7 +8578,7 @@ childno_destruct	equ	1
 	p_do		count
 	p_visualtickgoto	0,.checkface
 	p_igoto	.noface
-.checkface	p_andframegoto	1,.noface
+.checkface	p_visualtickgoto	1,.noface
 	p_faceshape
 .noface	p_next
 
@@ -10564,7 +10564,7 @@ prou_player2dmg
 
 	p_visualtickgoto	0,.checkdamageflash
 	p_igoto	.exit
-.checkdamageflash	p_andframegoto	1,.exit
+.checkdamageflash	p_visualtickgoto	1,.exit
 
 	p_spawn	0,0,0,0,0,0,wallflash,damagespark,1,1,99
 

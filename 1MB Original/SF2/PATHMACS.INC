@@ -4428,6 +4428,17 @@ MYNARG	=	NARG
 	pathmac_end
 	ENDM
 ;--------------------------------------------------------------------
+P_VISUALPHASEGOTO	MACRO	[var,addr]
+	pathmac_start
+MYNARG	=	NARG
+	PNARG	2
+	db	p_extracommands
+	db	ep_alwaysoff_all+1	; appended after alwaysoff_all
+	db	{var}
+	PADDR	{addr}
+	pathmac_end
+	ENDM
+;--------------------------------------------------------------------
 P_VISUALTICKGOTO	MACRO	[var,addr]
 	pathmac_start
 MYNARG	=	NARG

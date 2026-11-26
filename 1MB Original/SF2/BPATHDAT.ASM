@@ -2061,7 +2061,7 @@ andorf_child_eyecube		equ	98
 .adjustdist	LOCAL
 	
 	P_IMPORT	pword1,player1_worldy
-	P_ANDFRAMEGOTO	64,.nochg
+	P_VISUALPHASEGOTO	64,.nochg
 	P_ADD		pword1,600
 .nochg
 	P_CHASE		worldy,pword1
@@ -2074,7 +2074,7 @@ andorf_child_eyecube		equ	98
 	P_IGOTO		.closer2
 .normstuff
 	P_IFBOSSFLAG	dontcomeclose,ON,.dontdo332
-	P_ANDFRAMEGOTO	64,.closer
+	P_VISUALPHASEGOTO	64,.closer
 	P_DISTLESS	1400,.accelaway
 	P_IGOTO		.there
 .dontdo332
@@ -2089,7 +2089,7 @@ andorf_child_eyecube		equ	98
 	P_ACCEL		40,2
 .con554
 	P_DISTMORE	2000,.acceltowards
-	P_ANDFRAMEGOTO	64,.closer2
+	P_VISUALPHASEGOTO	64,.closer2
 	P_ACCEL		0,10
 .closer2
 

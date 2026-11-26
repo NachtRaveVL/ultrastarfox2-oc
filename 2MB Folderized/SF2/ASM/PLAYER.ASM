@@ -6168,7 +6168,9 @@ hit_effect_l
 	sp_weap_power	x,off,y
 
 	s_set_alvar	B,y,exal_rotzhit,#30
-	s_jmp_ANDframe	#1,.nohit
+	lda.l	kx_VisualFrame
+	and	#1
+	rlbeq	.nohit
 	s_neg_alvar	B,y,exal_rotzhit
 
 .nohit	LOCAL

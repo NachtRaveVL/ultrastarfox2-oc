@@ -2870,6 +2870,15 @@ Winctmend	equ	Winctimer+2
 	xalc	kx_4GframeTm,2	;4 frame ni 1 kai INC
 	xalc	kx_8GframeTm,2	;8 frame ni 1 kai INC
 	xalc	kx_16GframeTm,2	;16 frame ni 1 kai INC
+	xalc	kx_SpriteVideoFrame,2	;last sampled IRQ video timer
+	xalc	kx_SpriteVideoStep,2	;video frames since the previous sprite pass
+	xalc	kx_SpriteStep2,2	;two-frame boundaries crossed
+	xalc	kx_SpriteStep4,2	;four-frame boundaries crossed
+	xalc	kx_SpriteStep8,2	;eight-frame boundaries crossed
+	xalc	kx_MapArrowFrame,2	;arrow scheduler video snapshot
+	xalc	kx_MapArrowStep,2	;arrow scheduler elapsed frames
+	xalc	kx_PlanetAnimFrame,2	;planet scheduler video snapshot
+	xalc	kx_PlanetAnimStep,2	;planet scheduler elapsed frames
 ;-----------------------------------------------------
 ;* 94/4/15
 ;kono timer no seide ushirtono work wo kowashite ita
