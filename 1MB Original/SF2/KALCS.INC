@@ -2877,6 +2877,9 @@ Winctmend	equ	Winctimer+2
 	xalc	kx_MapArrowStep,2	;arrow scheduler elapsed frames
 	xalc	kx_PlanetAnimFrame,2	;planet scheduler video snapshot
 	xalc	kx_PlanetAnimStep,2	;planet scheduler elapsed frames
+	xalc	kx_DestAnimFrame,2	;shared destination marker video snapshot
+	xalc	kx_DestAnimStep,2	;elapsed marker video frames
+	xalc	kx_MessageMouth,2	;mouth frame held between nominal radio ticks
 ;-----------------------------------------------------
 ;* 94/4/15
 ;kono timer no seide ushirtono work wo kowashite ita

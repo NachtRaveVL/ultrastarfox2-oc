@@ -1461,7 +1461,8 @@ mm_dosprites
 	sta	oam_centerY	; <- position Y
 	lda	#cd_objanime_smallcursor
 	sta	oam_animeNo	; animation No
-	lda	mmx_curanmtm
+	lda.l	Winctimer
+	and	#$f
 	sta	oam_tcount	; animation Timer
 	a16
 	km_jsr	set_kawaobj
@@ -1492,7 +1493,8 @@ mm_dosprites
 	sta	oam_centerY	; <- position Y
 	lda	#cd_objanime_bigcursor
 	sta	oam_animeNo	; animation No
-	lda	mmx_curanmtm
+	lda.l	Winctimer
+	and	#$f
 	sta	oam_tcount	; animation Timer
 	a16
 	km_jsr	set_kawaobj
@@ -1546,8 +1548,7 @@ mm_dosprites
 ;============================================================================
 .skipcursor
 	shorta
-	lda	mmx_curanmtm
-	inc	a
+	lda.l	Winctimer
 	and	#$f
 	sta	mmx_curanmtm
 .notdisplay_cursor
@@ -1644,17 +1645,10 @@ mm_dosprites
 	a8
 ;---------------------------------------------------------------------
 ;* destination *
+	km_destanimtimer
 	km_bitcheckflag16	mmx_cursorflag,curf_destdisp
 	km_beq	.NotdestDisplay
 
-	dec	mmx_destmarktm
-	bne	.nochangepattern
-
-	lda	mmx_destmarkptr
-	eor	#1
-	sta	mmx_destmarkptr
-	km_setval	mmx_destmarktm,4
-.nochangepattern
 
 	km_mmsetspritesizedouble
 	a16

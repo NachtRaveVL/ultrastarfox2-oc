@@ -4193,6 +4193,48 @@ MYNARG	=	NARG
 	jmp	(kmwork)
 	endm
 ;--------------------------------------------------------------------
+
+; Shared destination blink clock for both map rendering paths. DBR must be $7e.
+km_destanimtimer macro
+	php
+	a16
+	lda	Winctimer
+	pha
+	sec
+	sbc	kx_DestAnimFrame
+	sta	kx_DestAnimStep
+	pla
+	sta	kx_DestAnimFrame
+	lda	mmx_cursorflag
+	and	#curf_destdisp
+	beq	.done\@
+	lda	mmx_destmarktm
+	and	#$ff
+	bne	.count\@
+	lda	#4
+.count\@	sec
+	sbc	kx_DestAnimStep
+	bcc	.crossed\@
+	beq	.crossed\@
+	bra	.store\@
+.crossed\@	eor	#$ffff
+	inc	a
+	pha
+	and	#4
+	bne	.even\@
+	a8
+	lda	mmx_destmarkptr
+	eor	#1
+	sta	mmx_destmarkptr
+	a16
+.even\@	pla
+	and	#3
+	eor	#3
+	inc	a
+.store\@	a8
+	sta	mmx_destmarktm
+.done\@	plp
+	endm
 km_jsr	macro	[addr]
 	per	(.rts\@)-1
 	brl	{addr}

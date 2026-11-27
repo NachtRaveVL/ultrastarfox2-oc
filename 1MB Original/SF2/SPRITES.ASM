@@ -291,6 +291,7 @@ init_sprites_l
 	sta.l	kx_SpriteVideoFrame
 	sta.l	kx_MapArrowFrame
 	sta.l	kx_PlanetAnimFrame
+	sta.l	kx_DestAnimFrame
 	lda	#0
 	sta.l	kx_SpriteVideoStep
 	sta.l	kx_SpriteStep2
@@ -1565,7 +1566,8 @@ Sprites_selectmissionmap_l
 	sta	oam_centerY	; <- position Y
 	lda	#cd_objanime_smallcursor
 	sta	oam_animeNo	; animation No
-	lda	mmx_curanmtm
+	lda.l	Winctimer
+	and	#$f
 	sta	oam_tcount	; animation Timer
 	a16
 	jsr	set_kawaobj
@@ -1582,7 +1584,8 @@ Sprites_selectmissionmap_l
 	sta	oam_centerY	; <- position Y
 	lda	#cd_objanime_bigcursor
 	sta	oam_animeNo	; animation No
-	lda	mmx_curanmtm
+	lda.l	Winctimer
+	and	#$f
 	sta	oam_tcount	; animation Timer
 	a16
 	jsr	set_kawaobj
@@ -1664,25 +1667,17 @@ Sprites_selectmissionmap_l
 ;============================================================================
 .skipcursor
 	shorta
-	lda	mmx_curanmtm
-	inc	a
+	lda.l	Winctimer
 	and	#$f
 	sta	mmx_curanmtm
 
 .notdisplay_cursor
 ;============================================================================
 ;* destination *
+	km_destanimtimer
 	km_bitcheckflag16	mmx_cursorflag,curf_destdisp
 	km_beq	.NotdestDisplay
 
-	dec	mmx_destmarktm
-	bne	.nochangepattern
-
-	lda	mmx_destmarkptr
-	eor	#1
-	sta	mmx_destmarkptr
-	km_setval	mmx_destmarktm,4
-.nochangepattern
 	km_SetSpriteSize1
 	a16
 	km_SetSpriteC4XY	mmx_arwingdestposX,mmx_arwingdestposY
@@ -1778,12 +1773,18 @@ mm_DisplayFox
 	bcs	.genki
 	
 	lda	mmw_pldangertm
-	inc	a
-	sta	mmw_pldangertm
+	clc
+	adc	kx_SpriteVideoStep
+	adc	#0	;65536 is one frame modulo 17
+.dangerphase	cmp	#17
+	bcc	.dangerstore
+	sec
+	sbc	#17
+	bra	.dangerphase
+.dangerstore	sta	mmw_pldangertm
+	beq	.danger
 	cmp	#16
 	bcc	.genki
-	beq	.danger
-	stz	mmw_pldangertm
 .danger
 	km_ldasprchr	$64,colpal3,pri2,noflip,mm_obj_offset
 	sta	kz_tpa
@@ -1903,7 +1904,9 @@ disp_senryouplanet
 	sta	oam_animeNo	; animation No
 	lda.w	mmx_timer2,x
 	sta	oam_tcount	; animation Timer
-	inc.w	mmx_timer2,x
+	clc
+	adc	kx_SpriteVideoStep
+	sta.w	mmx_timer2,x
 
 	jsr	set_kawaobj
 
@@ -2577,7 +2580,10 @@ DispEnemy
 	longi
 
 	stz	map_corneriacrash_offset	;(for yajima)
-	inc	map_corneriacrash_anime		;(for yajima)
+	lda	map_corneriacrash_anime
+	clc
+	adc	kx_SpriteVideoStep
+	sta	map_corneriacrash_anime		;(for yajima)
 
 	ldx	kx_enlistptr	;no enemy
 	km_beq	.noenemy
@@ -3792,8 +3798,11 @@ SetSprCorneriaHP
 .TimeCheck
 	lda	msx_CorneriaDispTm
 	km_beq	.end
-	dec	a
-	sta	msx_CorneriaDispTm
+	sec
+	sbc	kx_SpriteVideoStep
+	bcs	.disptime
+	lda	#0
+.disptime	sta	msx_CorneriaDispTm
 ;----------------------------------------------------
 ;**** Planet no hyouji ****
 	a8
@@ -3811,8 +3820,9 @@ SetSprCorneriaHP
 	km_bitcheckmissionflag	pause
 	bne	.Colour_RED
 
-	lda	kx_2frameTm
-	bne	.skip1
+	lda	kx_SpriteStep2
+	and	#1
+	beq	.skip1
 	km_eorflag16	kspriteflag,sf_corneriaflash
 .skip1
 	km_bitcheckflag16	kspriteflag,sf_corneriaflash

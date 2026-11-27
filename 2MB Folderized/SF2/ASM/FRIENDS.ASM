@@ -62,7 +62,15 @@ DisplayMessages_l
 	jsl	random_l
 	a16
 	and	#1
-	clc
+	pha
+	lda.l	kx_VisualStep
+	beq	.mouthheld
+	pla
+	sta.l	kx_MessageMouth
+	bra	.mouthpick
+.mouthheld	pla
+	lda.l	kx_MessageMouth
+.mouthpick	clc
 	adc	x1
 	tax
 
@@ -78,15 +86,8 @@ DisplayMessages_l
 	sta.l	m_spra
 .cont
 	jsr	.displayface
-	
-	a8
-	lda.l	MessageCount
-	inc	a
-	cmp	#num_of_speaking_frames+num_of_opening_frames
-	bcc	.dontcloseyet
-	lda	#-num_of_opening_frames
-.dontcloseyet
-	sta.l	MessageCount
+
+	jsr	.advance
 .finished
 	plb
 	plp
@@ -99,8 +100,80 @@ DisplayMessages_l
 	a16
 	and	#255
 	tax
-	cmp	#1
-	bne	.nsound
+	lda.l	.openingframes,x
+	sta.l	m_spra
+
+	jsr	.displayface
+
+	jsr	.advance
+
+	bra	.finished
+;###########################################################################
+; Display closing frames
+;###########################################################################
+.closing
+	nega
+	a16
+	and	#255
+	tax
+
+	lda.l	.openingframes-1,x
+	sta.l	m_spra
+
+	jsr	.displayface
+
+	jsr	.advance
+
+	brl	.finished
+
+;###########################################################################
+; Display the friends face
+;###########################################################################
+; Advance the complete radio timeline and fire cues only when crossed.
+.advance
+	a16
+	lda.l	kx_VisualStep
+	beq	.advancereturn
+	lda.l	MessageCount
+	and	#255
+	cmp	#128
+	bcc	.messageage
+	ora	#$ff00
+	clc
+	adc	#num_of_speaking_frames+num_of_opening_frames*2
+.messageage	tax
+	clc
+	adc.l	kx_VisualStep
+	pha
+	cpx	#3
+	bcs	.closecue
+	cmp	#3
+	bcc	.closecue
+	jsr	.messageopensound
+.closecue	pla
+	pha
+	cpx	#num_of_speaking_frames+num_of_opening_frames+1
+	bcs	.storeage
+	cmp	#num_of_speaking_frames+num_of_opening_frames+1
+	bcc	.storeage
+	a8
+	ksound	tsushin_end
+	a16
+.storeage	pla
+	cmp	#num_of_speaking_frames+num_of_opening_frames*2
+	bcc	.activeage
+	lda	#0
+	bra	.storecount
+.activeage	cmp	#num_of_speaking_frames+num_of_opening_frames
+	bcc	.storecount
+	sec
+	sbc	#num_of_speaking_frames+num_of_opening_frames*2
+.storecount	a8
+	sta.l	MessageCount
+.advancereturn	a8
+	rts
+
+.messageopensound
 	phx
 	lda.l	MessageNumber
 	jsr	GetFriendMessageInfo
@@ -122,48 +195,8 @@ DisplayMessages_l
 	ksound_a
 	a16
 	plx
-.nsound
-	lda.l	.openingframes,x
-	sta.l	m_spra
+	rts
 
-	jsr	.displayface
-
-	a8
-	lda.l	MessageCount
-	inc	a
-	sta.l	MessageCount
-
-	bra	.finished
-;###########################################################################
-; Display closing frames
-;###########################################################################
-.closing
-	nega
-	a16
-	and	#255
-	tax
-	cmp	#4
-	bne	.nsound2
-	a8
-	ksound	tsushin_end
-	a16
-.nsound2
-
-	lda.l	.openingframes-1,x
-	sta.l	m_spra
-
-	jsr	.displayface
-
-	a8
-	lda.l	MessageCount
-	inc	a
-	sta.l	MessageCount
-
-	brl	.finished
-
-;###########################################################################
-; Display the friends face
-;###########################################################################
 .displayface
 	php
 	a16
@@ -306,6 +339,10 @@ FriendMessage_l
 
 	dec	a
 	sta.l	MessageNumber
+	a16
+	lda	#0
+	sta.l	kx_MessageMouth
+	a8
 	lda	#1
 	sta.l	MessageCount
 
@@ -544,7 +581,10 @@ showtechdata_l
 	
 .noscroll
 
-	inc	credits_count1
+	lda	credits_count1
+	clc
+	adc.l	kx_VisualStep
+	sta	credits_count1
 
 	stz	credits_count3	; zero the line count
 
@@ -764,12 +804,16 @@ techdataline
 
 	lda.l	m_z1
 	beq	.not_eol
-	inc	credits_count4
 	lda	credits_count4
+	clc
+	adc.l	kx_VisualStep
+	sta	credits_count4
 	cmp	#techdata_eolpause
-	bne	.not_eol
+	bcc	.not_eol
+	sec
+	sbc	#techdata_eolpause
+	sta	credits_count1
 	stz	credits_count4
-	stz	credits_count1
 	inc	credits_count2
 .not_eol
 

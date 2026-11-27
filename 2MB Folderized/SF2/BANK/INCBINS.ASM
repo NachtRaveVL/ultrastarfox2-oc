@@ -136,6 +136,9 @@ keyscr_l	incfile	ASM\keyscr.asm
 	inccru	b1_ccr,data\b1.ccr
 	inccru	b8_ccr,data\b8.ccr
 	inccru	b12_ccr,data\b12.ccr
+	; Keep Japanese tilemaps inside their asset banks.
+	inccru	b3_pcr,data\b3.pcr
+	inccru	b12_pcr,data\b12.pcr
 	bankend	24
 
 	bank	25
@@ -148,7 +151,6 @@ keyscr_l	incfile	ASM\keyscr.asm
 	inccru	b0_pcr,data\b0.pcr
 	inccru	b1_pcr,data\b1.pcr
 	inccru	b2_pcr,data\b2.pcr
-	inccru	b3_pcr,data\b3.pcr
 	inccru	b4_pcr,data\b4.pcr
 	inccru	b5_pcr,data\b5.pcr
 	inccru	b6_pcr,data\b6.pcr
@@ -156,7 +158,6 @@ keyscr_l	incfile	ASM\keyscr.asm
 	inccru	b8_pcr,data\b8.pcr
 	inccru	b10_pcr,data\b10.pcr
 	inccru	b11_pcr,data\b11.pcr
-	inccru	b12_pcr,data\b12.pcr
 	inccru	b13_pcr,data\b13.pcr
 	inccru	b14_pcr,data\b14.pcr
 	inccru	b15_pcr,data\b15.pcr

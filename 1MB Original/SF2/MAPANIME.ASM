@@ -585,7 +585,11 @@ message_nextobj
 	beq	.exit
 	a8
 	lda	mapexp_nextobj
-	inc	mapexp_nextobj
+	pha
+	clc
+	adc	kx_MapArrowStep
+	sta	mapexp_nextobj	;only the low animation byte changes
+	pla
 	and	#0fh
 	a16
 	sta	oam_tcount
