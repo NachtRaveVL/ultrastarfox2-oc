@@ -4439,6 +4439,28 @@ MYNARG	=	NARG
 	pathmac_end
 	ENDM
 ;--------------------------------------------------------------------
+; Move a child by signed offsets per scramble tick. A zero duration holds the command.
+P_SCRAMBLEMOVE	MACRO	[ticks,mode,delta,delta2]
+	pathmac_start
+MYNARG	=	NARG
+	PNARG	4
+	db	p_extracommands
+	db	ep_alwaysoff_all+2	; after visualphasegoto in the extended table
+	db	{ticks},{mode},{delta},{delta2}
+	pathmac_end
+	ENDM
+;--------------------------------------------------------------------
+; Wait on the same clock as P_SCRAMBLEMOVE. A zero duration uses the spawn AP.
+P_SCRAMBLEWAIT	MACRO	[ticks]
+	pathmac_start
+MYNARG	=	NARG
+	PNARG	1
+	db	p_extracommands
+	db	ep_alwaysoff_all+2
+	db	{ticks},scramblemove_hold
+	pathmac_end
+	ENDM
+;--------------------------------------------------------------------
 P_VISUALTICKGOTO	MACRO	[var,addr]
 	pathmac_start
 MYNARG	=	NARG

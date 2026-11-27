@@ -89,6 +89,8 @@ pm
 ;	s_set_resource	L,x,start_hit,#pathhit_istrat
 .strat	LOCAL
 	s_start_strat
+	lda.l	kx_ScrambleStep
+	sta	pathscrambleticks
 
 	pnastyon
 
@@ -663,6 +665,7 @@ smt_modenum	=	0
 	s_mode_entry	p.iftamehomon,ep_iftamehomon
 	s_mode_entry	.alwaysoff_all,ep_alwaysoff_all
 	s_mode_entry	p.visualphasegoto,ep_visualphasegoto
+	s_mode_entry	p.scramblemove,ep_scramblemove
 
 	s_mode_table_end
 
@@ -7253,6 +7256,31 @@ visangle equ	$20
 
 ;**********
 
+; The remainder carries over to the following command when a phase ends.
+.scramblemove	LOCAL
+	PATHCMD
+	lda	pathscrambleticks
+	beq	.hold
+
+	pnastyoff
+	a16
+	ldy	#1
+	lda.l	[path_pcptr],y
+	sta	pathz3
+	ldy	#3
+	lda.l	[path_pcptr],y
+	sta	pathy3
+	a8
+	jsl	scramble_pathmove_l
+	pnastyon	; carry is preserved
+	bcs	.done
+.hold	; Extended command dispatch has already advanced past the prefix.
+	s_dec_alvar	W,x,al_sword2
+	jmp	pm.move
+.done	stz	al_sbyte3,x
+	jmp	_padd1
+
+;**********
 .chainposalvar	LOCAL
 
 	PATHCMD

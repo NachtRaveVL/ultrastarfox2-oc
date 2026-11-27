@@ -2,6 +2,7 @@
 ;		gamesequence
 ;
 	global	timechart_l
+	global	scramble_pathmove_l
 ;	global	chart_boss00
 	global	chart_playerdead
 	global	chart_playerwin

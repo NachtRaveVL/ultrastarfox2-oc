@@ -743,6 +743,16 @@ max_timer	=	timer_size*8
 
 	include INC\palettes.inc
 
+scramblemove_hold     equ 0
+scramblemove_x        equ 1
+scramblemove_yz       equ 2
+scramblemove_half_y   equ 3
+scramblemove_yaw      equ 4
+scramblemove_yaw4     equ 5
+scramblemove_pitch    equ 6
+
+	alc	pathscrambleticks,1	; remaining visual ticks for this path update
+
 	IFGT	wmempt-$2000
 	printf	"%n%nTOO MANY ALCS USED ",wmempt,"%n%n"
 	fail

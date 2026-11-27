@@ -336,7 +336,26 @@ timechart_l
 ;------------------------------------------------------------------------------
 
 .incexit	a16
+	lda	exal_chartptr,y
+	cmp	#chart_scramble&WM
+	bne	.normaladvance
+	a8
+	lda	exal_chartptr+2,y
+	cmp	#chart_scramble>>16
+	a16
+	bne	.normaladvance
 	lda	exal_charttimer,y
+	cmp	#scramble_end_tick
+	bcs	.normaladvance
+	clc
+	adc.l	kx_ScrambleStep
+	cmp	#scramble_end_tick
+	bcc	.scramblestore
+	lda	#scramble_end_tick	; preserve the exact-time ending trigger
+.scramblestore	sta	exal_charttimer,y
+	sta	exal_charttimer_work,y
+	bra	.exit
+.normaladvance	lda	exal_charttimer,y
 	inc	a
 	beq	.exit
 	sta	exal_charttimer,y
@@ -1405,10 +1424,11 @@ cs_cut1	equ	0c0h-46-20
 	end_chartdat
 
 ;-----------------------------------------------------------------------------
+scramble_end_tick	equ	180
 chart_scramble
 
 ;	chartdat	trig,km_bossmeteron,0
-	chartdat	trig,km_gameover,180
+	chartdat	trig,km_gameover,scramble_end_tick
 	end_chartdat
 
 ;-----------------------------------------------------------------------------
@@ -4792,3 +4812,115 @@ demodirector_tab_max	equ	(demodirector_tab_end-demodirector_tab)>>3
 
 
 ;컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴
+
+; Animate the child for each elapsed tick, returning carry when the phase ends.
+scramble_pathmove_l
+	a8i16
+	lda	pathz3
+	sta	pathy2
+	lda	pathz3+1
+	bne	.offsets
+	lda	pathy2
+	bne	.tick
+	lda	al_ap,x
+	bne	.apdelay
+	brl	.donewait
+.apdelay
+	sta	pathy2
+	bra	.tick
+.offsets	a16
+	lda	pathy3
+	sexa
+	sta	pathx3
+	lda	pathy3
+	xba
+	sexa
+	sta	pathy3
+	a8
+
+.tick	lda	pathz3+1
+	beq	.count
+	cmp	#scramblemove_x
+	beq	.xmove
+	cmp	#scramblemove_yaw
+	beq	.yaw
+	cmp	#scramblemove_pitch
+	beq	.pitch
+	cmp	#scramblemove_yaw4
+	bne	.yzmove
+
+	lda.l	kx_ScrambleFrame
+	sec
+	sbc	pathscrambleticks
+	inc	a
+	and	#3
+	bne	.count
+.yaw	lda	al_childroty,x
+	clc
+	adc	pathx3
+	sta	al_childroty,x
+	bra	.count
+.pitch	lda	al_childrotx,x
+	clc
+	adc	pathx3
+	sta	al_childrotx,x
+	bra	.count
+.xmove	a16
+	lda	al_childx,x
+	clc
+	adc	pathx3
+	sta	al_childx,x
+	bra	.count16
+.yzmove	a16
+	lda	al_childz,x
+	clc
+	adc	pathy3
+	sta	al_childz,x
+	a8
+	lda	pathz3+1
+	cmp	#scramblemove_half_y
+	bne	.ymove
+	lda	al_sbyte3,x
+	lsr	a
+	bcc	.count
+.ymove	a16
+	lda	al_childy,x
+	clc
+	adc	pathx3
+	sta	al_childy,x
+.count16	a8
+.count	dec	pathscrambleticks
+	inc	al_sbyte3,x
+	lda	pathy2
+	beq	.more
+	cmp	al_sbyte3,x
+	beq	.done
+.more	lda	pathscrambleticks
+	beq	.yield
+	brl	.tick
+.yield	clc
+	rtl
+.done	lda	pathz3+1
+	beq	.donewait
+	a16
+	lda	al_sword2,x
+	inc	a
+	inc	a
+	bra	.advance
+.donewait	a8
+	lda	pathz3
+	bne	.advancewait
+	lda	demoNo
+	cmp	#demo_scramble
+	beq	.advancewait
+	; The original AP loop also starts the hatch movement on its final update.
+	lda	#1
+	sta	pathscrambleticks
+.advancewait	a16
+	lda	al_sword2,x
+.advance	inc	a
+	inc	a
+	sta	al_sword2,x
+	a8
+	sec
+	rtl

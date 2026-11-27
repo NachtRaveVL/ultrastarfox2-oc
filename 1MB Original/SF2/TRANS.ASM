@@ -38,6 +38,54 @@ de_jsl	macro	[addr]
 ;-----------------------------------------------------------------------
 ;-----------------------------------------------------------------------
 
+; The stock launch demo advances about twice every seven NTSC video frames.
+; Keep that pace in both layouts, with the equivalent ratio for PAL.
+advance_scramble_clock
+	a8i16
+	a16
+	lda.l	kx_ScrambleRemainder
+	cmp	#$ffff
+	bne	.elapsed
+	lda	#0	; discard video frames counted before this scene
+	sta.l	kx_ScrambleRemainder
+	sta.l	kx_ScrambleStep
+	a8
+	rts
+
+.elapsed	phx
+	a16
+	lda	framer
+	and	#$00ff
+	asl	a
+	IFEQ	PAL
+scramble_divisor	equ	7
+	ELSEIF
+scramble_divisor	equ	35
+	asl	a
+	pha
+	asl	a
+	clc
+	adc	1,s
+	plx
+	ENDC
+	clc
+	adc.l	kx_ScrambleRemainder
+	ldx	#0
+.tick	cmp	#scramble_divisor
+	bcc	.ready
+	sbc	#scramble_divisor
+	inx
+	bra	.tick
+.ready	sta.l	kx_ScrambleRemainder
+	txa
+	sta.l	kx_ScrambleStep
+	clc
+	adc.l	kx_ScrambleFrame
+	sta.l	kx_ScrambleFrame
+	plx
+	a8
+	rts
+
 transfer_l
 	a8i16
 
@@ -99,6 +147,13 @@ transfer_l
 	bra	.visualtick
 .visualdone	sta.l	kx_VisualFrameRem
 	a8
+	lda	demoNo
+	cmp	#demo_scramble
+	bne	.otherdemoclock
+	jsr	advance_scramble_clock
+	bra	.notfinished
+.otherdemoclock	lda	#1	; retain the original step for shared hatch paths
+	sta.l	kx_ScrambleStep
 .notfinished
 	lda	trans_flag
 	bne	.notfinished

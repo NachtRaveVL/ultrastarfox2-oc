@@ -1180,6 +1180,9 @@ demof_all	equ	-1
 	xalc	kx_VisualStep8,2	;eight-frame ticks elapsed during the transfer
 	xalc	kx_VisualStep16,2	;sixteen-frame ticks elapsed during the transfer
 	xalc	kx_VisualStep32,2	;thirty-two-frame ticks elapsed during the transfer
+	xalc	kx_ScrambleFrame,2	; elapsed scramble ticks
+	xalc	kx_ScrambleStep,2	; scramble ticks in this transfer
+	xalc	kx_ScrambleRemainder,2	; fraction of the next scramble tick
 	xalc	kx_FadeStep,2	;last visual fade step
 	xalc	kx_GameTmSub,2		;1 second timer
 	xalc	kx_GameTmAdd,2		;1 second timer

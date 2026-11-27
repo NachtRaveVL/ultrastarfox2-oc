@@ -7429,28 +7429,15 @@ childno_scramble_arwing2	equ	85
 
 	p_spawn	0,scramble_cam_y,scramble_cam_z,0,0,0,nullshape,scramblecam,1,1,childno_scramble
 
-	p_do	4ch	;-08h
-	p_add	childroty,-1
-	p_next
-
-.loop	p_visualtickgoto	3,.next0
-	p_igoto	.next1
-.next0	p_add	childroty,-1
-.next1	p_goto	.loop
-	p_end
-
-
-
-
-
-
+	p_scramblemove	4ch,scramblemove_yaw,-1,0
+	p_scramblemove	0,scramblemove_yaw4,-1,0
 
 	start_path	scramblecam
 
 	p_slope		off
 	p_collisions	off
 
-	p_wait		1
+	p_scramblewait	1
 
 	p_copypos2view		1,immediate
 	p_campandemoshape	1,0,immediate
@@ -7458,35 +7445,16 @@ childno_scramble_arwing2	equ	85
 	p_rtrigger	.rot,always
 
 
-	p_do	scramble_time_a
-	p_add	childy,-scramble_cam_y/scramble_time_a
-	p_add	childz,-1
-	p_next
-
-
-
-	p_do		16
-	p_add		childz,-4
-	p_andframegoto	1,.next1
-	p_add		childy,-1
-.next1	p_next
+	p_scramblemove	scramble_time_a,scramblemove_yz,-scramble_cam_y/scramble_time_a,-1
+	p_scramblemove	16,scramblemove_half_y,-1,-4
 
 	p_trigger		.rot,off
 	p_rtrigger		.rot2,always
 
-	p_set		pbyte1,0
-
-	p_do		40h
-	p_add		childz,-4
-	p_andframegoto	1,.next
-	p_add		childy,-1
-.next	p_next
-
-
-.loop	p_inc		pbyte1
-	p_ifnotsame	pbyte1,14h,.next2
+	p_scramblemove	40h,scramblemove_half_y,-1,-4
+	p_scramblewait	14h
 	p_Qspawn	nullshape,scramble_arwing_d,22,22
-.next2	p_goto		.loop
+.hold	p_goto	.hold
 
 .rot	p_campandemoshape	1,0,immediate
 	p_copypos2view	1
@@ -7516,7 +7484,7 @@ childno_scramble_arwing2	equ	85
 ;	p_spawn		-55<<base_scale,0,40<<base_scale,0,0,0,nullshape,scramble_arwing_p,10,102,childno_scramble_arwing2
 	p_Qspawn	nullshape,scramble_arwing_p_c,10,23
 
-	p_wait		52h
+	p_scramblewait	52h
 
 	p_gosub		prou_makebase_h.h
 	p_spawn		-55<<base_scale,15<<base_scale,80<<base_scale,0,0,0,base_h1,scramble_base_h,10,8,childno_scramble
@@ -7551,17 +7519,12 @@ childno_scramble_arwing2	equ	85
 
 	p_collisions	off
 
-	p_set	count,ap
-
-	p_do	count
-	p_next
+	p_scramblewait	0	; opening delay is the spawn AP
 
 	p_ifzero	pbyte1,.se
 	P_SOUNDEFTPOS	ob_mothership_hatch	;GAKKI
 .se
-	p_do	32
-	p_add	childrotx,2
-	p_next
+	p_scramblemove	32,scramblemove_pitch,2,0
 
 	P_SOUNDEFTPOS	hatch_move_end		;GAKKI
 
@@ -7577,9 +7540,7 @@ childno_scramble_arwing2	equ	85
 .close2	LOCAL
 
 	P_SOUNDEFTDISTPOS	ob_mothership_hatch	;GAKKI
-	p_do		10h
-	p_add		childrotx,-4
-	p_next
+	p_scramblemove	10h,scramblemove_pitch,-4,0
 	P_SOUNDEFTDISTPOS	hatch_move_end	;GAKKI
 	p_end
 
@@ -7640,7 +7601,7 @@ childno_scramble_arwing2	equ	85
 	P_GOSUB		set_friend_shape
 
 	p_gosub		Pscramble_arwing_p.init
-	p_wait		97	;count
+	p_scramblewait	97	;count
 	p_accel		40,1
 	p_wait		20
 
@@ -7663,7 +7624,7 @@ childno_scramble_arwing2	equ	85
 	p_playershape
 	p_gosub		.init
 
-	p_wait		102
+	p_scramblewait	102
 
 	P_SOUND		p2_demo_arwing
 
@@ -7707,14 +7668,10 @@ childno_scramble_arwing2	equ	85
 
 	p_collisions	off
 	p_demoshape
-	p_wait	scramble_time_a
-	p_do	30
-	p_add	childx,+(55<<base_scale)/30
-	p_next
-	p_wait	112-30-scramble_time_a
-	p_do	40
-	p_add	childx,-(55<<base_scale)/40
-	p_next
+	p_scramblewait	scramble_time_a
+	p_scramblemove	30,scramblemove_x,+(55<<base_scale)/30,0
+	p_scramblewait	112-30-scramble_time_a
+	p_scramblemove	40,scramblemove_x,-(55<<base_scale)/40,0
 	p_end
 
 
